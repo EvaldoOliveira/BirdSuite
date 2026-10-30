@@ -1,0 +1,2 @@
+#birdnet
+*/5 * * * * $USER sudo -n /usr/local/sbin/birdsuite-root update -a >/dev/null 2>&1

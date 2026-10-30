@@ -1,0 +1,32 @@
+v0.16.0 - eBird page, spectrogram palettes, calibrated defaults
+
+New
+- Reports › eBird: the species of a day, a week or a month, one column per day with the number of detections and the
+  lowest confidence of each species; a filter All / Confirmed (Yes on the review) / Minimum confidence, a checkbox per
+  species, and Set as default for the filter the page opens with.
+- eBird file: ready for eBird › Submit › Import data (eBird Record Format, Extended): one Stationary checklist per day
+  and location, birds only, State/Province and Country Code filled in (the location's region list, else OpenStreetMap),
+  each species present (X) with the hour it was first heard, its weather and how many detections were confirmed by ear;
+  the checklist comment carries the day's weather (Open-Meteo, N/A without internet).
+- Sounds (zip): the best sounds confirmed by ear of each species (the number asked, 5 proposed) as WAV files named by
+  date, time, species and confidence, for eBird's Add media (Macaulay Library).
+- Send by e-mail: the report on screen with its eBird file goes to the address of Settings › E-mail; the weekly schedule
+  (day, time, its own filter, the report's name with {start} {end} {week} {year} {station} {id} {location}) follows the
+  station's species lists and carries the weather of each day.
+- Spectrogram palettes Turbo (the default) and Roseus beside Classic, Viridis, Inferno, Ocean, Grayscale and SoX heat,
+  grouped by colour, every one named with its colours; a Defaults button on the Spectrogram page puts palette,
+  contrast, floor and range back to the factory values.
+- Species page, Precision: the precision above a threshold weights each confidence band by its real number of
+  detections (a stratified estimate), with the share covered by reviews and the real detections lost, beside the
+  logistic threshold of Wood & Kahl (2024); a folded note explains the method with links to the papers; Confidence and
+  Probability of occurrence written out.
+- Repositories: the BirdDB-Br section also shows when the station contributes.
+
+Changed
+- BirdNET+ V3 factory defaults calibrated on more than 1,000 detections reviewed by ear: minimum confidence 0.4,
+  sigmoid sensitivity 1, minimum probability of occurrence 0.05, overlap 0; Now filters Low Conf 60 %, Low Prob 40 %.
+- Tools › Defaults opens with Show only changes ticked; every eBird setting is listed there.
+
+Notes
+- An eBird import still needs the checklists reviewed on eBird; with All or Minimum confidence the file also lists
+  species not confirmed by ear, which eBird reviewers may flag.

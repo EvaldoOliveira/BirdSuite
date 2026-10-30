@@ -1,0 +1,37 @@
+v0.14.0 - Clips by the scientific name, Tools > Data, https and the device's GPS
+
+New
+- Clips and folders by the scientific name only (By_Date/<date>/<Scientific_name>/): the common name lives in the
+  database alone, so the Common name Language (formerly Database Language) can change at any time and is saved as
+  soon as it is chosen. Migrate converts the old clips (folders by common name) once; the database is copied first.
+- Tools > Data: Locations Data (detections, deleted, ignored and the format of each location; Move to location or
+  station, Purge Removed, Purge Ignored), the life cycle of the sounds explained with the settings behind it, and the
+  danger zone (Clear ALL data keeps the settings; Factory settings saves them first).
+- Tools > Backup/Import: Export / Backup of a location or all of them, as BirdSuite or as BirdNET (common names in a
+  chosen language, birds.db + By_Date, for BirdNET-Pi and a long-term copy in any language); Import of BirdSuite
+  backups and of BirdNET-Pi folders, the format and language detected, into Test / Playback, a new location or an
+  existing one; Backup / Restore of the settings without the database.
+- Disk management in one place (Tools > Data): clips per species per day (50), per species (100), recent days kept
+  (5), Ignored audio deleted after 5 days, the best 50 of each species protected, purge at 70%; 0 = no limit in each.
+  Review later protects a sound like Yes.
+- https: the station answers over https too, with its own certificate (accept it once per device), so the map's GPS
+  icon takes the position from a phone or computer, also in the field without internet. The Pi locates itself by the
+  Wi-Fi around it (Google with a GEOLOCATION_API_KEY, else BeaconDB), the internet address as the last resort.
+- Microphone reconnected: a window on any page asks where the station is (countdown, location list, a new location
+  with coordinates filled in); a quick replug is caught too.
+- System > Status: each service button opens a terminal screen until it ends; the checks without pages.
+- Tools > Browse files: Midnight Commander in the browser after a password login (mc installed).
+- A field that differs from its factory value is yellow on every page; Defaults reorganised (in use, load the factory
+  defaults or a saved set, save the settings in use, Save edits).
+- Menus: Species Cards (Fichas), Themes, Custom, Advanced; Model Comparison and Data in Tools; External Files out of
+  the menu (the page stays).
+
+Fixes
+- The per-species file limit trims the folders by the scientific name too.
+- The Deleted counts per location include the removals made before the location tag existed.
+- The folder browsers list every mount under /mnt and /media (any depth); one the station cannot read shows greyed.
+
+Notes
+- The update migrates nothing by itself: Tools > Data shows Migrate when old clips are there.
+- New defaults apply to the settings this station never changed; the others keep their value (Tools > Data).
+- The first https visit on each device shows a certificate warning: Advanced > Proceed.

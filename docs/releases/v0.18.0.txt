@@ -1,0 +1,17 @@
+v0.18.0 - folder tree picker, backups marked, shorter Backup/Import texts
+
+New
+- Folder picker: a tree of the whole station (expandable folders from /), opened down to the current folder, the folder
+  chosen highlighted with its full path; the mounted folders (home, network shares, USB disks) as shortcuts above it.
+  Used by Tools › Data, Backup/Import and External Files. Any folder the station user can read, with that user's own
+  rights as before; /proc, /sys, /dev and /run are left out.
+- Backups are marked in the tree with a box (a BirdSuite backup with location.json or a BirdNET-Pi folder with
+  birds.db): a backup is a folder, not a file.
+
+Changed
+- Tools › Backup/Import: shorter texts, one sentence per line (Choose the destination folder; Select the folder that
+  holds the backup to restore, with the box explained).
+
+Notes
+- Two backups in the same folder never overwrite each other: the second of a day gets _2, _3 ...
+- Translations: the new texts are in all eleven languages.

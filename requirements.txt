@@ -1,0 +1,21 @@
+tensorflow
+librosa
+pytz
+tzlocal
+numpy
+pandas
+seaborn
+apprise==1.13.1
+paho-mqtt!=2.0
+pytest==7.1.2
+suntime==1.3.2
+inotify
+requests
+matplotlib
+pillow>=13.0.0
+soundfile
+onnxruntime; platform_machine == "aarch64" or platform_machine == "x86_64"
+# security floors (2026-10-23 test run, pip-audit of the pilot): fixed releases of what the packages above pull in
+# (streamlit, plotly, pyarrow and tornado went with the unused /stats page: streamlit pinned pillow below 12)
+urllib3>=2.8.0
+certifi>=2026.10.19

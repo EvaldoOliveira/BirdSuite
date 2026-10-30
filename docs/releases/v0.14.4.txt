@@ -1,0 +1,48 @@
+v0.14.4 - WiFi in the field, privacy with BirdNET+ V3, automatic update on chosen days
+
+New
+- WiFi in the field (Settings > Network): the station WiFi is Plan A (any phone, https://10.42.N.1) and the phone
+  hotspot Plan B. FIELD_WIFI_MODE always (default: the station WiFi on whenever there is no network, 10 s after it is
+  gone, no time limit), cycle (2 minutes every 15) or off (2 minutes after start-up, then the WiFi antenna off). A
+  phone on it keeps it on until 30 min after it left; with no phone on it the station goes back to a known network or
+  the fleet hotspot as soon as one is in range. A network that refused is tried again after 2, 4, 8 min, then on the
+  round 10 minutes of the clock. The times are settings (FIELD_*, Tools > Defaults).
+- With the cable connected the WiFi stays off; the cable gone, the WiFi joins its networks again.
+- The label has a second QR that opens https://10.42.N.1; a new address of the station on a network (the Android
+  hotspot picks a new one each time) is announced by a notification with its link, sent once there is internet.
+- Phones see the login page on the station WiFi (their internet checks are answered with the home page).
+- Automatic update: ticked in Tools > Status, it runs on the chosen days of the week at the chosen time (default
+  Sunday 03:00). A changed default now reaches the stations (a value still on the old default takes the new one; a
+  value the owner set is left alone).
+- Privacy with BirdNET+ V3: V3 has no human class, so the privacy filter alone does nothing with it. The Model page
+  says so and how to fix it: with the Shadow model BirdNET V2.4 on, its human-voice windows also drop the V3
+  detections in those moments. The privacy threshold is 1 by default (was 0). System > Status shows the moments
+  blanked in the last 24 h, or warns that the filter is not active.
+- Tools > Shadow (Model Comparison, Official versus Shadow): the model that detected a species in green, the one that
+  did not in red; Only V3 / Only V2.4 green when there are some, red when none; rows tinted by result with a legend.
+- Review player on a phone: smaller answer buttons; Detection N of M with its bar in one line on top of the fixed
+  answer bar; Previous / Next species in that bar.
+- Now and Reports (By Hour, By Week): the filter panel open on a wider screen and closed on a phone by default
+  (Settings > Defaults: NOW_FILTERS_*, NOW_PARAMS_*, REPORTS_FILTERS_*).
+- Backup folder names <yyyy-mm-dd>_<station>_<location> (_2, _3 for another one on the same day), one underscore for
+  each run of other characters ("Teste / Playback" -> Teste_Playback).
+- Import of an old BirdNET folder into new locations: one location per place, named with its coordinates.
+
+Changes
+- Menus: Repositories in Settings below Network; Notifications (Content, E-mail, Telegram); Model Comparison in Tools
+  as Shadow. Every page opens with its title. In Portuguese the shadow model is called Shadow.
+
+Fixes
+- Field service: a network counts only once connected (a refused password kept the station WiFi from coming); back to
+  a known network by its profile (device connect started the station WiFi again); the old avahi alias that published
+  birdsuite.local with the start-up address is retired.
+
+Tests
+- Import / export tests are the release gate: the release workflow runs tests/import_export_test.py and creates no tag
+  when they fail; tests/import_export_variants_test.py covers old-format and BirdSuite exports across languages,
+  locations and stations. On a station, --folder <mount> runs them through a real NAS mount.
+- tests/field_planb_test.sh: the station WiFi at 10.42.N.1 and the way back to the known network, unattended.
+- scripts/shadow_cost.py: how much the Shadow model adds to the analysis work (the price of privacy with V3).
+
+Notes
+- Not tested on a station yet: import / export through a mounted folder, privacy through the Shadow model.

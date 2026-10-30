@@ -1,0 +1,97 @@
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
+
+# User-specific stuff
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# AWS User-specific
+.idea/**/aws.xml
+
+# Generated files
+.idea/**/contentModel.xml
+.idea
+
+# Sensitive or high-churn files
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+
+*.pyc
+*.flac
+.vscode
+model/labels.txt
+datasets/
+IdentifiedSoFar.txt
+IdentifiedSoFar.txt.bak
+Birders_Guide_Installer_Configuration.txt
+birdnet/
+templates/*.service
+templates/*.timer
+scripts/*.txt
+scripts/*.db
+analyzing_now.txt
+apprise.txt
+body.txt
+BirdDB.txt
+exclude_species_list.txt
+firstrun.ini
+HUMAN.txt
+include_species_list.txt
+whitelist_species_list.txt
+/nbproject/private/
+
+# Station-private layer, docs and reference clones (owner 2026-10-07): custom/ lives in
+# ~/Documents/Birdnet/custom (symlinked here), backed up nightly to the NAS, never in git.
+# Installs without it run the plain fork (no station layer).
+/custom
+/firstrun_pending
+# station species lists (Settings > Species list filter)
+species_lists/
+# raw recordings (Raw Recording page)
+raw-recording/
+scripts/region_profile.json
+# species table additions looked up on the station (scripts/update_species_info.sh)
+model/species_info_local.csv
+model/species_info_local.csv.tmp
+species_info_build.log
+# station data (US-117): the registered stations, written by the Stations page
+# station data (US-58): the locations, and the microphone-reconnected question of the Now page
+mic_reconnected.json
+.mic_removed
+location_job.json
+location_job.lock
+notify_queue.jsonl*
+
+# station data: the Telegram group names shown by Settings › Telegram
+telegram_groups.json
+
+# station data: the custom themes of Settings › Appearance
+custom_themes.json
+
+# station data: the rare-tier Apprise config, its body and the Apprise secrets (placeholders' values, 600)
+apprise-rare.txt
+apprise-tokens.txt
+body-rare.txt
+# station data: the boot location check
+location_check.json
+
+# station data: the saved variations of System › Defaults
+settings_profiles/
+location_switch.json
+location_switch.json.tmp
+species_max_files.txt
+
+# the station's own files (owner 2026-10-22): settings, lists, notifications, locations, the database
+/config/*
+# the factory defaults ship with the program (owner 2026-10-22)
+!/config/factory_defaults.conf
+# the running state of the station (owner 2026-10-22)
+/state/

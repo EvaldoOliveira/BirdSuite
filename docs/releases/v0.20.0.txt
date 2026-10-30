@@ -1,0 +1,17 @@
+v0.20.0 - See: the pictures of the birds singing now
+
+New
+- See: a page, right below Now, with the picture of each bird heard: one card per species with its name, time and
+  confidence, the newest detection top left, updated without a reload. Two picklists: the minimum confidence (30% at
+  first) and the period (last minute at first, then 5 and 15 minutes, 1, 4, 8 and 12 hours). A species that sings again
+  goes to the front and starts its period over. Under the picture, Species card opens its page in a new tab and Listen
+  plays or pauses its last sound, with nothing else changing on the page.
+
+Fixed
+- Species pictures: a species missing from the model's English labels (Troglodytes musculus and other CBRO names) never
+  got its picture; it now uses the title of its Wikipedia page.
+
+Notes
+- The pictures come from Wikipedia and are loaded by the viewer's browser, so they need internet there.
+- Translations: the new texts are in all eleven languages.
+- v0.19.1 was a development milestone with these same changes.

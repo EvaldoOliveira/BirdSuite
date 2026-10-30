@@ -1,0 +1,11 @@
+{
+  "name": "BirdSuite Field",
+  "short_name": "BirdSuite",
+  "description": "Find a BirdSuite station over Bluetooth, open it, set its clock and position from the phone",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#1f4e79",
+  "icons": [{"src": "../images/BirdNetBr.png", "sizes": "192x192", "type": "image/png"}]
+}

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Overview spectrogram of the recording being analysed (scripts/spectrogram_png.py, sox as fallback)
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
+# Read the logging level from the configuration option
+LOGGING_LEVEL="${LogLevel_SpectrogramViewerService}"
+# If empty for some reason default to log level of error
+[ -z $LOGGING_LEVEL ] && LOGGING_LEVEL='error'
+# Additionally if we're at debug or info level then allow printing of script commands and variables
+if [ "$LOGGING_LEVEL" == "info" ] || [ "$LOGGING_LEVEL" == "debug" ];then
+  # Enable printing of commands/variables etc to terminal for debugging
+  set -x
+fi
+
+next=0
+looptime=$(( RECORDING_LENGTH * 2 / 3 ))
+
+# US-41: SPECTROGRAM_PALETTE (BirdSuite.conf) -> sox spectrogram options. The
+# live canvas draws its own gradients; these are the closest sox equivalents.
+case "${SPECTROGRAM_PALETTE:-turbo}" in
+  viridis)   PALETTE_OPTS="-h -p 5" ;;
+  ocean)     PALETTE_OPTS="-h -p 2" ;;
+  grayscale) PALETTE_OPTS="-m" ;;
+  *)         PALETTE_OPTS="" ;;   # birdnet / inferno / soxheat / turbo / roseus = sox default colours
+esac
+# US-42: colour sensitivity — floor and range (dB) become the sox Z-axis
+# (-Z = top of the scale in dBFS, -z = range below it). Contrast has no sox
+# equivalent (canvas only).
+_floor=${SPECTROGRAM_FLOOR_DB:--100}; _range=${SPECTROGRAM_RANGE_DB:-70}
+[[ "$_floor" =~ ^-?[0-9]+$ ]] || _floor=-100
+[[ "$_range" =~ ^[0-9]+$ ]] || _range=70
+(( _floor < -120 )) && _floor=-120; (( _floor > -40 )) && _floor=-40
+(( _range < 30 )) && _range=30; (( _range > 120 )) && _range=120
+_top=$(( _floor + _range )); (( _top > 0 )) && _top=0
+PALETTE_OPTS="$PALETTE_OPTS -Z $_top -z $_range"
+
+touch "$HOME/BirdSongs/StreamData/analyzing_now.txt"
+# Continuously loop generating a spectrogram
+inotifywait -m -e close_write "$HOME/BirdSongs/StreamData/analyzing_now.txt" |
+while read; do
+  now=$(date +%s)
+  if (( now > next )); then
+    analyzing_now="$(<$HOME/BirdSongs/StreamData/analyzing_now.txt)"
+
+    if [ -n "${analyzing_now}" ] && [ -f "${analyzing_now}" ]; then
+      spectrogram_png=${EXTRACTED}/spectrogram.png
+        raw_opt=""; [ "$RAW_SPECTROGRAM" == "1" ] && raw_opt="-r"
+        # drawn with the live Spectrogram page's palette, floor, range and contrast; sox stays the fallback
+        if ! "$HOME/BirdNET-Pi/birdnet/bin/python3" "$HOME/BirdNET-Pi/scripts/spectrogram_png.py" "${analyzing_now}" "${spectrogram_png}" \
+            "${analyzing_now//$HOME\//}" ${raw_opt:+--raw} 2> /dev/null; then
+          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" $raw_opt
+        fi
+    fi
+    next=$(( now + looptime ))
+  fi
+done

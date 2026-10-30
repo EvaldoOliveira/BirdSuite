@@ -1,0 +1,1655 @@
+@font-face {
+   font-family: 'Roboto Flex' ;
+   src: url('static/RobotoFlex-Regular.ttf') format('truetype');
+}
+
+* {
+  font-family: 'Roboto Flex', sans-serif;
+  box-sizing: border-box;
+  font-size: 14px;  /* base type smaller than the browser's 16px (owner 2026-10-08) */
+  color: #fff;
+}
+
+a {
+  text-decoration: none;
+  color: #fff;
+}
+
+a:hover {
+  font-weight: bold;
+  color: #ffffff;
+}
+
+h3 {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+iframe {
+  border: none;
+  height: calc(100% - 56px);
+  width: 100%;
+  position: fixed;
+  background-color: grey;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg,#1a1a1a);
+}
+
+table {
+  background-color: transparent;
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0px 0px 17px 1px rgba(255, 255, 255, 0.10);
+  border-radius:3px;
+  overflow: hidden;
+}
+
+td {
+  padding: 10px;
+  vertical-align: top;
+  background-color: var(--menu,#2b2b2b);
+  font-weight: lighter;
+  text-align: center;
+}
+
+th {
+  padding: 12px;
+  font-weight: bold;
+  height: auto;
+  text-align: center;
+}
+
+audio, video{
+  max-height: 100%;
+  max-width: 100%;
+}
+
+label {
+  font-weight: bold;
+}
+
+hr { 
+  border-color:#fff;
+}
+
+button {
+  background-color: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition:background-color 0.2s;
+}
+
+.disabled{
+  cursor: not-allowed;
+  pointer-events: none; 
+  opacity: 0.5;
+}
+
+button:hover {
+  color: #ffffff;
+}
+
+.row {
+  display: flex;
+}
+
+.centered {
+  text-align: center;
+  display: block;
+  width: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.banner {
+  /* compact one-line header (owner 2026-09-17) */
+  display: flex;
+  align-items: center;
+  height: 54px;
+  padding: 0 10px;
+  position: relative;
+  text-align: center;
+  background-color: var(--menu,#2b2b2b);
+}
+
+.banner h1 {
+  margin: 0;
+  padding: 0;
+  letter-spacing: 5px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 0;
+}
+
+.banner audio,.banner form {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.banner .stream {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.banner .sitename {
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-left: 6px;
+}
+
+.banner button {
+  padding: 6px 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.banner a {
+  text-decoration: none;
+  color: #fff;
+  font-size: x-large;
+}
+
+.chartdiv {
+  position: fixed;
+  top: 0%;
+  left: 50%;
+  width: calc(40% - 2px);
+  height: calc(25% - 2px);
+  background-color: var(--menu,#2b2b2b);
+  z-index: 9999;
+  overflow: auto;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px #fff;
+}
+
+/* the logo as in the light scheme (owner 2026-10-24: here it had no size and took half the window) */
+.logo img {
+  height: 40px;
+  width: auto;
+  display: block;
+  padding: 0;
+  filter: none !important;
+}
+
+.logo a {
+  display: block;
+  line-height: 0;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: var(--menu,#2b2b2b);
+  margin: 15% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  text-align: center; /* Center the content */
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 10% auto;
+  }
+}
+
+.topnav {
+  background-color: var(--menu,#2b2b2b);
+  display: flex;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 96%;
+  min-width: min-content;
+  justify-content: space-between;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 4px;
+  border-radius: 4px;
+}
+
+.topimage {
+  width:130px;
+  display:initial !important;
+  margin-left: 0;
+  filter: drop-shadow(0px 0px 20px rgba(255, 255, 255, 1.0));
+}
+
+.topnav form {
+  margin: 0;
+  padding: 0;
+}
+
+.topnav button {
+  background-color: transparent;
+  text-align: center;
+  padding: 6px 10px;
+  font-size: 14px;
+  white-space: nowrap;
+  width: auto;
+  vertical-align: middle;
+  color: #fff;
+}
+
+.topnav button:hover {
+  background-color: var(--panel,#3b3b3b);
+  color: #fff;
+}
+
+.topnav button.active {
+  background-color: var(--accent2,#04aa6d);
+  color: white;
+}
+
+.topnav .button-hover {
+  background-color: var(--panel,#3b3b3b) !important;
+  color: #fff;
+}
+
+.topnav .icon {
+  display: none;
+  color: #fff;
+}
+
+.overview th {
+  background-color: var(--menu,#2b2b2b);
+  text-align: center;
+  padding: 12px;
+}
+
+.overview td {
+  vertical-align: middle;
+}
+
+.overview div img {
+  max-height: 100%;
+  display: flex;
+  justify-content: center;
+  margin-right: auto;
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+.overview .chart {
+  margin-top: 10px;
+}
+.overview-stats {
+  display: flex;
+  justify-content: center;
+}
+
+.center-column {
+  display: none;
+}
+
+.left-column {
+  flex: 10%;
+  padding-left: 10px;
+}
+
+.right-column {
+  flex: 90%;
+  margin-right: 10%;
+}
+
+.stats td {
+  vertical-align: middle;
+}
+
+.stats table {
+  height: auto;
+}
+
+.stats button:hover {
+  color: #ffffff;
+}
+
+.overview button, .center button{
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.history table,.history img {
+  width: auto;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.7;
+}
+
+.views {
+  transition: opacity 0.3s;
+  -webkit-transition: opacity 0.3s;
+}
+
+.views .centered button {
+  background-color: var(--panel,#3b3b3b);
+  padding: 12px;
+  transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0px 3px 1px -2px rgb(255, 255, 255, 0.20), 0px 2px 2px 0px rgb(255, 255, 255, 0.14), 0px 1px 5px 0px rgb(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.views .centered button:hover {
+  background-color: #4b4b4b;
+  color: #fff;
+  box-shadow:0px 2px 4px -1px rgb(255, 255, 255, 0.20), 0px 4px 5px 0px rgb(255, 255, 255, 0.14), 0px 1px 10px 0px rgb(255, 255, 255, 0.12);
+}
+
+.settings {
+  padding: 12px;
+}
+
+.settings h2 {
+  margin-top: 0px;
+  color: #fff;
+}
+
+.settings p {
+  margin-bottom: 0px;
+  color: #fff;
+}
+
+.settings h3 {
+  text-align: left;
+  color: #fff;
+}
+
+.settings button {
+  background-color: var(--panel,#3b3b3b);
+  padding: 12px;
+  color: #fff;
+}
+
+.settings button:hover {
+  background-color: #4b4b4b;
+  color: #fff;
+}
+
+.float button {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  color: #fff;
+}
+
+.customlabels,.customlabels2 {
+  float:left;
+}
+
+.customlabels table {
+  height: 100%;
+}
+
+.customlabels td,.customlabels2 td {
+  border:none;
+  background-color: transparent;
+  vertical-align: middle;
+  color: #fff;
+}
+
+.customlabels button,.customlabels2 button {
+  padding: 12px;
+  background-color: var(--panel,#3b3b3b);
+  color: #fff;
+  width: 100%;
+}
+
+.column1, .column3 {
+  width: 45%;
+}
+
+.smaller {
+  width: 100%;
+  display: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.column2 {
+  text-align: center;
+  width: 10%;
+  height: 80%;
+}
+
+.column1 form,.column3 form {
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.column1 select,.column3 select {
+  height: 80%;
+  width: 100%;
+  background-color: #333; /* dark background */
+  color: #fff; /* white text */
+}
+
+.spectrogram {
+  width:50%
+}
+
+.full {
+  width:100%;
+}
+
+.logbutton, .navbuttons {
+  float: left;
+}
+
+.systemcontrols form,.servicecontrols form {
+  /*text-align: center;*/
+}
+
+.servicecontrols button {
+  background-color: var(--panel,#3b3b3b);
+  padding: 12px;
+  width: 50%;
+  color: #fff;
+}
+
+.systemcontrols button {
+  background-color: var(--panel,#3b3b3b);
+  display: block;
+  padding: 12px;
+  width: 50%;
+  margin: 16px auto;
+  color: #fff;
+}
+
+.servicecontrols button {
+  width: 20%;
+  color: #fff;
+}
+
+.btn-group-center {
+  text-align:center;
+  /*align-content: center;*/
+  margin: 16px auto;
+  position:relative;
+  /*display:inline-block;*/
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 33%;
+  height: 15px;
+  border-radius: 5px;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+#body::-webkit-scrollbar {
+  /*display:none*/
+}
+
+@media screen and (max-width: 1290px) {
+  .column1,.column2,.column3 {
+    height: 90%
+  }
+  .center-column {
+    display: flex;
+    justify-content: center;
+  }
+  .left-column {
+    display: none;
+  }
+  .right-column {
+    flex: 100%;
+    margin: 0;
+  }
+  img {
+    max-width: 100%;
+  }
+  .overview {
+    overflow-x: hidden;
+  }
+  .overview .right-column .chart img {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    opacity: 0.7;
+  }
+}
+@media screen and (max-width: 1000px) {
+  .customlabels form,.customlabels2 form {
+    width: 95%;
+  }  
+  .column1, .column3 {
+    width: 50%;
+    height: 100%;
+  }
+  .column1 select,.column3 select {
+    height: 70%;
+    background-color: #333; /* dark background */
+    color: #fff; /* white text */
+  }
+  .column2 {
+    display: none;
+  }
+  .smaller{
+    display: block;
+  }
+  .systemcontrols button,.servicecontrols button {
+    width: 60%;
+    padding: 12px;
+    background-color: var(--panel,#3b3b3b);
+  }
+  .topnav {
+    flex: 100%;
+    width: 100%;
+  }
+  .topnav button {display: none;}
+  .topnav button.icon {
+    padding: 0;
+    margin: 0;
+    display: block;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .banner {
+    height: auto;
+  }
+  .banner img {
+    display: none;
+  }
+  .logo img {
+    display: block;
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0px 0px 20px rgba(255, 255, 255, 1.0));
+  }
+  .topnav.responsive {position: relative;}
+  .topnav.responsive button {
+    display: block;
+    text-align: center;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .column1, .column3 {
+    width: 100%;
+  }
+  .systemcontrols button,.servicecontrols button {
+    width: 80%;
+    padding: 12px;
+    background-color: var(--panel,#3b3b3b);
+  }
+  .stats img {
+    width: 100%;
+    margin-left:auto;
+    margin-right:auto;
+    opacity: 0.7;
+  }
+  .overview img {
+    max-width: 100%
+  }
+  .banner {
+    height: auto;
+    margin-left: auto;
+    text-align: center;
+  }
+  .banner img {
+    display: none;
+  }
+  .stream {
+    float: right;
+    display: block;
+    width: 100px;
+  }
+  .logo img {
+    display: block;
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0px 0px 20px rgba(255, 255, 255, 1.0));
+  }
+  .play table,.overview table,.stats table {
+    width: 100%;
+  }
+  .topnav {
+    flex: 100%;
+    width: 100%;
+    flex-direction: column;
+  }
+  .topnav button { 
+    font-size: large;
+    width: 100%
+  }
+  .topnav button {display: none;}
+  .topnav button.icon {
+    margin: 0;
+    padding: 0;
+    display: block;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .topnav.responsive {position: relative;}
+  .topnav.responsive button {
+    display: block;
+  }
+  .center-column {
+    display: flex;
+    justify-content: center;
+  }
+  .left-column {
+    display: none;
+  }
+  .left {
+    display:none;
+  }
+  iframe {
+    height: 83%;
+  }
+}
+
+.copyimage {
+  position:absolute;
+  top:7px;
+  right:7px;
+  width:25px !important;
+  height:25px !important;
+}
+
+.copyimage-mobile {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.relative {
+  position:relative;
+}
+
+.sortbutton {
+  margin-top:10px;
+  font-size:x-large;
+  background: var(--panel,#3b3b3b);
+  padding:5px;
+  box-shadow: 0px 0px 5px 2px rgba(0, 0, 0, 0.10);
+}
+
+.sortbutton:hover {
+  background-color: #AAAAAA;
+  color: white;
+}
+
+.sortbutton.active {
+  background-color: #777777;
+  color: white;
+}
+
+button.legacyview {
+  display: none;
+  color:gray;
+  margin:5px;
+  float:right;
+  z-index:100;
+  position:relative;
+  font-size:small;
+  background:var(--panel,#3b3b3b);
+  padding:5px;
+  transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
+}
+
+button.legacyview:hover  { 
+  box-shadow:0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
+}
+
+button.loadmore {
+  margin-top:10px;
+  font-size:x-large;
+  background:var(--panel,#3b3b3b);
+  padding:10px;
+  transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
+  
+}
+
+button.loadmore:hover { 
+  box-shadow:0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
+}
+
+#searchterm {
+  transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#searchterm:hover {
+  box-shadow:0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
+}
+
+tr {
+  background-color:var(--panel,#3b3b3b);
+}
+
+.history.centered form {
+  display:flex;
+  justify-content: center;
+}
+
+.history.centered input {
+  margin-right:5px;
+  border:0px;
+}
+
+.centered form#views button {
+  box-shadow: 0px 0px 5px 2px rgba(0, 0, 0, 0.10);
+  margin:2px;
+  transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
+}
+
+.centered form#views button:hover {
+  box-shadow:0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
+}
+
+dl {
+  margin: 1em 0 0 1em;
+}
+dt {
+  float: left;
+  clear: left;
+  width: auto;
+  text-align: left;
+  font-weight: bold;
+  color: #b2b2b2;
+}
+dd::before {
+  content: ": ";
+}
+
+input {
+  box-shadow: 0px 0px 17px 1px rgba(0, 0, 0, 0.10);
+  background-color: var(--panel,#3b3b3b);
+  color: #fff;
+}
+
+dialog {
+  border:none;
+  background-color:rgba(59, 59, 59, 0.9);
+}
+
+dialog::backdrop {
+  background: repeating-linear-gradient(
+    30deg,
+    rgba(30, 50, 80, 0.2),
+    rgba(30, 50, 80, 0.2) 1px,
+    rgba(30, 50, 80, 0.3) 1px,
+    rgba(30, 50, 80, 0.3) 20px
+  );
+  backdrop-filter: blur(3px);
+}
+
+.centered_image_container {
+  font-size:15px !important;  /* detection cards, was 19px (owner 2026-10-08) */
+  display:inline-block;
+  position:relative;
+  margin-bottom:3px;
+}
+
+.centered_image_container img.img1 {
+  transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
+  cursor:pointer;
+  height:95%;
+  position:absolute;
+  right:110%;
+  top:0px;
+  border-radius: 5px;
+  width:unset;
+}
+
+.centered_image_container img.img1:hover{
+  opacity:0.8;
+  box-shadow:0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
+}
+
+#birdimage {
+  transition:box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0px 3px 1px -2px rgb(0 0 0 / 20%), 0px 2px 2px 0px rgb(0 0 0 / 14%), 0px 1px 5px 0px rgb(0 0 0 / 12%);
+  cursor:pointer;
+  border-radius: 5px;
+}
+
+#birdimage:hover {
+  opacity:0.8;
+  box-shadow:0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
+}
+
+.centered_image_container * {
+  font-size:15px !important;  /* detection cards, was 19px (owner 2026-10-08) */
+}
+
+.centered_image_container form {
+  margin-bottom:0px;
+}
+
+.brbanner {
+  padding:15px;
+  background-color:var(--panel,#3b3b3b);
+  text-align:center;
+  font-size:large;
+  color: #fff;
+}
+
+#gain.centered {
+  margin-bottom:10px;
+}
+
+.updatenumber {
+  margin-left:5px;
+  position:absolute;
+  display:inline-block;
+  background-color:#c8191a;
+  color:#fff;
+  width:20px;
+  line-height:20px;
+  border-radius:12px;
+  text-align:center;
+  font-size:small;
+}
+
+form#views button .updatenumber {
+  position:initial;
+  margin-left:0px;
+}
+
+#detections_table_overview table {
+  width:944px;
+}
+
+#recent_detection_middle_td{
+  width:33%;
+}
+@media screen and (max-width:500px) {
+  #recent_detection_middle_td{
+    width:66%;
+  }
+}
+#recent_detection_middle_td img{
+  width:unset !important;
+  max-width:50px;
+  max-height:50px;
+  padding:0px;
+  float:left;
+}
+
+.settingstable {
+  margin-left:unset;
+  margin-right:unset;
+}
+.settingstable td {
+  text-align:unset;
+}
+.settingstable textarea {
+  width:100%;
+  margin-top:10px;
+}
+.settingstable h2 {
+  font-size:x-large;
+  color: #fff;
+}
+.plaintable {
+  box-shadow: unset;
+  color: #fff;
+}
+.plaintable td {
+  padding: unset;
+  color: #fff;
+}
+
+.brbanner h1 {
+  margin:0px;
+  font-size: xx-large;
+  color: #fff;
+}
+
+.testbtn {
+  background:var(--panel,#3b3b3b) !important;
+  color: #fff;
+}
+
+pre.bash {
+  background-color: var(--menu,#2b2b2b);
+  color: #fff;
+  font-size: medium ; 
+  font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+  width: 100%;
+  display: inline-block;
+}
+pre#timer.bash {
+  display:unset;
+  width:unset;
+}
+
+#toolsbtn {
+  min-width: max-content;
+  color: #fff;
+}
+
+#showpassword {
+  cursor:pointer;
+  margin-left:2px;
+  height:5px;
+  line-height:5px;
+  padding:3px;
+  background-color:var(--panel,#3b3b3b);
+  color: #fff;
+}
+
+#newrtspstream{
+  cursor: pointer;
+  margin-left: 2px;
+  height: 5px;
+  line-height: 5px;
+  padding: 3px;
+  background-color: var(--panel,#3b3b3b);
+  color: #fff;
+}
+
+.exclude_species_list_option_highlight {
+  color: #fff;
+  background-color: var(--panel,#3b3b3b);
+  font-weight: bolder;
+}
+
+#ddnewline::before {
+   content: none;
+   color: #fff;
+}
+
+/* US-47: models block (official / shadow side by side) */
+.modelstable { border-collapse: collapse; margin: 6px 0; }
+.modelstable th, .modelstable td { padding: 3px 8px; text-align: left; vertical-align: middle; }
+.modelstable th { font-weight: normal; opacity: 0.8; }
+/* shadow row greyed when the shadow switch is off: the fields stay in the form (a disabled input
+   would not be submitted and the save would wipe the shadow settings), only look and feel change */
+.modelstable tr.shadow-off select, .modelstable tr.shadow-off input[type=number] { opacity: 0.65; pointer-events: none; }
+.modelstable tr.shadow-off td b { opacity: 0.75; }
+
+/* Side menu (owner 2026-10-08): groups like webmin, one link per page */
+.sidenav { position: fixed; top: 0; left: 0; bottom: 0; width: 180px; overflow-y: auto; background-color: var(--menu,#2b2b2b);
+  box-shadow: 0px 0px 28px 1px rgba(0, 0, 0, 0.10); padding: 6px 0; z-index: 20; font-size: 14px; }
+.sidenav ~ .views { margin-left: 188px; }
+.sidenav a.navitem { display: block; padding: 6px 14px; color: #fff; text-decoration: none; white-space: normal; line-height: 1.25; }
+.sidenav details a.navitem { padding-left: 26px; }
+.sidenav a.navitem:hover { background-color: var(--panel,#3b3b3b); color: #fff; }
+/* the page you are on: the Dark theme's Selection colour (owner 2026-10-24) */
+.sidenav a.navitem.active { background-color: var(--accent2,#4f7f44); color: var(--on-accent2,#fff); }
+.sidenav a.navitem.active { font-weight: bold; }
+.sidenav summary { padding: 6px 14px; cursor: pointer; font-weight: bold; color: #fff; list-style-position: inside; }
+.sidenav summary:hover { background-color: var(--panel,#3b3b3b); }
+.sidenav .updatenumber { display: inline-block; position: static; margin-left: 6px; }
+.sidenav-toggle { display: none; }
+@media screen and (max-width: 800px) {
+  .sidenav { display: none; }
+  .sidenav ~ .views { margin-left: 0; padding-top: 40px; }
+  .sidenav-toggle { display: block; position: fixed; top: 4px; left: 4px; z-index: 30; padding: 4px 10px; font-size: 20px;
+    background-color: var(--menu,#2b2b2b); color: #fff; border-radius: 4px; }
+  body.sidenav-open .sidenav { display: block; width: 220px; padding-top: 44px; }
+}
+
+/* Header on phones (owner 2026-10-08): one row — small logo, station name, Live Audio; the centred
+   BirdSuite wordmark is left out so nothing overlaps */
+@media screen and (max-width: 800px) {
+  .banner { height: 48px; margin-left: 0; padding: 0 8px; }
+  .banner h1 { display: none; }
+  .logo img { display: block; width: 36px; height: 36px; }
+  .banner .sitename { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50vw; }
+  .banner .stream { width: auto; float: none; margin-left: auto; }
+  .banner button { padding: 4px 8px; font-size: 13px; }
+  .banner audio { max-width: 45vw; }
+}
+
+/* Overview totals beside the chart (owner 2026-10-08): smaller and narrower, so the side menu leaves
+   room for the species names of the chart */
+.overview-stats .left-column { flex: 0 0 auto; max-width: 160px; padding-left: 4px; }
+.overview-stats .left-column table { font-size: 12px; width: 100%; }
+.overview-stats .left-column th, .overview-stats .left-column td { padding: 3px 5px; }
+.overview-stats .left-column button { font-size: 12px; padding: 2px 6px; }
+
+/* Every page's content aligned to the left, against the side menu (owner 2026-10-08) */
+.sidenav ~ .views table,
+.sidenav ~ .views .centered,
+.sidenav ~ .views .settings,
+.sidenav ~ .views .play,
+.sidenav ~ .views .stats,
+.sidenav ~ .views .splist,
+/* the newer pages too (owner 2026-10-09: every page against the menu, never centred) */
+.sidenav ~ .views .dash, .sidenav ~ .views .sea, .sidenav ~ .views .spx, .sidenav ~ .views .sp, .sidenav ~ .views .cur,
+.sidenav ~ .views .wipe, .sidenav ~ .views .doctor, .sidenav ~ .views .app { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .systemcontrols button { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .btn-group-center, .sidenav ~ .views .systemcontrols p, .sidenav ~ .views .systemcontrols pre { text-align: left !important; }
+.sidenav ~ .views .overview-stats { justify-content: flex-start; }
+.sidenav ~ .views > h3,
+.sidenav ~ .views .centered,
+.sidenav ~ .views .history > form,
+.sidenav ~ .views div[style*="text-align: center"],
+.sidenav ~ .views div[style*="text-align:center"] { text-align: left !important; }
+.sidenav ~ .views .overview div img,
+.sidenav ~ .views .history img,
+.sidenav ~ .views .chart img { margin-left: 0 !important; margin-right: auto !important; }
+.sidenav ~ .views .right-column { text-align: left; }
+.sidenav ~ .views h3,
+.sidenav ~ .views .history form,
+.sidenav ~ .views .right-column,
+.sidenav ~ .views .right-column > * { text-align: left; }
+.sidenav ~ .views .history.centered form,
+.sidenav ~ .views .center-column { justify-content: flex-start; }
+.sidenav ~ .views h2 { text-align: left !important; }
+
+/* Overview top (owner 2026-10-08): totals as a two-line table on the left, new / rare species today and
+   the recordings button on the right, the chart below both */
+.sidenav ~ .views .overview-stats { display: block; }
+.sidenav ~ .views .overview-stats .left-column { float: left; max-width: none; }
+.overview-stats table.totals th, .overview-stats table.totals td { text-align: center; white-space: nowrap; }
+.sidenav ~ .views .overview-stats .new_species,
+.sidenav ~ .views .overview-stats .rare_species { float: right; text-align: right; }
+.sidenav ~ .views .overview-stats .new_species h2,
+.sidenav ~ .views .overview-stats .rare_species h2 { text-align: right !important; margin: 4px 8px; }
+.sidenav ~ .views .overview-stats .new_species table,
+.sidenav ~ .views .overview-stats .rare_species table { margin-left: auto !important; margin-right: 8px !important; }
+.sidenav ~ .views .overview-stats .chart { clear: both; }
+.sidenav ~ .views .overview-stats .new_species table { margin-top: 2px; }
+/* Overview totals centred, half the vertical cell padding (owner 2026-10-08) */
+.sidenav ~ .views .overview-stats .left-column { float: none; display: flex; justify-content: center; max-width: none; }
+.sidenav ~ .views .overview-stats table.totals { margin-left: auto !important; margin-right: auto !important; }
+.overview-stats table.totals th, .overview-stats table.totals td { padding-top: 1.5px; padding-bottom: 1.5px; }
+.sidenav ~ .views .overview-stats table.totals { width: auto; }
+/* only the centred totals table on the Overview (the narrow-screen copy below it is dropped, owner 2026-10-08) */
+.sidenav ~ .views .overview-stats .center-column { display: none !important; }
+#todaystats table.totals { width: auto; font-size: 12px; margin: 0 !important; }
+#todaystats table.totals th, #todaystats table.totals td { text-align: center; white-space: nowrap; padding: 1.5px 6px; }
+#todaystats table.totals button { font-size: 12px; padding: 0 4px; }
+
+/* The page frame reaches the bottom of the screen (owner 2026-10-08): on phones "100%" is measured without
+   the browser's toolbars, which left a green band below the content */
+body > iframe { top: 54px; left: 0; height: calc(100vh - 54px) !important; height: calc(100dvh - 54px) !important; }
+@media screen and (max-width: 800px) {
+  body > iframe { top: 48px; height: calc(100vh - 48px) !important; height: calc(100dvh - 48px) !important; }
+}
+
+/* Recordings / Best Recordings: smaller species buttons and sort buttons (owner 2026-10-08) */
+.play td.spec, .play table td { padding: 3px 8px; }
+.play td.spec button, .play table button { font-size: 13px; padding: 2px 4px; }
+.sortbutton { font-size: medium; padding: 2px; margin-top: 4px; }
+.sortbutton img { width: 22px; height: 22px; }
+/* text sort buttons (owner 2026-10-08) */
+.sortlabel { font-size: 13px; margin-right: 4px; }
+.sortbutton { font-size: 13px !important; padding: 3px 8px !important; margin-top: 4px; border-radius: 3px; }
+.sortbutton.active { color: black !important; font-weight: bold; }
+.sortbutton:hover { color: black !important; }
+.sortbutton.modebutton.inactive { opacity: 0.55; font-weight: normal; }
+
+/* pages that are themselves a frame (Species Stats, View Log): beside the side menu, from its top edge */
+.sidenav ~ .views iframe { position: fixed; top: 0; left: 188px; width: calc(100% - 188px); height: 100%; }
+@media screen and (max-width: 800px) {
+  .sidenav ~ .views iframe { left: 0; width: 100%; top: 40px; height: calc(100% - 40px); }
+}
+
+/* collapsible side menu (owner 2026-10-08) */
+.sidenav-collapse { display: block; width: 100%; text-align: right; padding: 2px 12px; font-size: 18px; color: #fff; background: transparent; }
+.sidenav-collapse:hover { background-color: var(--panel,#3b3b3b); }
+@media screen and (min-width: 801px) {
+body.sidenav-collapsed .sidenav { width: 40px; overflow: hidden; }
+body.sidenav-collapsed .sidenav > :not(.sidenav-collapse) { display: none; }
+body.sidenav-collapsed .sidenav-collapse { text-align: center; padding: 2px 0; }
+body.sidenav-collapsed .sidenav ~ .views { margin-left: 48px; }
+body.sidenav-collapsed .sidenav ~ .views iframe { left: 40px; width: calc(100% - 40px); }
+}
+@media screen and (max-width: 800px) {
+  .sidenav-collapse { display: none; }
+}
+
+/* Overview split (owner 2026-10-08): Now = recent detections, All Detections = totals + chart */
+.overview-stats.part-now .left-column,
+.overview-stats.part-now .new_species,
+.overview-stats.part-now .rare_species,
+.overview-stats.part-now .chart { display: none !important; }
+.overview-stats.part-records #most_recent_detection,
+.overview-stats.part-records .now-only,
+.overview-stats.part-records #detections_table,
+.overview-stats.part-records #spectrogramimage,
+.overview-stats.part-records #customimage { display: none !important; }
+
+/* Species Management: the header row stays on top while scrolling, like a frozen row in a spreadsheet */
+
+/* phones: the card actions stay top right and the card text starts below them, so they do not cover the name */
+@media screen and (max-width: 800px) {
+  td.relative { padding-top: 36px !important; }
+}
+
+/* species-page icon before every common name, and the clickable rows of the daily chart (owner 2026-10-08) */
+.chartwrap { position: relative; display: inline-block; max-width: 100%; }
+.chartwrap img { display: block; max-width: 100%; }
+.chartwrap a.chartrow { position: absolute; display: block; border-radius: 3px; }
+.chartwrap a.chartrow:hover { background: rgba(217, 122, 0, .18); outline: 2px solid #d97a00; }
+.chartwrap a.chartrow:hover::after { content: attr(data-label); position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: var(--accent,#2b5e22); color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; white-space: nowrap; }
+.charthint { font-size: 12px; opacity: .8; margin: 2px 0 4px; }
+
+/* species title: [icon] [common / scientific name] [link icons at the height of both lines] (owner 2026-10-08) */
+.sptitle { display: inline-flex; align-items: flex-start; gap: 8px; text-align: left; vertical-align: top; margin: 2px 0; }
+.sptitle .spnames { line-height: 1.25; }
+.sptitle .spnames button, .sptitle .spnames a { margin: 0; padding: 0; }
+.sptitle .splinks { display: inline-flex; align-items: flex-start; gap: 6px; flex-wrap: nowrap; padding-top: 2px; }
+.sptitle .splinks a { line-height: 0; }
+.sptitle .splinks img, .sptitle img.splink { height: 2.5em !important; width: auto !important; max-width: none !important;
+  float: none !important; display: inline-block !important; cursor: pointer; margin: 0 !important; }
+.sptitle .splinks img:hover { transform: scale(1.1); }
+th .sptitle { font-weight: bold; }
+th .sptitle i { font-weight: normal; }
+@media (max-width: 600px) { .sptitle .splinks img, .sptitle img.splink { height: 2em !important; } .sptitle { gap: 6px; } }
+/* Best Detections gallery and the species page photo */
+.spgallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; text-align: left; margin: 10px 0; }
+.spgallery .gcard { background: rgba(0,0,0,.25); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.spgallery .sptitle { display: flex; }
+.spgallery .sptitle .spnames { flex: 1; min-width: 0; }
+.spgallery .sptitle .splinks img { height: 1.4em !important; }
+.spgallery .gbody { padding: 6px 8px 8px; }
+.spgallery .gmeta { font-size: 12px; opacity: .85; margin: 2px 0 6px; }
+.spgallery .gspec { width: 100%; display: block; border-radius: 4px; cursor: pointer; transition: filter .15s; }
+.spgallery .gspec:hover { filter: brightness(1.15); outline: 2px solid #d97a00; }
+.spgallery audio { width: 100%; height: 32px; margin-top: 4px; }
+.spphoto { float: right; margin: 0 0 8px 16px; max-width: 320px; width: 38%; text-align: right; }
+.spphoto img { width: 100%; border-radius: 8px; display: block; }
+.spphoto small { opacity: .7; font-size: 11px; }
+@media (max-width: 600px) { .spphoto { float: none; width: 100%; max-width: none; margin: 8px 0; } .spphoto img { width: auto; max-width: 100%; max-height: 60vh; margin: 0 auto; object-fit: contain; } }
+
+/* Review button of the review loop (owner 2026-10-08) */
+button.validatebtn { font-size: 11px; line-height: 1; padding: 4px 7px; border-radius: 10px; border: 1px solid var(--accent,#2b5e22);
+  background: #fff; color: var(--accent,#2b5e22); cursor: pointer; white-space: nowrap; font-weight: 600; width: auto !important; vertical-align: middle; }
+button.validatebtn.positioned { position: absolute; top: 9px; right: 7px; left: auto; }
+button.validatebtn.v-yes { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+button.validatebtn.v-no { background: #c62828; border-color: #c62828; color: #fff; }
+button.validatebtn.v-unsure { background: #9e9e9e; border-color: #9e9e9e; color: #fff; }
+button.validatebtn:hover { filter: brightness(1.08); }
+
+.sptitle .spen { font-size: inherit; font-style: normal; }
+
+/* Today's Detections card head: photo left, then time, names, links, confidence (owner 2026-10-08) */
+.tdhead { display: flex !important; align-items: flex-start; justify-content: flex-start !important; gap: 12px; text-align: left; margin: 4px 0 6px; }
+.tdhead .tdinfo { flex: 0 1 auto; margin: 0 !important; }
+.tdhead img.img1, .sidenav ~ .views .overview div.tdhead img.img1 { float: none !important; margin: 0 !important; flex: 0 0 auto; width: 90px !important; height: 70px !important; object-fit: cover; border-radius: 6px; }
+.tdhead .tdinfo { min-width: 0; }
+.tdhead .tdtime { font-weight: 600; }
+.tdhead .sptitle .splinks img, .tdhead .sptitle img.splink { height: 1.5em !important; }
+/* the card's action icons sit top right: on wide screens the photo and names start on that same line; on a phone
+   (no room beside them) below it — the card padding (td.relative) already leaves that room */
+@media (max-width: 600px) { .tdhead img.img1 { width: 64px !important; height: 52px !important; } .tdhead { margin-top: 0; } }
+
+/* Now page: the 5 most recent rows use the same small link icons */
+#recent_detection_middle_td .sptitle .splinks img { height: 1.5em !important; }
+#recent_detection_middle_td .sptitle { text-align: left; }
+
+/* lists of detections: everything aligned to the top of the row, and at least 3 px of page colour between two
+   records so they never run together (owner 2026-10-08) */
+tr.relative > td { vertical-align: top !important; }
+tr.relative + tr.relative > td { border-top: 3px solid #1a1a1a !important; }
+
+/* Now page, 5 most recent: the small actions on one line under the names */
+.rowactions { white-space: nowrap; margin-top: 3px; text-align: left; }
+.rowactions img { margin-right: 6px !important; }
+#recent_detection_middle_td, #recent_detection_middle_td > div, #recent_detection_middle_td form { text-align: left !important; }
+
+.recentname { text-align: left; }
+.recentacts { white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; vertical-align: middle; margin-left: 6px; }
+.recentacts img { margin: 0 !important; }
+@media (max-width: 600px) { .recentacts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: 4px 0 0; white-space: normal; } }
+
+/* "Open" = the spectrogram dialog, playing (species page, Now) */
+button.openbtn { font-size: 11px; line-height: 1; padding: 4px 9px; border-radius: 10px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22);
+  color: #fff; cursor: pointer; font-weight: 600; width: auto !important; white-space: nowrap; vertical-align: middle; }
+button.openbtn:hover { background: #d97a00; border-color: #d97a00; }
+
+/* Now page cards: names left, delete + Review top right (Review last) */
+.nowgallery .gtop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.nowgallery .gnames { min-width: 0; line-height: 1.25; text-align: left; }
+.nowgallery .gacts { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.nowgallery .gacts img { width: 20px !important; height: 20px !important; cursor: pointer; margin: 0 !important; }
+
+.nowpager { display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 14px 0 6px; }
+.nowpager button.openbtn { font-size: 13px; padding: 6px 14px; }
+
+/* Now page: Spectrogram / List switch (owner 2026-10-09) */
+.nowmodes { display: inline-flex; gap: 6px; margin-left: 12px; vertical-align: middle; font-weight: normal; }
+.nowmodes button { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); cursor: pointer; width: auto; }
+.nowmodes button.active { background: var(--accent,#2b5e22); color: #fff; }
+.nowmodes button.nowdefault { border-style: dashed; }
+.nowlist { overflow-x: auto; }
+.nowlist table.list { width: 100%; border-collapse: collapse; background: rgba(0,0,0,.25); border-radius: 8px; }
+.nowlist th { text-align: left !important; padding: 5px; border-bottom: 2px solid rgba(128,128,128,.4); font-size: .9em; white-space: nowrap; }
+.nowlist td { text-align: left !important; padding: 4px 5px; border-top: 1px solid rgba(128,128,128,.2); vertical-align: middle; }
+.nowlist td.num, .nowlist th.num { text-align: right !important; }
+.nowlist audio { height: 28px; width: 200px; vertical-align: middle; }
+
+/* standard detection list + review player rows (owner 2026-10-09) */
+/* sideways scroll only on a phone: on a desktop it would stop the header row from staying at the top */
+@media (max-width: 800px) { .reviewlist { overflow-x: auto; } }
+.reviewlist td.nw { white-space: nowrap; }
+.reviewlist td.rv, .reviewlist th.rv { text-align: right !important; }
+.reviewlist tr.rvrow { cursor: pointer; }
+.reviewlist .spen2 { font-size: .85em; opacity: .8; }
+
+/* Now: today's totals + search above the most recent detections (owner 2026-10-09) */
+.nowtoday { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 4px 0 6px; }
+.nowtoday .nowsearch input { padding: 5px 8px; font-size: 14px; }
+.namemode { font-size: 12px; padding: 1px 2px; max-width: 150px; }
+
+/* indicator cards (Now, kiosk) like All Detections (owner 2026-10-09) */
+.kpis { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 4px; text-align: left; }
+.kpis .kpi { background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 12px; color: inherit; text-decoration: none; }
+.kpis a.kpi:hover { box-shadow: 0 0 0 2px #d97a00 inset; }
+.kpis .kpi small { display: block; } .kpis .kpi b { display: block; font-size: 1.3em; }
+
+/* standard tables (owner 2026-10-09): one look for every list — Now, species pages, curation, removed detections */
+table.stdtable { width: 100%; border-collapse: separate; border-spacing: 0; background: rgba(0,0,0,.25); border-radius: 10px; overflow: clip; }
+table.stdtable th { text-align: left !important; padding: 6px 8px; font-size: .9em; white-space: normal; border-bottom: 2px solid rgba(128,128,128,.35); position: sticky; top: 0; z-index: 3; background-color: var(--menu,#2b2b2b); box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15); }
+table.stdtable td { text-align: left !important; padding: 5px 8px; border-top: 1px solid rgba(128,128,128,.18); vertical-align: middle; }
+table.stdtable td.num, table.stdtable th.num, table.stdtable td.r, table.stdtable th.r { text-align: right !important; }
+table.stdtable td.num, table.stdtable td.r { white-space: nowrap; }  /* the numbers stay on one line, their headers may wrap */
+/* the row under the mouse: the Selection colour (owner 2026-10-24) */
+table.stdtable tbody tr:hover td, table.stdtable tr:hover td { background: var(--accent2,#4f7f44); color: var(--on-accent2,#fff); }
+/* black or white, whichever reads better on the Selection colour (common.php contrast_text) */
+table.stdtable tr:hover td a, table.stdtable tr:hover td .small, table.stdtable tr:hover td * { color: var(--on-accent2,#fff); }
+table.stdtable th.sortable { cursor: pointer; } table.stdtable th.sortable:after { content: ' \2195'; opacity: .35; font-size: .85em; }
+table.stdtable th.asc:after { content: ' \25B2'; opacity: .8; } table.stdtable th.desc:after { content: ' \25BC'; opacity: .8; }
+
+/* Now: the search sits on the Most Recent Detections line, on the right */
+.nowhead { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.nowhead .nowsearch { margin-left: auto; font-weight: normal; }
+.nowhead .nowsearch input { padding: 5px 8px; font-size: 14px; }
+
+/* Now: the same vertical rhythm between the sections (cards, Currently Analyzing, Most Recent Detections) — 14 px
+   above each title, 6 px under it, nothing extra when the live spectrogram is hidden (owner 2026-10-09) */
+.nowtoday { margin: 4px 0 0 !important; }
+.nowtoday .kpis { margin: 0; }
+h3.nowsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 14px 0 6px !important; min-height: 30px; }
+#spectrogramimage { display: block; margin: 0 0 4px; }
+
+/* Now: analysis settings beside the cards */
+.nowtoday { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.nowanalysis { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+.nowanalysis label { display: flex; flex-direction: column; gap: 2px; }
+.nowanalysis input { width: 70px; padding: 3px 5px; font-size: 14px; }
+.nowanalysis button { width: auto; padding: 5px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; font-weight: 600; cursor: pointer; align-self: flex-end; }
+.nowtoday #todaystats { flex: 0 1 auto; width: auto !important; margin: 0 !important; }
+.nowtoday { flex-wrap: wrap; justify-content: flex-start; }
+/* cards and the analysis inputs on one line on a desktop */
+.nowtoday .kpis { gap: 8px; } .nowtoday .kpis .kpi { padding: 6px 10px; }
+.nowanalysis { gap: 6px; padding: 6px 8px; font-size: 11px; } .nowanalysis input { width: 56px; }
+.nowanalysis { gap: 12px; padding: 6px 12px; } .nowanalysis input { width: 72px; } .nowanalysis #na_conf { width: 90px; }
+.nowtoday .kpis { gap: 6px; } .nowtoday .kpis .kpi { padding: 5px 9px; } .nowtoday .kpis .kpi small { font-size: 11px; } .nowtoday .kpis .kpi b { font-size: 1.2em; }
+.nowanalysis label { font-size: 11px; }
+.nowanalysis { gap: 10px; } .nowanalysis input { width: 64px; } .nowanalysis #na_conf { width: 80px; }
+.nowanalysis #na_conf { width: 64px; }
+/* the analysis inputs end on the right edge of the tables below */
+.nowtoday .nowanalysis { margin-left: auto; }
+/* today and all-days cards are different contexts (owner 2026-10-09): three times the gap before "Total (all days)" */
+.kpis .kpi.kpi2 { margin-left: 20px; } .nowtoday .kpis .kpi.kpi2 { margin-left: 12px; }
+/* Now filters beside the search box: All / Low Conf / Low Prob + the value */
+.nowhead .nowsearch { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.nowfilters select { padding: 3px 6px; font-size: 13px; border-radius: 10px; }
+.nowanalysis .nagroup { display: flex; gap: 8px; padding: 3px 8px; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; }
+.nowanalysis #na_apply { min-width: 64px; }
+.nowstatus { font-size: 12px; font-weight: normal; margin-left: 10px; opacity: .85; } .nowstatus.late { color: #b71c1c; font-weight: 600; opacity: 1; }
+.locmoved { margin: 6px 0 8px; padding: 8px 12px; border-radius: 8px; background: #fff3cd; color: #5d4300; font-size: 14px; text-align: left; }
+.locmoved button { width: auto; margin-left: 8px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; cursor: pointer; font-weight: 600; }
+.locmoved button.keep { background: #fff; color: var(--accent,#2b5e22); }
+.locmoved .locpick { display: inline-block; margin: 6px 0 0 8px; }
+.locmoved .locpick input, .locmoved .locpick select { padding: 3px 6px; border-radius: 6px; border: 1px solid #c9b77a; }
+/* the current location on Now (US-58) */
+.nowloc { margin: 4px 0 6px; font-size: 14px; text-align: left; }
+.nowloc .nowlocnote { opacity: .7; margin-left: 4px; }
+.nowtoday .naopen { width: auto; align-self: flex-start; padding: 5px 14px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; margin-left: auto; }
+.nowanalysis .nabuttons { display: flex; flex-direction: column; gap: 4px; align-self: center; }
+.nowanalysis .nabuttons button { width: auto; min-width: 64px; }
+.nowanalysis .naclose { padding: 3px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+.nowanalysis .nabuttons button, .nowanalysis #na_apply { min-width: 54px; padding: 3px 10px; font-size: 12px; }
+/* Live Audio looks like a button (owner 2026-10-10: as plain text it went unnoticed) */
+.banner .stream button { padding: 5px 14px !important; border-radius: 14px !important; border: 1px solid var(--accent,#2b5e22) !important; background: #fff !important; color: var(--accent,#2b5e22) !important; font-weight: 600; cursor: pointer; }
+.banner .stream button:hover { background: var(--accent,#2b5e22) !important; color: #fff !important; }
+.nowanalysis .nadefault { width: auto; align-self: center; padding: 3px 10px; font-size: 12px; border-radius: 12px; border: 1px dashed var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+.nowtoday .nowanalysis { gap: 6px; padding: 5px 8px; } .nowtoday .nowanalysis input, .nowtoday .nowanalysis #na_conf { width: 52px; } .nowanalysis .nagroup { gap: 5px; padding: 3px 6px; }
+.nowanalysis input.nondefault { background: #fff8c4 !important; }
+.nowfilters .nowfilterlabel { font-size: 12px; font-weight: 600; margin: 0 2px 0 8px; }
+.nowfilters .nowfilterlabel { display: inline-flex; align-items: center; color: var(--accent,#2b5e22); margin: 0 4px 0 0; }
+button.autolocate { width: auto; padding: 4px 14px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
+button.autolocate:disabled { opacity: .5; cursor: wait; }
+.nowtoday .naopen + .nowanalysis + .nalive, .nowtoday .nalive { margin-left: 8px; align-self: flex-start; }
+.nowtoday .nalive.on { background: #c62828; border-color: #c62828; color: #fff; }
+.nowanalysis .nabuttons .nalive { margin-left: 0; padding: 2px 10px; font-size: 12px; border-radius: 12px; }
+#live_audio { height: 32px; width: 240px; max-width: 60vw; align-self: flex-start; margin-left: 6px; }
+.livevol { position: relative; align-self: flex-start; margin-left: 4px; }
+.livevol > button { width: auto; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; cursor: pointer; font-size: 14px; line-height: 1.2; }
+.livevol .volpop { display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; padding: 8px 6px; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.25); z-index: 30; }
+.livevol .volpop.open { display: block; }
+.livevol .volpop input { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 110px; margin: 0; cursor: pointer; }
+/* the Now live player keeps its time bar; its own speaker is hidden in favour of the speaker with the vertical slider */
+#live_audio::-webkit-media-controls-mute-button, #live_audio::-webkit-media-controls-volume-slider, #live_audio::-webkit-media-controls-volume-control-container { display: none !important; }
+/* Param. and Live are two blocks side by side (owner 2026-10-10), each opens on its own; together they wrap below the cards when there is no room */
+.nowtoday .nacontrols { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; margin-left: auto; justify-content: flex-end; }
+.nowtoday .nablock, .nowtoday .liveblock { display: flex; align-items: flex-start; gap: 4px; }
+.nowtoday .nacontrols .naopen, .nowtoday .nacontrols .nalive { margin-left: 0; }
+.hmhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hmsort { margin-left: auto; display: inline-flex; align-items: center; gap: 0; font-weight: normal; }
+.hmsort small { margin-right: 6px; font-size: 12px; }
+.hmsort button { width: auto; padding: 3px 12px; font-size: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); cursor: pointer; margin-left: -1px; }
+.hmsort button:first-of-type { border-radius: 12px 0 0 12px; } .hmsort button:last-of-type { border-radius: 0 12px 12px 0; }
+.hmsort button.on { background: var(--accent,#2b5e22); color: #fff; }
+.sea .top .right { gap: 10px; align-items: center; } .sea .hmsort { margin-left: 0; }
+.hmhead .hmfilter { padding: 4px 8px; font-size: 13px; width: 200px; max-width: 100%; font-weight: normal; }
+/* period navigation, one control for By Hour and By Week (owner 2026-10-10): All · ◀ · current period · ▶ */
+.periodnav { display: inline-flex; gap: 0; align-items: center; }
+.periodnav a { padding: 4px 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; text-decoration: none; margin-left: -1px; font-size: 13px; white-space: nowrap; }
+.periodnav a:first-child { border-radius: 12px 0 0 12px; margin-left: 0; } .periodnav a:last-child { border-radius: 0 12px 12px 0; }
+.periodnav a.on { background: var(--accent,#2b5e22); color: #fff; } .periodnav a.off { opacity: .35; pointer-events: none; }
+.yrange { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; margin: 0; }
+.yrange select { padding: 2px 4px; } .yrange button { width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: var(--accent,#2b5e22); color: #fff; font-weight: 600; cursor: pointer; }
+.dash .bar .periodnav { gap: 0; } .hmsort button { white-space: nowrap; }
+/* Live Audio in the header (owner 2026-10-10): button, the player's time bar and the speaker on one line */
+.banner .stream { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.banner .stream button.liveaudio.on { background: #c62828 !important; border-color: #c62828 !important; color: #fff !important; }
+.banner .stream .livevol { align-self: center; }
+.banner .stream .livevol > button { padding: 3px 8px !important; font-size: 14px; }
+.banner #live_audio { align-self: center; margin-left: 6px; }
+
+/* the BirdSuite wordmark in the header (owner 2026-10-20: text until the new logo) */
+.wordmark { display: inline-block !important; width: auto !important; font: 700 26px/1 system-ui, sans-serif; letter-spacing: .5px;
+  color: var(--accent, #1f4e79); text-decoration: none; }
+
+/* the location a page shows, above its table or chart (owner 2026-10-21) */
+.loclabel { text-align: left; margin: 4px 0 6px; font-size: 14px; }
+
+/* One button size in the whole app (owner 2026-10-21): every pill action button of the pages has the same font, padding,
+   height and corners; only the colour tells a main (filled) or a destructive (red) one apart. Buttons in the same
+   column of a table also get the same width (static/ui-standard.js). */
+.locbtn, .restorebtn, .wipebtn, .folderbtn, .embtn, .extbtn, .ldbtn, .netbtn, .rawbtn, .stnbtn, .tgbtn, .stdbtn,
+.bar button:not(.hmsort button), .dash .bar a.btn, .actions button, .app .custom button, .yrange button, .dfl button,
+.stdtable td button:not(.validatebtn):not([class*="icon"]) {
+  font-size: 13px !important; padding: 4px 12px !important; line-height: 1.3 !important; height: auto !important;
+  min-height: 0 !important; border-radius: 12px !important; font-weight: 600; box-sizing: border-box; white-space: nowrap;
+}
+
+/* the same standard for the buttons of Now and the other toggles (owner 2026-10-21): Param., the views, the filters */
+.naopen, .nowanalysis button, .nowmodes button, .hmsort button {
+  font-size: 13px !important; padding: 4px 12px !important; line-height: 1.3 !important; height: auto !important;
+  min-height: 0 !important; border-radius: 12px !important; font-weight: 600; box-sizing: border-box; white-space: nowrap;
+}
+.naopen { border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); cursor: pointer; width: auto; }
+.naopen:hover { background: var(--accent,#2b5e22); color: #fff; }
+/* Settings › Locations: every column as wide as its content (owner 2026-10-21) */
+#loctable { width: auto !important; }
+#loctable td, #loctable th { white-space: nowrap; }
+#loctable td:first-child { white-space: normal; min-width: 14em; }
+#loctable input[data-k=radius_km] { width: 4.5em !important; }
+
+/* phones (owner 2026-10-21): the menu button in the header instead of a row of its own, and less space before the
+   Now table */
+.banner .topmenu { display: none; }
+@media screen and (max-width: 800px) {
+  .banner .topmenu { all: unset; display: block; cursor: pointer; font-size: 22px; padding: 2px 8px 2px 0; }
+  body.in-frame .sidenav-toggle { display: none; }
+  body.in-frame .sidenav ~ .views { padding-top: 0; }
+  h3.nowsec { margin: 4px 0 4px !important; min-height: 0; }
+  .nowhead { gap: 4px; }
+  .nowhead #nowloc { width: auto !important; max-width: 45vw; }
+}
+
+/* the line under the Now table (owner 2026-10-21): count on the left, newer / range / older in the middle */
+.nowpager { display: grid !important; grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; max-width: none !important; margin: 6px 0 10px !important; }
+.nowpager .nowpcount { justify-self: start; font-weight: 600; white-space: nowrap; }
+.nowpager .nowpnav { justify-self: center; display: flex; align-items: center; gap: 8px; }
+
+/* phones (owner 2026-10-21): the location picklist as wide as its text and the views on the same line; every button
+   one step smaller, the same for all */
+@media screen and (max-width: 800px) {
+  .nowhead .nowmodes { margin-left: 0; gap: 4px; }
+  .nowhead { gap: 4px; flex-wrap: wrap; }
+  .locbtn, .restorebtn, .wipebtn, .folderbtn, .embtn, .extbtn, .ldbtn, .netbtn, .rawbtn, .stnbtn, .tgbtn, .stdbtn, .naopen,
+  .nowanalysis button, .nowmodes button, .hmsort button, .bar button:not(.hmsort button), .dash .bar a.btn, .actions button,
+  .app .custom button, .yrange button, .dfl button, .stdtable td button:not(.validatebtn):not([class*="icon"]) {
+    font-size: 12px !important; padding: 3px 9px !important;
+  }
+}
+
+/* tighter table rows everywhere (owner 2026-10-21): less padding, the Review button no taller than the text */
+table.stdtable td { padding: 2px 8px !important; line-height: 1.25; }
+table.stdtable td .validatebtn { padding: 2px 7px !important; line-height: 1.1 !important; }
+
+/* the Sort icon (owner 2026-10-21): closed, the sort buttons are hidden; the search box beside them stays */
+.sortbar:not(.sopen) .hmsort > small, .sortbar:not(.sopen) .hmsort > button { display: none !important; }
+.sortbar:not(.sopen):not(.fopen) .hmsort:not(:has(input:not([type=hidden]))) { display: none !important; }
+.sortbar .right { display: inline-flex; align-items: center; gap: 6px; }
+.sorticon { cursor: pointer; border-radius: 50%; padding: 3px; display: inline-flex; color: var(--accent,#2b5e22); vertical-align: middle; }
+.sortbar.sopen .sorticon { background: var(--accent,#2b5e22); color: #fff; }
+
+/* Filter and Sort icons always in the right corner (owner 2026-10-21): what they open (sort buttons, search box, filter
+   buttons) appears on their left, on every page */
+.sortbar .right, .cur .curlegend .curtools, .nowhead .nowright { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.sortbar .right > .dashfilter, .cur .curlegend .curtools > .dashfilter { order: 98; }
+.sortbar .right > .sorticon, .cur .curlegend .curtools > .sorticon { order: 99; }
+.nowhead .nowsearch { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.nowhead .nowsearch > .nowfilters { display: contents; }
+.nowhead .nowsearch .nowfilterlabel { order: 99; }
+
+/* phones (owner 2026-10-21): what the Filter / Sort icons open never pushes them off the screen; the icons stay at the
+   top right and the open controls take a full line of their own under them, wrapping as needed */
+.sortbar .right, .cur .curlegend .curtools { flex: 1 1 auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+@media screen and (max-width: 800px) {
+  .sortbar.sopen .right > .hmsort, .sortbar.fopen .right > .hmsort, .sortbar.sopen .curtools > .hmsort, .sortbar.fopen .curtools > .hmsort {
+    order: 100 !important; flex: 1 1 100% !important; max-width: 100%; display: flex !important; flex-wrap: wrap !important; justify-content: flex-end; row-gap: 4px; margin: 4px 0 0 !important; }
+  .sortbar .hmsort input { flex: 1 1 100%; max-width: 100%; min-width: 0; }
+}
+
+/* the standard pill button for any page (owner 2026-10-21: Swap Models looked unlike the app): accent outline, filled
+   on hover; pages use class="stdbtn" instead of a look of their own */
+.stdbtn { width: auto; border: 1px solid var(--accent,#2b5e22) !important; background: #fff !important; color: var(--accent,#2b5e22) !important; cursor: pointer; }
+.stdbtn:hover:not(:disabled) { background: var(--accent,#2b5e22) !important; color: #fff !important; }
+.stdbtn:disabled { opacity: .45; cursor: default; }
+
+/* ===== UI standard for boxes (owner 2026-10-21: "consistency"): =====
+   1. every page against the menu with the same 12 px gutter, never centred (wide screens centred .mdl and the tables);
+   2. every box (setup sections, panels, cards, tables) rounded 10 px with the same shadow;
+   3. every setup section the same width: page column 1000 px, box 976 px (1000 minus the 12 px gutters). */
+.sidenav ~ .views table { margin-left: 0; margin-right: auto; }
+.sidenav ~ .views .mdl, .sidenav ~ .views .dfl, .sidenav ~ .views .em, .sidenav ~ .views .tg, .sidenav ~ .views .net,
+.sidenav ~ .views .raw, .sidenav ~ .views .ext, .sidenav ~ .views .ld, .sidenav ~ .views .locs, .sidenav ~ .views .stn,
+.sidenav ~ .views .spm, .sidenav ~ .views .overview { margin-left: 0 !important; margin-right: auto !important; }
+.overview, .spm, .dfl { padding-left: 12px !important; padding-right: 12px !important; box-sizing: border-box; }
+table { border-radius: 10px; }
+.settingstable:not(.plaintable), .box, .app .custom, .dash .card, .dash .panel, .mdl .card, .sea .wrap, .sea .card,
+.doctor .summary, form.nowanalysis {
+  border-radius: 10px !important; box-shadow: 0 0 17px 1px rgba(0, 0, 0, 0.10) !important; border: 0 !important;
+}
+.settingstable:not(.plaintable) { width: 100%; max-width: 976px; box-sizing: border-box; }
+.em, .tg, .net, .raw, .ext, .ld, .locs, .stn, .app { max-width: 1000px !important; box-sizing: border-box; }
+.box { box-sizing: border-box; }
+
+/* ===== UI standard for buttons (owner 2026-10-21: every button the same) =====
+   One size for every action button of the pages (13 px, 4 x 12 px, corners 12 px; one step smaller on phones). The
+   buttons that had no look of their own (Lists, System Controls, Services, Update Settings, the folder buttons of
+   External Files and Backup/Restore, the pagers) take the standard look: accent outline, filled on hover; Update Settings
+   is the main one, filled (colours: light scheme only). Theme cards, map controls, the review buttons, icons and the menu are not action buttons. */
+.views button:not(.thcard):not(.lp-gps):not(.validatebtn):not([class*="icon"]):not(.namemode):not(.topmenu):not(.sidenav-toggle):not(.leaflet-control *):not(#rpDialog *):not(.navlang-cur),
+.views input[type=submit], .views input[type=button] {
+  font-size: 13px !important; padding: 4px 12px !important; line-height: 1.3 !important; height: auto !important;
+  min-height: 0 !important; border-radius: 12px !important; font-weight: 600; box-sizing: border-box; white-space: nowrap;
+  width: auto !important; max-width: 100%;
+}
+@media screen and (max-width: 800px) {
+  .views button:not(.thcard):not(.lp-gps):not(.validatebtn):not([class*="icon"]):not(.namemode):not(.topmenu):not(.sidenav-toggle):not(.leaflet-control *):not(#rpDialog *):not(.navlang-cur),
+  .views input[type=submit], .views input[type=button] { font-size: 12px !important; padding: 3px 9px !important; }
+}
+
+/* boxes and light pill buttons of the newer pages in the dark scheme (2026-10-23 test run: near-white text on the
+   light fallbacks of var(--panel) and #fff was unreadable on Raw Recording, External Files and Backup/Restore) */
+/* --panel comes from the Dark theme (common.php theme_presets, owner 2026-10-24) */
+html .raw .rawbtn, html .raw a.folderbtn, html .ext .dirs button, html .ext .extbtn.light, html .ld .ldbtn, html .ld .dirs button,
+html button.validatebtn, html .nowmodes button, html .locmoved button.keep {
+  background: var(--menu,#2b2b2b); color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff); border-color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff);
+}
+html .raw .rawbtn.stop, html .ld .ldbtn.del { color: #ef9a9a; border-color: #ef9a9a; }
+html .raw .rawbtn:hover, html .raw .rawbtn.main, html .raw a.folderbtn:hover, html .ld .ldbtn:hover, html .ld .ldbtn.main, html .nowmodes button.active {
+  background: var(--accent,#2b5e22); color: #fff;
+}
+html .ext .crumbs a, html .ld .crumbs a { color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff); }
+html .ext .bar, html .ld .bar { background: #444; }
+html .raw input[type=time], html .raw input[type=number] { background: #333; border-color: #555; }
+html .status .svcst.ok { color: #81c784; } html .status .svcst.warn { color: #ffb74d; } html .status .svcst.fail { color: #ef9a9a; }
+
+/* a phone (2026-10-23 test run): a table wider than the screen scrolls inside its own box and a long select fits,
+   so no page scrolls sideways */
+@media (max-width: 600px) {
+  table.stdtable { display: block; overflow-x: auto; max-width: 100%; }
+  select { max-width: 100%; }
+}
+
+/* ===== Accessibility standard (2026-10-23 test run, WCAG 2.2 AA), the same in both colour schemes =====
+   1. a link inside text is underlined (never told apart by its colour only) and takes the colour of the text around it,
+      readable on every theme background; */
+.views p a:not([class]), .views li a:not([class]), .views small a:not([class]), .views label a:not([class]),
+.views dd a:not([class]), .views .note a:not([class]), .views .splist-note a:not([class]), .views .callout a:not([class]),
+.views table.settingstable td > a:not([class]) {
+  color: inherit; text-decoration: underline; text-underline-offset: 2px;
+}
+.views td a:not([class]):has(+ .spnew), .views .wipeloc td a:not([class]) { text-decoration: underline; text-underline-offset: 2px; }
+/* 2. every control shows where the keyboard is (the range sliders had no focus mark); */
+.views :focus-visible, #rpDialog :focus-visible { outline: 2px solid #d97a00 !important; outline-offset: 2px; }
+/* 3. targets at least 24 px: fields and picklists, ticks, the Review buttons of the detection lists; */
+.views input[type=text], .views input[type=number], .views input[type=search], .views input[type=url], .views input[type=password],
+.views input[type=email], .views input[type=time], .views input[type=date], .views select:not([multiple]):not([size]) {
+  min-height: 26px; box-sizing: border-box;
+}
+/* 3 px around each box (2026-10-23 run 3, WCAG 2.5.8): an 18 px box with 24 px between neighbouring targets */
+.views input[type=checkbox], .views input[type=radio], .leaflet-control-layers-selector { width: 18px; height: 18px; vertical-align: middle; margin: 3px; }
+/* the species links of the By Hour / By Week heatmaps: 24 px rows on every screen (WCAG 2.5.8, owner 2026-10-23) */
+td.nm > a { display: inline-block; min-height: 24px; line-height: 24px; }  /* every screen (owner 2026-10-23) */
+table.stdtable td .validatebtn { min-height: 24px; }
+.views a:has(> button) { display: inline-block; }
+/* 4. probability of occurrence above / below the minimum (detection lists, Species Pages, Validation) */
+.pgood { color: #14491a; } .pbad { color: #7a0000; }
+
+/* ===== Width standard (2026-10-23 test run): no page scrolls sideways; a wide table scrolls inside its own box
+   (on wide screens only the short Locations table, so the sticky headers of the long lists keep working) ===== */
+#loctable { display: block; overflow-x: auto; max-width: 100%; }
+@media (max-width: 1000px) {
+  .reviewlist, .spprec-blk, .dfl, .stn, .locs .box { overflow-x: auto; max-width: 100%; }
+}
+@media (max-width: 800px) {
+  table.settingstable { width: 100% !important; max-width: 100%; table-layout: fixed; }
+  table.settingstable > tbody > tr > td, table.settingstable > tbody > tr > th { overflow-wrap: anywhere; white-space: normal !important; }
+  table.settingstable input:not([type=checkbox]):not([type=radio]), table.settingstable select, table.settingstable textarea,
+  .views input[size], .views textarea { max-width: 100%; box-sizing: border-box; }
+  table.settingstable table { display: block; overflow-x: auto; max-width: 100%; table-layout: auto; overflow-wrap: normal; }
+  .views select { max-width: 100%; min-width: 0; }
+}
+
+/* ===== Dark scheme, the rest of the 2026-10-23 test run: the pages' own light colours (white boxes, light pills, dark
+   greens and greys made for a light background) read on the dark background too ===== */
+.pgood { color: #a5d6a7; } .pbad { color: #f4a6a6; }
+.wordmark { color: #fff; }  /* white in the dark scheme (owner 2026-10-24) */
+/* Validation: the orange and yellow row tints lighter, so the coloured numbers on them stay readable */
+/* Model Comparison: which model found it */
+html body .mdl td.both { color: #a5d6a7; } html body .mdl td.oonly { color: #ffb74d; } html body .mdl td.sonly { color: #90caf9; }
+/* fields and picklists: the browser's light field under the scheme's light text was unreadable */
+html select, html textarea,
+html input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=submit]):not([type=button]):not([type=image]) {
+  background-color: #333; color: #fff; border-color: #666;
+}
+html .dfl input.dflin.nondefault, html input.nondefault { background: #5c5200 !important; color: #fff; }
+/* the pages' translucent white boxes (cards, KPIs, theme cards) and white pills */
+html body .dash .card, html body .mdl .card, html body .sea .card, html body .sea .wrap, html body .dash .panel, html body .cur .kpi,
+html body .app .thcard, html body .app .custom { background: var(--menu,#2b2b2b) !important; color: #fff; }
+html body .dash .card small, html body .mdl .card small, html body .sea .card small, html body .cur .kpi small, html body .dash .dl,
+html body .sea .dl, html body .mdl .card .t, html body .views .note, html body .app p.note, html body .splist h3 small { color: #bdbdbd !important; }
+html body .dash .dl.up, html body .sea .dl.up, html body .net .ok, html body .status .svcst.ok { color: #81c784; }
+html body .dash .dl.down, html body .sea .dl.down { color: #ef9a9a; }
+html body .dash table.hm th.k, html body .sea th.k { color: #bdbdbd; }
+html body .splist .splist-groups button:not(.active), html body .views .openbtn, html body .cur button.openbtn {
+  background: var(--menu,#2b2b2b); color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff); border-color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff);
+}
+html body .stn .herebadge { color: #c5e1a5; }
+html body .ld .ldbtn.del { color: #ef9a9a; }
+/* the pages' inline reds and greens (messages, "Danger zone") */
+html body .views [style*="color:#c62828"], html body .views [style*="color: #c62828"], html body .views [style*="color:#b71c1c"] { color: #ef9a9a !important; }
+html body .views [style*="color:#2e7d32"], html body .views [style*="color: #2e7d32"], html body .views [style*="color:#1b5e20"] { color: #81c784 !important; }
+/* map controls keep Leaflet's white boxes: dark text on them */
+html .leaflet-container .leaflet-control, html .leaflet-container .leaflet-control *, html .leaflet-popup-content-wrapper,
+html .leaflet-tooltip { color: #222; }
+html .leaflet-container .leaflet-control input { background-color: #fff; color: #222; }
+/* every outlined pill button of the pages (2026-10-23 run 3: Raw Recording, External Files, Backup/Restore kept the dark
+   accent text on the dark page, 1.9-2.2:1): light green outline and text on the dark panel; the filled ones (main,
+   hover) keep the accent background with white text, the destructive ones a light red */
+html body :is(.locbtn, .restorebtn, .folderbtn, .embtn, .extbtn.light, .ldbtn, .netbtn, .rawbtn, .stnbtn, .tgbtn, .stdbtn, .naopen,
+  .setdefault, .nowmodes button, .openbtn):not(.main):not(.active):not(:hover) {
+  background: var(--menu,#2b2b2b) !important; color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff) !important; border-color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff) !important;
+}
+html body :is(.wipebtn, .locbtn.del, .ldbtn.del, .stnbtn.del, .stdbtn.del, .rawbtn.stop):not(:hover) {
+  background: var(--menu,#2b2b2b) !important; color: #ef9a9a !important; border-color: #ef9a9a !important;
+}
+/* the red notes of the pages (Network "no password yet") and the Excluded list buttons on the light panel colour */
+html body .net .warn { color: #ef9a9a !important; }
+html body .splist .splist-mid button { background: var(--menu,#2b2b2b) !important; color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff) !important; border-color: color-mix(in srgb, var(--accent2,#4f7f44) 55%, #fff) !important; }
+
+/* rows outside the page of the standard pager (static/ui-standard.js, 2026-10-23 run 3) */
+.bs-pghide { display: none !important; }
+
+/* long translations (2026-10-23 run 3, I18N-10/11): headers wrap (above), picklists and fields inside table cells never wider
+   than 12em, so a table fits a 1280 px page instead of scrolling it */
+table.stdtable td select, table.stdtable td input[type=text] { max-width: 12em; }
+
+/* review player, right panel in the dark scheme (owner 2026-10-24: it stayed white): the menu colour, white text; its
+   white buttons and options take the table colour. "html" so it wins over the player's own injected rules */
+html #rpDialog .rp-side { background: var(--menu,#2b2b2b); color: #fff; }
+html #rpDialog .rp-side * { color: #fff; }
+html #rpDialog .rp-opt, html #rpDialog .rp-alt, html #rpDialog .rp-nav button, html #rpDialog .rp-back,
+html #rpDialog .rp-delete, html #rpDialog .rp-cause, html #rpDialog .rp-qother { background: var(--panel,#3b3b3b); border-color: #666; }
+html #rpDialog .rp-opt:hover, html #rpDialog .rp-opt:focus, html #rpDialog .rp-alt:hover { background: var(--accent2,#4f7f44); border-color: #d97a00; }
+html #rpDialog .rp-delete, html #rpDialog .rp-cause, html #rpDialog .rp-qother { border-color: #ef9a9a; }
+html #rpDialog .rp-delete:hover, html #rpDialog .rp-cause:hover, html #rpDialog .rp-qother:hover { background: #c62828; }
+html #rpDialog .rp-alt i, html #rpDialog .rp-alt small { color: #ddd; }
+
+/* Validation: the group colours are solid light colours (scripts/curation.php): black text on them here too (owner 2026-10-24) */
+html body .cur .curchip[class*="g-cur"], html body .cur .curchip[class*="g-cur"] *, html body .cur #curtable tr[class*="g-cur"] td:not(.pgood):not(.pbad), html body .cur #curtable tr[class*="g-cur"] td:not(.pgood):not(.pbad) * { color: #000; }
+html body .cur #curtable tr[class*="g-cur"] td.pgood { color: #14491a; }
+html body .cur #curtable tr[class*="g-cur"] td.pbad { color: #7a0000; }

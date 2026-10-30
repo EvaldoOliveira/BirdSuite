@@ -1,0 +1,34 @@
+# birdnet-setup.conf — answers for an unattended installation (US-51c)
+# Copy to the SD card's boot partition as birdnet-setup.conf (/boot/firmware/birdnet-setup.conf
+# on Raspberry Pi OS Bookworm/Trixie) before the first boot, then run the installer with
+# BIRDNET_UNATTENDED=1 (or answer only the questions missing here). Missing keys = the
+# installer's default (location and state from the network, model V3, web password birdsuite).
+SITE_NAME=My station
+# decimal degrees: north and east positive, south and west negative (example: New York)
+LATITUDE=40.7128
+LONGITUDE=-74.0060
+# timezone of the detections (a fresh Raspberry Pi OS is on Europe/London)
+TIMEZONE=America/New_York
+# V3 (BirdNET+ V3.0, recommended) or V2.4
+MODEL=V3
+# language of the bird names: en, es, de, fr, pt_BR (Brazil), pt_PT (Portugal), ... (model/l18n)
+LANGUAGE=en
+# Brazil only: state (UF, e.g. SP) whose include list limits the species; none elsewhere
+STATE=none
+# web password for Tools / Settings, user birdsuite (required; empty = the factory password birdsuite)
+WEB_PASSWORD=
+# your phone hotspot (plan A in the field: the station joins it whenever it is on); empty = none
+HOTSPOT_NAME=
+HOTSPOT_PASSWORD=
+# the station's own WiFi BirdSuite-XXXX, on when no known network is in reach (8-63 characters; empty = set later in
+# Settings > Network). It is in the QR of the station label: never the web password
+STATION_WIFI_PASSWORD=
+# live stream password (empty = random)
+STREAM_PASSWORD=
+BIRDWEATHER_ID=
+# several locations (home, farm, trips) and several BirdSuite stations: y = their controls in the web interface, n (or
+# empty) = hidden, switched on later in Tools > Defaults
+MULTI_LOCATION=n
+MULTI_STATION=n
+# Apprise notification URL, e.g. tgram://<bot token>/<chat id>  (empty = none)
+APPRISE_URL=

@@ -1,0 +1,48 @@
+v0.17.0 - biome of each location, simple mode, http by default, incremental backup, faster import
+
+New
+- Biome of each location, worldwide: the RESOLVE Ecoregions 2017 biome and ecoregion and, in Brazil, the IBGE biome
+  (offline maps in model/maps); the land cover within 100 m (ESA WorldCover 2021, read online) and the setting Urban /
+  Peri-urban / Natural from the built-up share within 500 m. Stored with the location, shown under the map of
+  Settings › Locations, carried in the Export / Backup files and in the BirdDB-Br metadata of every recording; the
+  references (Dinerstein 2017, Olson 2001, IBGE 2019, Zanaga 2022) folded at the end of the section.
+- Settings › Locations: what is under the point of the map while it is fine-tuned (map click, pin drag, GPS), before
+  Save; Save of new coordinates stops the recording and starts it again at once; a metric scale bar on the location map
+  and on the stations map.
+- Simple mode: multiple locations and multiple stations asked at the installation (two y/n questions) and on the setup
+  page, and the first section of Tools › Defaults (Locations and stations); with both off the location list, New
+  location and the station picker are hidden. A station moved (boot check) in simple mode offers Update this location
+  or New location.
+- http by default: the station answers on http only; Tools › Defaults › Web access › HTTPS always serves https only.
+  The device GPS (map icon and Auto Locate Now) turns https on for a moment, after a notice that explains the browser's
+  certificate warning, and off again once the position is read; the network position when no GPS position came.
+- Tools › Backup/Import › Export / Backup: Incremental, only the detections and clips in no earlier backup of this
+  station and location in the folder, and the reviews new or changed since; no folder when nothing is new.
+- Validation: a Notification column beside Excluded (Normal / Muted / Rare, sortable); Calibrate thresholds as a modal
+  (every species that reaches the Precision criteria, new suggestions ticked); Manual confidence column.
+- Tools › Data: Delete all back on each location with detections; Locations: Remove on every location but
+  Test / Playback.
+
+Changed
+- Import much faster: the detections already on the station are read before the loop, each folder listed once, a commit
+  every 500 rows or 2 s (it ran at 4 to 9 detections a second from an SD card or a network share).
+- On import the newest review of a clip wins.
+- Clip spectrograms stored as JPEG straight away (quality 85); no PNG.
+- PURGE_RECENT_DAYS default 3 (was 5).
+- Validation reads the answers of the period once, through the period's files: the page went from 23 s to under 1 s on
+  a station with 177,000 detections.
+- Searches and species filters ignore accents everywhere (Now, Species Cards).
+- Installer and setup page: BirdNET+ V3 takes the thresholds of factory_defaults.conf (0.4 / 0.05).
+- Every update writes model/labels.txt again from the language's labels file.
+
+Fixed
+- Nightly trim deadlock: the purge protection waited on its own parent's lock, so the per-species limit had stopped.
+- Database folder setgid: with the web pages running as another user the -shm and -wal files blocked the analysis and
+  Optimise ("attempt to write a readonly database").
+- Species names migration: an answer whose new clip name already has one keeps the newer answer (UNIQUE constraint).
+- The updater left config/locations.json owned by root; its version log line failed on "dubious ownership".
+- Locations: Remove saves at once.
+
+Notes
+- The land cover and setting need internet once per location; offline stations show the biome only.
+- Translations: the texts added in this release are in all eleven languages.

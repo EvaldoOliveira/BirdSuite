@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BirdSuite Field</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f4e79">
+<!-- BirdSuite field companion (US-120, owner 2026-10-20): finds a station over Bluetooth with or without any network,
+     shows its name, location, MAC and address, opens it, turns its WiFi on, sets its clock and position from the phone,
+     blinks its LED. Installed once (it works offline afterwards). Web Bluetooth and GPS need the page on https:
+     Chrome on Android; on an iPhone the Bluefy browser. Talks to scripts/field_ble.py (service f00d0001-…). -->
+<style>
+:root { --bg: #f4f6f8; --card: #fff; --fg: #1d2330; --muted: #667085; --accent: #1f4e79; --ok: #2e7d32; --bad: #c62828; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f1218; --card: #181c24; --fg: #e6e9ef; --muted: #98a2b3; --accent: #58a6ff; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; }
+main { max-width: 520px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 20px; margin: 4px 0 12px; }
+.card { background: var(--card); border-radius: 12px; padding: 14px; margin: 10px 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+button { display: block; width: 100%; padding: 12px; margin: 8px 0; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-size: 16px; font-weight: 600; }
+button.light { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button:disabled { opacity: .5; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 14px; }
+.kv b { color: var(--muted); font-weight: 500; }
+.msg { font-weight: 600; margin: 8px 0; }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.small { font-size: 12px; color: var(--muted); }
+code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>BirdSuite Field</h1>
+  <div class="card" id="intro">
+    <button id="find">Find a station (Bluetooth)</button>
+    <div class="small" id="support"></div>
+  </div>
+  <div class="card" id="station" hidden>
+    <div class="kv" id="info"></div>
+    <div class="msg" id="msg"></div>
+    <button id="open">Open the station</button>
+    <button id="wifi" class="light">Turn on the station WiFi</button>
+    <button id="time" class="light">Set the clock from this phone</button>
+    <button id="gps" class="light">Use this phone's position (GPS)</button>
+    <button id="blink" class="light">Identify (the LED blinks 5 minutes)</button>
+    <button id="disconnect" class="light">Disconnect</button>
+  </div>
+  <div class="card small">No network at the place? Turn on the station WiFi, join it in the phone's WiFi settings
+    (name and password on the station's label), and the station opens by itself at <code>http://10.42.0.1</code>.
+    Several stations in range: each has its own name <code>BirdSuite-XXXXXXXXXXXX</code> (its MAC); Identify blinks the one you picked.</div>
+</main>
+<script>
+var SERVICE = 'f00d0001-b5d1-4e7a-9a2b-3c4d5e6f7a80', INFO = 'f00d0002-b5d1-4e7a-9a2b-3c4d5e6f7a80', CMD = 'f00d0003-b5d1-4e7a-9a2b-3c4d5e6f7a80';
+var dev = null, infoCh = null, cmdCh = null, last = {}, pwd = '';
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]; }); };
+function say(t, ok) { $('msg').innerHTML = '<span class="' + (ok === false ? 'bad' : ok ? 'ok' : '') + '">' + esc(t) + '</span>'; }
+
+if (!navigator.bluetooth) {
+  $('find').disabled = true;
+  $('support').innerHTML = 'This browser has no Bluetooth for web pages. Android: open this page in <b>Chrome</b>. iPhone: open it in the <b>Bluefy</b> browser. '
+    + (location.protocol !== 'https:' ? 'The page must be opened over <b>https</b>.' : '');
+} else {
+  $('support').textContent = 'The phone lists the stations in range (BirdSuite-XXXX); pick yours.';
+}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+function show(j) {
+  last = j;
+  var ip = (j.ip || []).join(', ') || '—';
+  $('info').innerHTML = '<b>Station</b><span>' + esc(j.s) + '</span><b>Location</b><span>' + esc(j.l || '—') + '</span>'
+    + '<b>MAC</b><span><code>' + esc(j.mac) + '</code></span><b>Address</b><span>' + esc(ip) + '</span>'
+    + '<b>Network</b><span>' + esc((j.net || []).join(', ') || 'none') + '</span>'
+    + '<b>Station WiFi</b><span>' + (j.ap ? '<span class="ok">on</span> (' + esc(j.ssid) + ', ' + j.apc + ' phone(s))' : 'off (' + esc(j.ssid) + ')') + '</span>'
+    + '<b>Clock</b><span>' + esc(j.now) + ' ' + (j.t ? '<span class="ok">confirmed</span>' : '<span class="bad">not confirmed</span>') + '</span>'
+    + '<b>Recording</b><span>' + (j.rec ? 'yes' : '<span class="bad">no</span>') + '</span>';
+  if (j.res && j.res.cmd) say((j.res.ok ? '✓ ' : '✗ ') + j.res.cmd + (j.res.msg ? ': ' + j.res.msg : ''), j.res.ok);
+}
+function decode(dv) { try { return JSON.parse(new TextDecoder().decode(dv)); } catch (e) { return null; } }
+async function read() { var j = decode(await infoCh.readValue()); if (j) show(j); return j; }
+async function send(cmd) {
+  if (last.pw && !pwd) { pwd = prompt('Station password') || ''; if (!pwd) return; }
+  say('Sending…');
+  await cmdCh.writeValue(new TextEncoder().encode((last.pw ? 'pw:' + pwd + ';' : '') + cmd));
+  setTimeout(read, 2500);
+}
+
+$('find').onclick = async function () {
+  try {
+    dev = await navigator.bluetooth.requestDevice({filters: [{services: [SERVICE]}, {namePrefix: 'BirdSuite-'}], optionalServices: [SERVICE]});
+    dev.addEventListener('gattserverdisconnected', function () { $('station').hidden = true; $('intro').hidden = false; });
+    var server = await dev.gatt.connect();
+    var svc = await server.getPrimaryService(SERVICE);
+    infoCh = await svc.getCharacteristic(INFO);
+    cmdCh = await svc.getCharacteristic(CMD);
+    try { await infoCh.startNotifications(); infoCh.addEventListener('characteristicvaluechanged', function (e) { var j = decode(e.target.value); if (j) show(j); }); } catch (e) {}
+    $('intro').hidden = true; $('station').hidden = false;
+    await read();
+  } catch (e) { $('support').textContent = 'Not connected: ' + e.message; }
+};
+// same network: its address; otherwise its fixed name (.local) or the station WiFi
+$('open').onclick = function () {
+  var ip = (last.ip || []).filter(function (a) { return a.indexOf('10.42.0.') !== 0; })[0];
+  var target = last.ap ? '10.42.0.1' : (ip || last.mdns);
+  if (!target) { say('The station is on no network: turn on its WiFi first.', false); return; }
+  window.open('http://' + target + '/', '_blank');
+};
+$('wifi').onclick = function () { send('ap:on').then(function () { say('Station WiFi on: join ' + (last.ssid || 'it') + ' in the phone settings, then tap Open the station.', true); }); };
+$('time').onclick = function () { send('time:' + Math.floor(Date.now() / 1000)); };
+$('gps').onclick = function () {
+  if (!navigator.geolocation) { say('No GPS in this browser.', false); return; }
+  say('Reading the GPS…');
+  navigator.geolocation.getCurrentPosition(function (p) {
+    var name = prompt('Name of this location (empty: the registered one there, or "Field <date>")', '') || '';
+    send('gps:' + p.coords.latitude.toFixed(5) + ',' + p.coords.longitude.toFixed(5) + (name ? ',' + name.replace(/[,;]/g, ' ') : ''));
+  }, function (e) { say('GPS: ' + e.message, false); }, {enableHighAccuracy: true, timeout: 30000});
+};
+$('blink').onclick = function () { send('identify'); };
+$('disconnect').onclick = function () { if (dev && dev.gatt.connected) dev.gatt.disconnect(); };
+</script>
+</body>
+</html>

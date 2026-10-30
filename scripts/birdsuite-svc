@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# birdsuite-svc ACTION UNIT [UNIT ...] - the only way the station user and its pages start, stop or switch services
+# (owner 2026-10-23, least privilege). Installed root-owned in /usr/local/sbin by the installer and the updater (a copy,
+# not a link, so the station user cannot change it); the sudoers rule of a least-privilege install allows only this.
+# ACTION: start stop restart enable disable status enable-now disable-now
+# UNIT: the BirdSuite services only (with or without .service), the PHP pool, and the station's RAM drive mount.
+set -u
+usage() { echo "usage: birdsuite-svc start|stop|restart|enable|disable|status|enable-now|disable-now UNIT..." >&2; exit 2; }
+[ $# -ge 2 ] || usage
+action=$1; shift
+case "$action" in
+  start|stop|restart|enable|disable|status) args=("$action") ;;
+  enable-now) args=(enable --now) ;;
+  disable-now) args=(disable --now) ;;
+  *) usage ;;
+esac
+units=()
+for u in "$@"; do
+  name=${u%.service}
+  case "$name" in
+    birdnet_analysis|birdnet_recording|birdnet_log|birdnet_location_check|birdsuite_field|birdsuite_ble|\
+    livestream|icecast2|spectrogram_viewer|chart_viewer|web_terminal|caddy|custom_recording)
+      units+=("$name.service") ;;
+    *)
+      if [[ "$name" =~ ^php[0-9]+(\.[0-9]+)?-fpm$ ]]; then
+        units+=("$name.service")
+      elif [[ "$u" =~ ^home-[a-z_][a-z0-9_-]*-BirdSongs-StreamData\.mount$ ]]; then
+        units+=("$u")
+      else
+        echo "birdsuite-svc: not a BirdSuite service: $u" >&2; exit 2
+      fi ;;
+  esac
+done
+# a backup download streams through php-fpm and caddy (2026-10-23 destructive phase NEW-REL-01: a settings save restarted
+# php-fpm and the browser kept a truncated archive): while it runs, a restart / stop of those two is deferred and done
+# by backup.php when the download ends
+station_user=$(cat /usr/local/lib/birdsuite/station_user 2>/dev/null)
+lock=/home/$station_user/BirdNET-Pi/state/backup_running
+# (a lock older than 12 h is stale: a worker killed mid-download never removed it)
+if [ -n "$station_user" ] && [ -n "$(find "$lock" -mmin -720 2>/dev/null)" ] && kill -0 "$(head -c 16 "$lock" | tr -cd 0-9)" 2>/dev/null; then
+  case "$action" in
+    restart|stop|disable-now)
+      for u in "${units[@]}"; do
+        case "$u" in php*-fpm.service|caddy.service)
+          echo "$action ${units[*]}" >> "/home/$station_user/BirdNET-Pi/state/backup_deferred"
+          echo "birdsuite-svc: a backup download is running; $action ${units[*]} will run when it ends" >&2
+          exit 0 ;;
+        esac
+      done ;;
+  esac
+fi
+if [ "$action" = status ]; then
+  exec /usr/bin/systemctl status --no-pager "${units[@]}"
+fi
+exec /usr/bin/systemctl "${args[@]}" "${units[@]}"

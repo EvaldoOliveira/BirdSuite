@@ -1,0 +1,22 @@
+v0.19.0 - external backup of old sounds, smoother review to the end of a list
+
+New
+- External backup of old sounds: beside Purge and Keep, Tools › Data offers External backup. The old sounds go to a
+  folder on another disk (<folder>/<station>/By_Date/<date>/<species>/) instead of being deleted; their detections stay
+  in the database and the spectrograms are drawn again from the audio. Used by the full-disk purge, the per-species
+  limit and the daily cap. Choose the destination folder and what to do when the backup is not possible (folder not
+  mounted, not writable, full or on the station's own disk): stop the recording (the default) or delete the oldest.
+  Station Doctor checks the folder.
+
+Changed
+- Validation › Calibrate thresholds: Apply closes the window and says how many species were set.
+- Validation: a notice when nothing is left to review in the list shown, at the start and at the end of a review.
+
+Fixed
+- Review: going on to the next species no longer opens the page of every species with nothing left to review.
+- Review: at the end of the list the player goes back to Validation instead of staying on the species page.
+
+Notes
+- The sounds stay on the station until you choose External backup; nothing changes on update.
+- The backup needs a folder on another disk with at least 1 GB free.
+- Translations: the new texts are in all eleven languages.
