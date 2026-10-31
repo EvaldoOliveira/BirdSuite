@@ -76,7 +76,6 @@ read -r -d '' ACCESS_LOG << 'EOF'
 EOF
 read -r -d '' BODY << EOF
   root * ${EXTRACTED}
-${ACCESS_LOG}
 ${HARDENING}
   file_server
   handle /By_Date/* {
@@ -109,7 +108,10 @@ else
 fi
 HTTP_BODY=$BODY
 [ "$HTTPS_MODE" = always ] && HTTP_BODY='  redir https://{host}{uri} 308'
-cat << EOF > "$OUT.https"
+# Caddy's check runs as the station user, who may not write the access log (2026-10-31: the check failed on it and
+# the GPS https was gone): the check gets the same file without the log block, the installed file has it
+write_https() {
+cat << EOF
 {
   on_demand_tls {
     ask http://localhost:5555/
@@ -119,30 +121,36 @@ http://localhost:5555 {
   respond 200
 }
 http:// ${BIRDNETPI_URL} {
-${HTTP_BODY}
+${1}${HTTP_BODY}
 }
 https:// {
   tls internal {
     on_demand
   }
-${BODY}
+${1}${BODY}
 }
 EOF
+}
+write_https "${ACCESS_LOG}
+" > "$OUT.https"
+write_https '' > "$OUT.check"
 
 # only when Caddy accepts it; else the pages over http alone, as before (the station never loses its web server)
 cat << EOF > "$OUT.http"
 http:// ${BIRDNETPI_URL} {
+${ACCESS_LOG}
 ${BODY}
 }
 EOF
 if [ "$HTTPS_MODE" = off ]; then
   mv -f "$OUT.http" "$OUT"; rm -f "$OUT.https"
-elif caddy validate --adapter caddyfile --config "$OUT.https" > /dev/null 2>&1; then
+elif caddy validate --adapter caddyfile --config "$OUT.check" > /dev/null 2>&1; then
   mv -f "$OUT.https" "$OUT"; rm -f "$OUT.http"
 else
   echo "update_caddyfile.sh: Caddy refused the https part - the pages stay on http only" >&2
   mv -f "$OUT.http" "$OUT"; rm -f "$OUT.https"
 fi
+rm -f "$OUT.check"
 
 if [ -n "${CADDYFILE_OUT:-}" ]; then
   caddy fmt --overwrite "$OUT"
