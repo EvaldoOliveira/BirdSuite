@@ -380,12 +380,15 @@ def main():
         if real:
             cycle_start = None
         # the antenna: off in the off mode once its window after start-up is over and no phone is on the station WiFi
-        # (no station WiFi, no known network, no phone hotspot); on again in the other modes
-        if mode == 'off' and uptime() > BOOT_WAIT + BOOT_WINDOW and not st['ap_on'] and st['wifi_radio'] == 'enabled':
+        # (no station WiFi, no known network, no phone hotspot); on again in the other modes, and in the off mode during its
+        # window after start-up (owner 2026-10-31: the antenna stayed off from the last run, NetworkManager keeps it off
+        # across a restart, so the window never opened and the cable gone left the station with no network at all)
+        in_window = uptime() <= BOOT_WAIT + BOOT_WINDOW
+        if mode == 'off' and not in_window and not st['ap_on'] and st['wifi_radio'] == 'enabled':
             field_net.sh('nmcli', 'radio', 'wifi', 'off', check=False)
             st['wifi_radio'] = 'disabled'
             print('off mode: WiFi antenna off until the next start-up', flush=True)
-        elif mode != 'off' and st['wifi_device'] and st['wifi_radio'] == 'disabled':
+        elif (mode != 'off' or in_window) and st['wifi_device'] and st['wifi_radio'] == 'disabled':
             field_net.sh('nmcli', 'radio', 'wifi', 'on', check=False)
             print('WiFi antenna on (%s mode)' % mode, flush=True)
         # no network: the station WiFi, as the mode says
