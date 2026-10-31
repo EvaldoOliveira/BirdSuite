@@ -16,6 +16,7 @@ if (isset($_GET['data'])) {
   $now = time();
   $since = $now - $min * 60 - 120;
   $db = get_db();
+  apply_location_filter($db); // the active location, as every page (owner 2026-10-31)
   $st = $db->prepare("SELECT Sci_Name, Com_Name, Date, Time, Confidence, File_Name, MAX(Date || ' ' || Time) AS last FROM detections
                       WHERE Date BETWEEN :d0 AND :d1 AND Date || ' ' || Time >= :since AND Confidence >= :conf" . not_rejected_sql() . ' GROUP BY Sci_Name');
   ensure_db_ok($st);

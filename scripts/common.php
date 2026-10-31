@@ -868,7 +868,9 @@ function location_filter_page() {
   $view = defined('NOW_PAGE') ? 'Now' : (string)($_GET['view'] ?? pathinfo($_SERVER['SCRIPT_NAME'] ?? '', PATHINFO_FILENAME));
   if ($view === 'curation') $view = 'Curation';
   $key = 'loc_' . preg_replace('/[^A-Za-z0-9]/', '', $view);
-  return array($key, $view === 'Now' ? 'all' : 'current');
+  // every page on the current location (owner 2026-10-31: Latest and Now show the active location; Latest opened on All
+  // since 2026-10-22); All stays one choice away in the picker
+  return array($key, 'current');
 }
 // the locations with detections, by id (owner 2026-10-22: the Location picklist of Now)
 function locations_data_ids() {

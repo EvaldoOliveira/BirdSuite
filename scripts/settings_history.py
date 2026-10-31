@@ -24,7 +24,7 @@ SNAPSHOT = os.path.join(STATE, 'settings_history.snapshot')
 ACCESS_LOG = '/var/log/caddy/access.log'
 MAX_BYTES = 1024 * 1024
 ORIGIN_WINDOW = 10  # seconds before the change a web request counts as its origin
-SECRET = re.compile(r'PASS|PWD|TOKEN|SECRET|KEY|APPRISE_URL|_URLS?$|EMAIL|TELEGRAM|BIRDWEATHER_ID|ID$', re.I)
+SECRET = re.compile(r'PASS|PWD|TOKEN|SECRET|API_?KEY|_KEY$|APPRISE_URL|EMAIL|TELEGRAM|BIRDWEATHER_ID|CHAT_ID', re.I)
 
 
 def parse(path):
