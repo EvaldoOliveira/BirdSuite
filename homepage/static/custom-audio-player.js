@@ -243,6 +243,7 @@ function initCustomAudioPlayers(root) {
         // the picture can be reloaded (review player palette): one bar only
         if (indicator) return;
         indicator = document.createElement("div");
+        indicator.className = "cap-indicator";  // a page may restyle it (review player: the bar below the picture)
         applyStyles(indicator, {
           position: "absolute",
           top: "0",
@@ -431,6 +432,7 @@ function initCustomAudioPlayers(root) {
 
     // Bottom control overlay
     const controlOverlay = document.createElement("div");
+    controlOverlay.className = "cap-controls";
     applyStyles(controlOverlay, {
       position: "absolute",
       left: "0",

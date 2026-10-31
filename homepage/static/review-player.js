@@ -99,6 +99,10 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-rates{display:inline-flex;margin-left:4px}#rpDialog .rp-rates button{border-radius:0;margin-left:-1px}'
     + '#rpDialog .rp-rates button:first-child{border-radius:6px 0 0 6px}#rpDialog .rp-rates button:last-child{border-radius:0 6px 6px 0}'
     + '#rpDialog .rp-player img.rp-crop{margin-top:-2.48%}'
+    // the play bar below the spectrogram, never over it (owner 2026-10-31: it hid an important part of the picture);
+    // always shown, so the picture does not move when it appears
+    + '#rpDialog .rp-player .cap-controls{position:static!important;display:flex!important;height:32px!important;box-sizing:border-box;background:#1e1e1e!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}'
+    + '#rpDialog .rp-player .cap-indicator{bottom:32px!important}'
     + '#rpDialog .rp-spec{display:flex;align-items:center;gap:6px;color:#bbb;font-size:12px;flex-wrap:wrap}'
     + '#rpDialog .rp-spec select,#rpDialog .rp-spec input{background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:3px 5px;font-size:12px;min-height:26px;box-sizing:border-box}'
     + '#rpDialog .rp-spec label{font-weight:normal;font-size:12px;color:#bbb;display:flex;align-items:center;gap:4px;margin:0}#rpDialog .rp-spec input{width:4.4em}#rpDialog .rp-spec button{width:auto;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px}'
