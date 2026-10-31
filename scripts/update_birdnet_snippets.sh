@@ -578,6 +578,7 @@ if { [ -n "${CADDY_PWD}" ] && [ -z "${AUTH}" ]; } \
   || ! grep -q 'respond @internal' /etc/caddy/Caddyfile \
   || ! grep -q 'redir @captive' /etc/caddy/Caddyfile \
   || ! grep -q 'birdsuite-(root|svc)' /etc/caddy/Caddyfile \
+  || ! grep -q 'access.log' /etc/caddy/Caddyfile \
   || grep -q 'file_server browse' /etc/caddy/Caddyfile; then
   # checked by Caddy before it is installed (birdsuite-root caddyfile); http only unless HTTPS_ALWAYS since 2026-10-29 (US-126)
   /usr/local/sbin/birdsuite-root caddyfile > /dev/null 2>&1 || sudo /usr/local/bin/update_caddyfile.sh > /dev/null 2>&1
@@ -688,6 +689,34 @@ for svc in birdsuite_field:field_daemon birdsuite_ble:field_ble; do
   newest=$(stat -c %Y "$HOME/BirdNET-Pi/scripts/${svc#*:}.py" "$HOME/BirdNET-Pi/scripts/field_net.py" 2>/dev/null | sort -n | tail -1)
   [ -n "$newest" ] && [ "$newest" -gt "$since" ] && systemctl restart "$unit"
 done
+
+# the settings history (owner 2026-10-31, install_services.sh install_settings_history): every change of BirdSuite.conf
+# in state/settings_history.log, with the origin from the web server's access log
+if [ ! -f "$HOME/BirdNET-Pi/templates/birdsuite_settings_history.path" ]; then
+  cat << EOF > "$HOME/BirdNET-Pi/templates/birdsuite_settings_history.service"
+[Unit]
+Description=BirdSuite settings history (what changed in BirdSuite.conf, when and from where)
+[Service]
+Type=oneshot
+User=$USER
+ExecStart=/usr/bin/python3 $HOME/BirdNET-Pi/scripts/settings_history.py
+EOF
+  cat << EOF > "$HOME/BirdNET-Pi/templates/birdsuite_settings_history.path"
+[Unit]
+Description=BirdSuite settings history (watches BirdSuite.conf)
+[Path]
+PathChanged=$HOME/BirdNET-Pi/config/BirdSuite.conf
+[Install]
+WantedBy=multi-user.target
+EOF
+  chown "$USER:$USER" "$HOME"/BirdNET-Pi/templates/birdsuite_settings_history.*
+  getent group caddy > /dev/null && usermod -aG caddy "$USER"
+  install_unit birdsuite_settings_history.service
+  install_unit birdsuite_settings_history.path
+  systemctl daemon-reload
+  systemctl enable --now birdsuite_settings_history.path || true
+  systemctl start birdsuite_settings_history.service || true
+fi
 
 # retired settings (owner 2026-10-23): APPRISE_WEEKLY_REPORT (the weekly report is gone) and INCLUDE_REGION (replaced
 # by SPECIES_LIST, read above only to migrate an old station); each line goes with the ## comment lines right above it

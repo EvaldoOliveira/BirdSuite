@@ -62,8 +62,21 @@ ${USERS}
   }
 "
 fi
+# the access log (owner 2026-10-31): the origin of each settings change in state/settings_history.log
+# (scripts/settings_history.py); readable by the web server's group, which the station user is in; rolled by Caddy
+read -r -d '' ACCESS_LOG << 'EOF'
+  log {
+    output file /var/log/caddy/access.log {
+      roll_size 10MiB
+      roll_keep 5
+      roll_keep_for 720h
+      mode 0640
+    }
+  }
+EOF
 read -r -d '' BODY << EOF
   root * ${EXTRACTED}
+${ACCESS_LOG}
 ${HARDENING}
   file_server
   handle /By_Date/* {

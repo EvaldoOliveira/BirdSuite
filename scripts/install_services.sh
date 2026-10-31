@@ -379,6 +379,35 @@ EOF
   systemctl enable birdnet_location_check.service
 }
 
+install_settings_history() {
+  # every change of BirdSuite.conf, whoever writes it, one line in state/settings_history.log with the origin from the
+  # web server's access log (scripts/settings_history.py, owner 2026-10-31); the station user reads that log through
+  # the web server's group
+  cat << EOF > $HOME/BirdNET-Pi/templates/birdsuite_settings_history.service
+[Unit]
+Description=BirdSuite settings history (what changed in BirdSuite.conf, when and from where)
+[Service]
+Type=oneshot
+User=$USER
+ExecStart=/usr/bin/python3 $HOME/BirdNET-Pi/scripts/settings_history.py
+EOF
+  cat << EOF > $HOME/BirdNET-Pi/templates/birdsuite_settings_history.path
+[Unit]
+Description=BirdSuite settings history (watches BirdSuite.conf)
+[Path]
+PathChanged=$HOME/BirdNET-Pi/config/BirdSuite.conf
+[Install]
+WantedBy=multi-user.target
+EOF
+  chown "$USER:$USER" $HOME/BirdNET-Pi/templates/birdsuite_settings_history.*
+  getent group caddy > /dev/null && usermod -aG caddy $USER
+  install_unit birdsuite_settings_history.service
+  install_unit birdsuite_settings_history.path
+  systemctl daemon-reload
+  systemctl enable --now birdsuite_settings_history.path
+  systemctl start birdsuite_settings_history.service || true
+}
+
 install_field_services() {
   # field access (US-120, owner 2026-10-20): the station WiFi on demand and at boot without a network, the fixed mDNS
   # name, the clock, the offline notification queue (birdsuite_field) and the Bluetooth service a phone uses to find
@@ -470,6 +499,7 @@ install_services() {
   install_mic_hotplug
   install_location_check
   install_field_services
+  install_settings_history
   install_cleanup_cron
   install_automatic_update_cron
   increase_caddy_timeout
