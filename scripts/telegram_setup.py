@@ -43,6 +43,9 @@ BOX_NORMAL = os.path.join(BASE, 'config', 'notifications', 'apprise.txt')
 BOX_RARE = os.path.join(BASE, 'config', 'notifications', 'apprise-rare.txt')
 TOKENS = os.path.join(BASE, 'config', 'notifications', 'apprise-tokens.txt')
 NAMES = os.path.join(BASE, 'config', 'notifications', 'telegram_groups.json')  # the group names, for the page (not secret)
+# every group the bot was ever seen in (owner 2026-10-31: Telegram keeps a bot's messages only 24 hours, so groups joined
+# before were never found again); per bot, mode 600 like the token store
+SEEN = os.path.join(BASE, 'config', 'notifications', 'telegram_chats.json')
 OURS = re.compile(r'^\s*tgram://\$\w+/\$\w+\s*$', re.I)  # a Telegram line with placeholders (ours or the Mesh's)
 LINE = re.compile(r'^\s*tgram://\$(\w+)/\$(\w+)\s*$', re.I)
 
@@ -202,7 +205,12 @@ def chats():
                     'error': t('Telegram: {reason} (another program reads this bot: use a bot only for the station, or type the group id)',
                                reason=r.get('description', ''))}
         raise SystemExit('Telegram: ' + r.get('description', ''))
-    seen = {}
+    bot_id = token.split(':', 1)[0]
+    try:
+        known = json.load(open(SEEN, encoding='utf-8'))
+    except (OSError, ValueError):
+        known = {}
+    seen = dict(known.get(bot_id, {}))
     for u in r.get('result', []):
         for key in ('message', 'my_chat_member', 'channel_post'):
             c = (u.get(key) or {}).get('chat')
@@ -215,6 +223,20 @@ def chats():
             if m:  # a group upgraded to a supergroup gets a new id
                 seen.pop(str(c['id']), None)
                 seen[str(m)] = c.get('title', '')
+    # the groups of the tokens already set count as seen too (a setup made before this list existed)
+    tok = tokens()
+    k = keyset()
+    for key, gid in (('normal', tok.get(k[1], '')), ('prio', tok.get(k[3], ''))):
+        if gid and gid not in seen:
+            seen[gid] = names().get(key, '')
+    if seen != known.get(bot_id, {}):
+        known[bot_id] = seen
+        old = os.umask(0o077)
+        try:
+            write_lines(SEEN, [json.dumps(known, ensure_ascii=False)])
+        finally:
+            os.umask(old)
+        os.chmod(SEEN, 0o600)
     return {'ok': True, 'chats': [{'id': k, 'title': v} for k, v in seen.items()]}
 
 
