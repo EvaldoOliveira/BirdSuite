@@ -82,6 +82,8 @@ case "$task" in
     if [ -s "$tmp" ] && caddy validate --adapter caddyfile --config "$tmp" > /dev/null 2>&1; then
       install -o root -g root -m 0644 "$tmp" /etc/caddy/Caddyfile
       rm -f "$tmp"
+      # the check above, as root, creates the access log as root: the web server could not write it (2026-10-31)
+      chown caddy:caddy /var/log/caddy/access.log* 2> /dev/null
       exec /usr/bin/systemctl reload caddy
     fi
     rm -f "$tmp"
