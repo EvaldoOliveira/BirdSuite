@@ -73,6 +73,7 @@ done
 # the confirmed species are this station's: emptied
 [ -f "$HERE/config/species_lists/confirmed_species_list.txt" ] && run ": > '$HERE/config/species_lists/confirmed_species_list.txt'"
 [ "$KEEP_NOTIF" = 0 ] && for f in apprise.txt apprise-rare.txt apprise-tokens.txt telegram_groups.json; do [ -e "$HERE/config/notifications/$f" ] && run ": > '$HERE/config/notifications/$f'"; done  # the bot token and the app password too
+[ "$KEEP_NOTIF" = 0 ] && [ -e "$HERE/state/apprise-tokens.keep" ] && run "rm -f '$HERE/state/apprise-tokens.keep'"  # their kept copy (utils/token_store.py) would put them back
 
 echo "Clearing the identity"
 run "sudo sed -i 's/^SITE_NAME=.*/SITE_NAME=\"\"/' $CONF"

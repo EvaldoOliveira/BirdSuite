@@ -17,6 +17,7 @@ from .helpers import get_settings
 from .i18n import fmt_num, t
 from . import locations
 from . import notify_channels
+from . import token_store
 from .rarity import region_rare_reason
 
 userDir = os.path.expanduser('~')
@@ -68,6 +69,10 @@ def _load_apprise_tokens():
     # Station-private token store (name=value per line, mode 600): the apprise
     # config boxes carry only $name placeholders, never the secrets themselves.
     tokens = {}
+    # what Settings › Telegram / E-mail saved is put back when anything else changed it (owner 2026-10-31: perpetual)
+    restored = token_store.heal()
+    if restored:
+        log.warning('notification secrets put back from the saved copy: %s', ', '.join(restored))
     try:
         with open(APPRISE_TOKENS) as f:
             for line in f:

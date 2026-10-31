@@ -37,6 +37,7 @@ except Exception:
         return text
 
 BASE = os.path.expanduser('~/BirdNET-Pi')
+from utils import token_store  # noqa: E402  the copy that keeps the secrets (owner 2026-10-31)
 from utils import notify_channels  # noqa: E402  a channel sends only after the user confirmed a test (2026-10-26)
 BOX_NORMAL = os.path.join(BASE, 'config', 'notifications', 'apprise.txt')
 BOX_RARE = os.path.join(BASE, 'config', 'notifications', 'apprise-rare.txt')
@@ -83,6 +84,7 @@ def write_lines(path, lines):
 
 
 def tokens():
+    token_store.heal()  # what this page saved comes back when anything else changed it (owner 2026-10-31)
     out = {}
     for line in read_lines(TOKENS):
         k, _, v = line.partition('=')
@@ -98,6 +100,7 @@ def save_tokens(tok):
     finally:
         os.umask(old)
     os.chmod(TOKENS, 0o600)
+    token_store.remember(tok)
 
 
 def api(token, method, params=None, timeout=10):
