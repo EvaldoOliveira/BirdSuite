@@ -227,6 +227,14 @@ function get_config($force_reload = false) {
     $source = preg_replace("~^#+.*$~m", "", file_get_contents(BS_CONF));
     $my_config = parse_ini_string($source);
     if ($my_config) {
+      // the words off/on/yes/no/true/false/none/null stay words (owner 2026-10-31: FIELD_WIFI_MODE=off read as "", the
+      // Network page selected nothing and showed "Always on", so choosing it saved nothing and the station stayed off)
+      $raw = parse_ini_string($source, false, INI_SCANNER_RAW);
+      foreach ((array)$raw as $k => $v) {
+        if (isset($my_config[$k]) && preg_match('/^(off|on|yes|no|true|false|none|null)$/i', (string)$v)) {
+          $my_config[$k] = $v;
+        }
+      }
       $_SESSION['my_config'] = array_merge(birdsuite_defaults(), $my_config);
     } else {
       syslog(LOG_ERR, "Cannot parse config");
