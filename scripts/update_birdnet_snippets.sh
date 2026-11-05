@@ -248,7 +248,13 @@ apply_ramdisk_policy
 install_udev_rules
 # the services' systemd sandboxing (install_helpers.sh, 2026-10-23 run 3): written or refreshed; the reload and the
 # restart below apply it
-install_unit_hardening && echo "systemd: service sandboxing updated"
+if install_unit_hardening; then
+  echo "systemd: service sandboxing updated"
+  # the restart below covers the recording chain only: the field, Bluetooth, terminal and files services take a new
+  # sandbox only when restarted (bug #61: they kept running without it); try-restart leaves a stopped one stopped
+  systemctl daemon-reload
+  systemctl try-restart "$BS_SVC_FIELD.service" "$BS_SVC_BLE.service" "$BS_SVC_TERMINAL.service" "$BS_SVC_FILES.service" 2> /dev/null || true
+fi
 
 # the log policy (owner 2026-11-01, System › Disk Space): journal LOG_RETENTION_DAYS days and 200 MB, rotated logs
 # compressed, applied again with the current setting
