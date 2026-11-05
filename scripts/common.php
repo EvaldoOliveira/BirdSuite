@@ -207,7 +207,7 @@ function list_pager($label, $offset, $shown, $page, $more, $count_js, $page_js, 
 function hearing_state() {
   $c = get_config();
   $hi = max(500, intval($c['FREQSHIFT_HI'] ?? 12000));
-  $lo = max(100, intval($c['FREQSHIFT_LO'] ?? 6000));
+  $lo = max(100, intval($c['FREQSHIFT_LO'] ?? 5000));
   $base = max(0, intval($c['FREQSHIFT_BASE'] ?? 0));
   return array('on' => false, 'r' => max(0.2, min(1, $lo / $hi)), 'base' => $base, 'v' => substr(md5("$hi|$lo|$base"), 0, 8));
 }

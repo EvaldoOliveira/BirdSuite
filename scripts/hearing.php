@@ -13,7 +13,7 @@ $hi = max(500, intval($c['FREQSHIFT_HI'] ?? 12000));
 $dhi = max(500, intval($d['FREQSHIFT_HI'] ?? 12000));
 echo json_encode(array(
   'hi' => $hi,
-  'r' => max(0.2, min(1, intval($c['FREQSHIFT_LO'] ?? 6000) / $hi)),
+  'r' => max(0.2, min(1, intval($c['FREQSHIFT_LO'] ?? 5000) / $hi)),
   'base' => max(0, intval($c['FREQSHIFT_BASE'] ?? 0)),
-  'def' => array('hi' => $dhi, 'r' => max(0.2, min(1, intval($d['FREQSHIFT_LO'] ?? 6000) / $dhi)), 'base' => max(0, intval($d['FREQSHIFT_BASE'] ?? 0))),
+  'def' => array('hi' => $dhi, 'r' => max(0.2, min(1, intval($d['FREQSHIFT_LO'] ?? 5000) / $dhi)), 'base' => max(0, intval($d['FREQSHIFT_BASE'] ?? 0))),
 ));

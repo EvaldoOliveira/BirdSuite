@@ -556,7 +556,7 @@ if (isset($_GET['lowered'])) {
   if (!is_file($src)) { http_response_code(404); die(); }
   $c = get_config();
   $hi = max(500, intval($c['FREQSHIFT_HI'] ?? 12000));
-  $lo = max(100, min($hi, intval($c['FREQSHIFT_LO'] ?? 6000)));
+  $lo = max(100, min($hi, intval($c['FREQSHIFT_LO'] ?? 5000)));
   $base = max(0, intval($c['FREQSHIFT_BASE'] ?? 0));
   $dir = sys_get_temp_dir() . '/birdsuite-lowered';
   if (!is_dir($dir)) @mkdir($dir, 0700, true);
