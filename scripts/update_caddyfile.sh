@@ -40,7 +40,8 @@ EOF
 PUBLIC_SCRIPTS_RETIRED="/scripts/gps.php /scripts/location_switch.php /scripts/stations.php /scripts/ui_lang.php /scripts/status.php /scripts/curation.php /scripts/species_tools.php /scripts/species_page.php /scripts/ebird.php /scripts/detections_dashboard.php /scripts/seasonality.php /scripts/appearance.php /scripts/email_settings.php /scripts/telegram_settings.php /scripts/network.php /scripts/models.php"
 AUTH=
 # a password on everything (owner 2026-11-02): every page, endpoint, stream, log, terminal and file view asks for the
-# web login; while no password is set the factory one (BS_WEB_PASSWORD_DEFAULT) is in force, so a station is never open.
+# web login; while no password is set the factory one (BS_WEB_PASSWORD_DEFAULT) is asked, so a station is never open, and
+# it opens only Station › Access, to set the station's own (bug #60, common.php login_user()).
 # The station's own calls (localhost: the cache warmer, the notification pictures) do not log in.
 # the stored password is its bcrypt hash (SEC-15; scripts/web_password_hash.py) and goes in as it is; the factory
 # password, or a plain value left by an older station, is hashed here
@@ -73,6 +74,17 @@ fi
 #   login, the pages themselves ask where they show something sensitive and for every change (views.php, the view
 #   registry); what has no page in front (the log, terminal and files services, the live audio, the database editor,
 #   the hardware page) still asks there; every other device asks for everything
+# no password set yet (bug #60): the factory password is never a login, so what has no page in front (terminal, files,
+# the database editor, the hardware page) sends to Station › Access, where the station's own password is set
+NOPWD=
+if [ -z "${CADDY_PWD:-}" ] && [ "${WEB_LOGIN:-on}" != off ]; then
+  NOPWD="  @nopwd {
+    not remote_ip 127.0.0.1 ::1
+    path /terminal* /files* /scripts/adminer.php /phpsysinfo/*
+  }
+  redir @nopwd /views.php?view=Access
+"
+fi
 case "${WEB_LOGIN:-on}" in
   off) AUTH= ;;
   *)
@@ -125,7 +137,7 @@ ${HARDENING}
   handle /By_Date/* {
     file_server
   }
-${AUTH}  reverse_proxy /stream localhost:${BS_PORT_ICECAST}
+${NOPWD}${AUTH}  reverse_proxy /stream localhost:${BS_PORT_ICECAST}
   php_fastcgi unix//run/php/php-fpm.sock
   reverse_proxy /log* localhost:${BS_PORT_LOG}
   reverse_proxy /terminal* localhost:${BS_PORT_TERMINAL}

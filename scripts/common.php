@@ -880,7 +880,29 @@ function login_user() {
   $given = (string)($_SERVER['PHP_AUTH_PW'] ?? '');
   // the main user is the web login of Settings › Access: its password in force (the factory one while none is set)
   $ok = $e['main'] ? web_password_matches($given) : ($e['hash'] !== '' && password_verify($given, $e['hash']));
-  return $who = $ok ? $e : null;
+  if (!$ok) return $who = null;
+  // the factory password (public in the program) is never a login (bug #60, run 5 NEW-SEC-R5-02): while no password is
+  // set it only opens the page that sets one (Station › Access); everywhere else it is a viewer
+  if ($e['main'] && web_password_unset()) { $e['role'] = 'viewer'; $e['factory'] = true; }
+  return $who = $e;
+}
+// no web password set yet: the factory password is in force, with the login on
+function web_password_unset() {
+  return (string)(get_config()['CADDY_PWD'] ?? '') === '' && !web_login_off();
+}
+// this request logged in with the factory password
+function factory_login() {
+  $u = login_user();
+  return $u !== null && !empty($u['factory']);
+}
+// the page that sets the password (Station › Access): an admin, or the factory password, which may only
+// leave the factory state there (a password of its own, or the login Off)
+function ensure_password_setup() {
+  if (factory_login()) {
+    if (!is_same_origin_request()) { header('HTTP/1.0 403 Forbidden'); echo t('str_refused_the_request_came_from_help'); exit; }
+    return;
+  }
+  ensure_authenticated();
 }
 // admin access: the station's own call, an open station, or a logged-in admin (what every page's check asks)
 function is_authenticated() {
@@ -964,6 +986,11 @@ function ensure_authenticated($error_message = 'str_you_cannot_edit_the_settings
     exit;
   }
   if (!is_authenticated()) {
+    if (factory_login()) {
+      header('HTTP/1.0 403 Forbidden');
+      echo '<table><tr><td>' . htmlspecialchars(t('str_factory_password_only_sets_help')) . ' <a href="/views.php?view=Access">' . htmlspecialchars(menu_path('Access')) . '</a>' . '</td></tr></table>';
+      exit;
+    }
     if (login_user() !== null) refuse_role();
     header('WWW-Authenticate: Basic realm="BirdSuite - user name: ' . web_user() . '"');
     header('HTTP/1.0 401 Unauthorized');
