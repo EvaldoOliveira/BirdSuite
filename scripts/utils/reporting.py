@@ -412,6 +412,7 @@ def species_override(sci_name):
 
 def write_to_db(file: ParseFileName, detection: Detection):
     conf = get_settings()
+    last_error = None
     # Connect to SQLite Database
     for _attempt_number in range(3):
         con = None
@@ -435,7 +436,8 @@ def write_to_db(file: ParseFileName, detection: Detection):
 
             con.commit()
             break
-        except BaseException as e:  # noqa: BLE001  any error here is logged and the station goes on
+        except BaseException as e:  # noqa: BLE001  any error here is logged and retried
+            last_error = e
             log.warning("Database busy: %s", e)
             sleep(2)
         finally:
@@ -444,6 +446,9 @@ def write_to_db(file: ParseFileName, detection: Detection):
     else:
         log.error("Giving up writing detection to db: %s %s %s",
                   detection.date, detection.time, os.path.basename(detection.file_name_extr))
+        # the report fails instead of going on (bug #64: with a full disk the detection was lost and its recording
+        # deleted): the recording is analysed again (no space) or kept in the quarantine (any other error)
+        raise RuntimeError(f'detection not written to the database: {last_error}') from last_error
 
 
 def summary(file: ParseFileName, detection: Detection):

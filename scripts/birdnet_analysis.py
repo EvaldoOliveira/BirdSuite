@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 import shutil
@@ -20,6 +21,66 @@ from utils.reporting import apprise, bird_weather, extract_detection, heartbeat,
 from utils.shadow import run_shadow_analysis
 
 shutdown = False
+
+# recordings whose analysis or report failed for want of space (bug #64, 2026-11-05 test station: the disk at 100% for
+# 2.5 minutes, the quarantine move failed too, and the recordings stayed in StreamData until the next restart): kept
+# where they are and analysed again, oldest first, once the card has RETRY_MIN_FREE_MB free again
+NO_SPACE_RETRY = []
+NO_SPACE_LOCK = threading.Lock()
+RETRY_MIN_FREE_MB = 100
+NO_SPACE_TEXT = re.compile(r'No space left on device|database or disk is full|disk I/O error', re.I)
+
+
+def no_space(e):
+    # an error of a full disk, anywhere in the chain: the errno, or the text of sox / SQLite / a sub-process
+    while e is not None:
+        if getattr(e, 'errno', None) == errno.ENOSPC:
+            return True
+        text = str(e)
+        if isinstance(e, CalledProcessError) and e.stderr:
+            text += e.stderr.decode('utf-8', 'replace') if isinstance(e.stderr, bytes) else str(e.stderr)
+        if NO_SPACE_TEXT.search(text):
+            return True
+        e = e.__cause__ or e.__context__
+    return False
+
+
+def keep_for_retry(file_name):
+    with NO_SPACE_LOCK:
+        if file_name not in NO_SPACE_RETRY:
+            NO_SPACE_RETRY.append(file_name)
+    log.warning('no space left: %s kept in StreamData, analysed again once there is room', os.path.basename(file_name))
+
+
+def room_again():
+    # the data folder (clips) and the database folder both have room
+    for path in (get_settings()['RECS_DIR'], core.BS_DATA):
+        try:
+            if shutil.disk_usage(path).free < RETRY_MIN_FREE_MB * 1024 * 1024:
+                return False
+        except OSError:
+            return False
+    return True
+
+
+def retry_no_space(report_queue):
+    # the kept recordings, oldest first, before the newest one, so the detections stay in their order
+    with NO_SPACE_LOCK:
+        if not NO_SPACE_RETRY:
+            return
+    if not room_again():
+        return
+    with NO_SPACE_LOCK:
+        pending = sorted(NO_SPACE_RETRY)
+        NO_SPACE_RETRY.clear()
+    log.info('room again: analysing %d recording(s) kept for want of space', len(pending))
+    for file_name in pending:
+        if shutdown:
+            break
+        if os.path.exists(file_name):
+            process_file(file_name, report_queue)
+    # the last one's report is done before the newest recording goes in
+    report_queue.join()
 
 log = logging.getLogger(__name__)
 
@@ -77,6 +138,7 @@ def main():
                 break
 
             if event is None:
+                retry_no_space(report_queue)
                 if empty_count > (conf.getint('RECORDING_LENGTH') * 2 + 30):
                     log.error('no more notifications: restarting...')
                     break
@@ -95,6 +157,7 @@ def main():
                 backlog = []
                 continue
 
+            retry_no_space(report_queue)
             process_file(file_path, report_queue)
             empty_count = 0
     finally:
@@ -169,6 +232,9 @@ def process_file(file_name, report_queue):
         report_queue.join()
         report_queue.put((file, detections))
     except BaseException as e:
+        if no_space(e) and os.path.exists(file_name):
+            keep_for_retry(file_name)
+            return
         stderr = e.stderr.decode('utf-8') if isinstance(e, CalledProcessError) else ""
         log.exception(f'Unexpected error: {stderr}', exc_info=e)
 
@@ -231,6 +297,10 @@ def handle_reporting_queue(queue):
                 # stopped in the middle (a service restart, 2026-10-23: the recording landed in quarantine): it stays in
                 # StreamData and the next start analyses it again
                 log.warning('reporting interrupted by the shutdown: %s left for the next start', os.path.basename(file.file_name))
+            elif no_space(e):
+                # not a bad recording: the card is full (bug #64); the rows already written are not repeated by the
+                # next try (write_to_db: WHERE NOT EXISTS)
+                keep_for_retry(file.file_name)
             else:
                 log.exception(f'Unexpected error: {stderr}', exc_info=e)
                 quarantine(file.file_name)
