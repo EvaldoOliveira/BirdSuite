@@ -79,7 +79,7 @@ BirdSuite is an independent edition of [BirdNET-Pi](#lineage), a hard fork of [N
 
 - **Now**: the **pictures of the birds singing now**, from Wikipedia, over a wallpaper of your garden.
 - **Reports** by half hour and by calendar week, a **species page** for every species, a **live sonogram** with the names of the birds written on it.
-- **Hearing aid** for high songs: a switch beside *Live Audio*, kept per device, lowers what goes to the speaker (the recordings never change); the sonogram and the review player show the real scale beside the heard one.
+- **Hearing aid** for high songs: a switch beside *Live Audio*, kept per device, lowers what goes to the speaker (the recordings never change); the sonogram and the review player show the real scale beside the heard one. Its gear sets the band (the station's); the factory band, for older listeners, is 500 - 12,000 Hz heard up to 5,000 Hz.
 - **One standard on every page**: the same tables, filters, pagers and dialogs; works on a phone; keyboard accessible (WCAG 2.2 AA).
 - **Eleven interface languages** and **37 species-name languages**, CBRO names for Brazil.
 - **Six colour themes** plus your own, one per location.
