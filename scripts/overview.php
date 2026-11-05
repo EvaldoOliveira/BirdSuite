@@ -191,7 +191,8 @@ $refresh = max(3, min(60, intval($config['RECORDING_LENGTH'] ?? 15) ?: 15));
 $dividedrefresh = max(1, intval($refresh / 4));  // the newest clip is asked four times per recording
 $time = time();
 echo "<img id=\"spectrogramimage\" src=\"spectrogram.png?nocache=$time\">";
-$now_view_cfg = in_array($config['LATEST_VIEW'] ?? 'list', array('simple', 'spectrogram'), true) ? $config['LATEST_VIEW'] : 'list';
+// the Essential level opens in Simple (owner 2026-11-05); Birder and Expert in the station's LATEST_VIEW
+$now_view_cfg = ui_level() === 'essential' ? 'simple' : (in_array($config['LATEST_VIEW'] ?? 'list', array('simple', 'spectrogram'), true) ? $config['LATEST_VIEW'] : 'list');
 
 ?>
 <?php // the parts of the view shown or hidden before the first paint (2026-10-23 test run: the live spectrogram and its
@@ -549,7 +550,7 @@ function nowSearchTyped(v) {
 }
 // spectrogram cards or list (owner 2026-10-09): LATEST_VIEW (Settings › Defaults) is the default (list when unset, owner
 // 2026-10-10), the buttons switch it
-var nowView = <?php echo json_encode(in_array($config['LATEST_VIEW'] ?? 'list', array('simple', 'spectrogram'), true) ? $config['LATEST_VIEW'] : 'list'); ?>;
+var nowView = <?php echo json_encode($now_view_cfg); ?>;
 // a phone opens in Simple with the filters closed; a wider screen opens in the default view (Full unless set) with the
 // filters open (owner 2026-10-20); the buttons and the Filter icon still switch
 var nowPhone = bsPhone();
