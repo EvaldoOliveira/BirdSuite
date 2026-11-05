@@ -79,10 +79,10 @@ The log is written to `installation-<date>.txt` in the folder you ran the comman
 The installer asks no questions: it fills in what the network tells (location, time zone, Brazilian state, species-name language by country), model V3, the web password `birdsuite` and a random live-stream password.
 The first visit to the station opens **First Run** (without login until it is saved; afterwards the button **Start the First Run** of *System › All settings* opens it again, with the login, afterwards), which shows these values to check and asks the rest:
 
-1. **Location** on a map (the GPS icon reads the device's position) and **time zone**; the station is named `BirdSuite-<MAC>` and the place *Home*, both renamed later in *Station › Locations*.
+1. **Location** on a map (the GPS icon reads the device's position) and **time zone**; the station is named `BirdSuite-<last 4 digits of the MAC>` and the place *Home*, both renamed later in *Station › Locations*.
 2. **Model**, **language of the species names** and, in Brazil, the **state list**.
 3. **Several locations?** and **several BirdSuite stations?** (default no: the interface stays simple).
-4. **Network in the field**: the **phone hotspot** name and password (Plan B, the station joins your phone whenever the hotspot is on) and the **station WiFi password** for `BirdSuite-<MAC>` (Plan A, it goes on the QR label, never the web password); both can stay empty.
+4. **Network in the field**: the **phone hotspot** name and password (Plan B, the station joins your phone whenever the hotspot is on) and the **station WiFi password** for `BirdSuite-<last 4 digits of the MAC>` (Plan A, it goes on the QR label, never the web password); both can stay empty.
 5. **Theme** and a new **web password** for the user `birdsuite`.
 
 Saving it starts the detections.
@@ -128,7 +128,7 @@ The file is read as `KEY=value` lines, never executed; missing keys take the def
 **One card for many stations.**
 `~/BirdSuite/scripts/prepare_image.sh` turns a working station into a master card: identity, data, logs, WiFi networks, notification secrets and the web password are cleared (unless kept with `--keep-wifi`, `--keep-notifications`, `--keep-password`) and the first-run setup is pending again.
 `--dry-run` shows what it would do.
-Each clone then comes up as **`BirdSuite-<its MAC>`** at *Home* and is set up from a phone through its own WiFi and QR label.
+Each clone then comes up as **`BirdSuite-<the last 4 digits of its MAC>`** at *Home* and is set up from a phone through its own WiFi and QR label.
 
 ---
 

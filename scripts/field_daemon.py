@@ -157,7 +157,7 @@ def announce(st, lan):
         pass
     net = next((a['name'] for a in st['active'] if a['name'] != field_net.AP and a['type'] != 'loopback'), '')
     ssid = st['fleet_ssid'] if net == field_net.FLEET else st['known_ssid'].get(net, net)
-    station = setting('SITE_NAME', '') or 'BirdSuite-' + st['mac'].replace(':', '').upper()
+    station = setting('SITE_NAME', '') or field_net.ap_ssid()
     user = os.path.basename(home())
     prefix = ['runuser', '-u', user, '--'] if os.geteuid() == 0 else []
     r = subprocess.run([*prefix, core.BS_PYTHON,
@@ -244,7 +244,7 @@ def write_state(st, extra):
         pass
     rec = subprocess.run(['systemctl', 'is-active', core.BS_SVC_RECORDING + '.service'], capture_output=True, text=True, check=False).stdout.strip() == 'active'
     data = dict(st, **extra)
-    data.update({'station': conf.get('SITE_NAME') or 'BirdSuite-' + st['mac'].replace(':', '').upper(),
+    data.update({'station': conf.get('SITE_NAME') or field_net.ap_ssid(),
                  'lat': conf.get('LATITUDE'), 'lon': conf.get('LONGITUDE'), 'recording': rec, 'updated': int(time.time())})
     try:
         locs = json.loads(Path(core.BS_LOCATIONS_FILE).read_text(encoding='utf-8'))

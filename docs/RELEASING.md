@@ -104,7 +104,7 @@ Run on the pilot before step 3 (the notes). Items added while the change was onl
   station joins it by itself; iPhone: the station answers at `http://172.20.10.14` (and https); Android: its address is
   in the hotspot's "connected devices"; the label's addresses match.
 - **No network, station WiFi, plan B** (2026-10-24, not tested yet): with no known network in reach the station turns on
-  its own WiFi `BirdSuite-<MAC>` with the password set; a phone joins it with the label's QR code and opens
+  its own WiFi `BirdSuite-<last 4 digits of the MAC>` with the password set; a phone joins it with the label's QR code and opens
   `https://10.42.N.1` (the station's own address, Network page; GPS on the map); Find my station blinks the LEDs; the station goes back to the known
   network when it is in reach again.
 - **Station WiFi (Plan A since 2026-10-25) after a lost network** (2026-10-25, not tested yet): with the station on a WiFi or the phone hotspot, turn

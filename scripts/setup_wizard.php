@@ -53,7 +53,7 @@ $saved = false;
 if (isset($_POST['wizard_save'])) {
   $p = array_map(function ($v) { return is_string($v) ? trim(htmlspecialchars_decode($v, ENT_QUOTES)) : $v; }, $_POST);
   // control characters too: a newline would leave a second, executable line in BirdSuite.conf
-  // no station or location name asked at the first run (owner 2026-10-20): BirdSuite-<MAC> and Home, changed later in
+  // no station or location name asked at the first run (owner 2026-10-20): BirdSuite-<last 4 of the MAC> and Home, changed later in
   // Settings › Locations (the location name) and System › Stations (the station name); a name already set is kept
   $site_name = ($config['SITE_NAME'] ?? '') !== '' ? str_replace(array('"', "'", '\\', '$', '`'), '', $config['SITE_NAME']) : default_sitename();
   $lat = $p['latitude'] ?? '';

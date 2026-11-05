@@ -95,13 +95,18 @@ def wifi_mac():
     return ''
 
 
-# the whole MAC in every name, never a shortened one (owner 2026-10-24)
+# the last 4 digits of the MAC in every name (owner 2026-11-05, privacy: the WiFi and Bluetooth names are seen by anyone in
+# range; the whole MAC made the station trackable from place to place and showed the maker; until then the whole MAC)
+def mac_suffix():
+    return mac().replace(':', '')[-4:].upper()
+
+
 def ap_ssid():
-    return 'BirdSuite-' + mac().replace(':', '').upper()
+    return 'BirdSuite' + ('-' + mac_suffix() if mac_suffix() else '')
 
 
 def mdns_name():
-    return 'birdsuite-' + mac().replace(':', '') + '.local'
+    return 'birdsuite' + ('-' + mac_suffix().lower() if mac_suffix() else '') + '.local'
 
 
 def ap_addr():

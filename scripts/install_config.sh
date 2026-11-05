@@ -27,7 +27,7 @@ install_config() {
 ################################################################################
 #                    Configuration settings for BirdSuite                     #
 ################################################################################
-# Optional: station name. Empty = BirdSuite-<MAC of the Pi> (the board's own identity, so cloned SD cards differ),
+# Optional: station name. Empty = BirdSuite-<last 4 digits of the Pi's MAC> (the board's own, so cloned SD cards differ),
 # written here by First Run (System › All settings, Start the First Run) on the first run
 
 SITE_NAME="${FR_SITE_NAME:-}"

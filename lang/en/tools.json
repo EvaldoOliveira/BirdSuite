@@ -281,7 +281,7 @@
   "str_if_the_backup_is_not_possible": "If the backup is not possible",
   "str_if_the_bot_is_already_in_the_help": "If the bot is already in the group, send <code>/start@{user}</code> there.",
   "str_if_the_disk_goes_over_the_help": "If the disk goes over {pct}, the oldest sounds are deleted until space is free.",
-  "str_if_this_station_is_left_empty_help": "If <b>this station</b> is left empty, it takes the default name: BirdSuite-&lt;board's MAC&gt;",
+  "str_if_this_station_is_left_empty_help": "If <b>this station</b> is left empty, it takes the default name: BirdSuite-&lt;the last 4 digits of the board's MAC&gt;",
   "str_ignored_answered_human_noise_or_help": "<b>Ignored</b>: answered Human, Noise or Ignore, and excluded species; the detections keep counting, Purge Ignored deletes only their audio.",
   "str_ignored_dot": "Ignored.",
   "str_import": "Import",

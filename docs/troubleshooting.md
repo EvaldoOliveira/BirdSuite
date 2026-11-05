@@ -70,7 +70,7 @@ That is the station's own certificate, used only for a moment to read the GPS or
 Click **Advanced** and **Proceed** once per device. See [http, and https only for the GPS](installation.md#http-and-https-only-for-the-gps).
 
 **I cannot reach the station in the field.**
-Plan A: join the station's own WiFi `BirdSuite-<MAC>` (scan the QR label); the phone then opens the station by itself.
+Plan A: join the station's own WiFi `BirdSuite-<last 4 digits of the MAC>` (scan the QR label); the phone then opens the station by itself.
 Plan B: turn on your phone hotspot; the station joins it by itself.
 With *WiFi in the field* set to *Cycle* or *Off*, the station WiFi is on only part of the time (*Station › Network*).
 

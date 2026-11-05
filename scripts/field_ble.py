@@ -61,7 +61,7 @@ def info_json():
         st = {}
     lan = [i['ip'] for i in st.get('ips', [])]
     net = [a['name'] for a in st.get('active', []) if a.get('name') != field_net.AP]
-    data = {'s': st.get('station', ''), 'l': st.get('location', ''), 'mac': st.get('mac', field_net.mac()), 'ip': lan,
+    data = {'s': st.get('station', ''), 'l': st.get('location', ''), 'mac': field_net.mac_suffix(), 'ip': lan,
             'net': net, 'ap': st.get('ap_on', False), 'apc': st.get('ap_clients', 0), 'ssid': st.get('ap_ssid', field_net.ap_ssid()),
             't': st.get('time_confirmed', False), 'now': st.get('time', ''), 'rec': st.get('recording', False),
             'mdns': st.get('mdns', ''), 'pw': (conf_value('WEB_LOGIN') or 'on').strip('"\'').lower() != 'off', 'res': last_result}

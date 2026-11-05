@@ -798,9 +798,11 @@ function station_mac($plain = false) {
   }
   return $plain ? strtoupper(str_replace(':', '', $mac)) : $mac;
 }
-// the default station name until one is chosen (Settings): BirdSuite-<MAC without colons>
+// the default station name until one is chosen (Settings): BirdSuite-<the last 4 digits of the MAC> (owner 2026-11-05,
+// privacy: the name goes out in notifications and is the station WiFi's and Bluetooth's; as field_net.py ap_ssid())
 function default_sitename() {
-  return 'BirdSuite' . (station_mac(true) !== '' ? '-' . station_mac(true) : '');
+  $m = strtoupper(substr(station_mac(true), -4));
+  return 'BirdSuite' . ($m !== '' ? '-' . $m : '');
 }
 
 function get_sitename() {

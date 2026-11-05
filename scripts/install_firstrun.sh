@@ -48,7 +48,7 @@ if [ -n "$json" ] && [ "$(echo "$json" | jq -r .status 2>/dev/null)" = "success"
   fr_tz=$(echo "$json" | jq -r .timezone)
 fi
 
-# empty = BirdSuite-<MAC> (install_config.sh, get_sitename): the board's own name, so cloned cards and stations made
+# empty = BirdSuite-<last 4 of the MAC> (install_config.sh, get_sitename): the board's own name, so cloned cards and stations made
 # from one answer file differ
 fr_val FR_SITE_NAME SITE_NAME ""
 fr_val FR_LATITUDE LATITUDE "$LATITUDE"
@@ -161,7 +161,8 @@ for fr_wl in 0 1; do
   done
 done
 unset fr_wl fr_sub fr_drv
-fr_ap_ssid=BirdSuite-${fr_ap_mac^^}  # as field_net.py ap_ssid(): the whole MAC
+fr_ap_mac=${fr_ap_mac: -4}
+fr_ap_ssid=BirdSuite${fr_ap_mac:+-${fr_ap_mac^^}}  # as field_net.py ap_ssid(): the last 4 digits of the MAC (privacy)
 unset fr_ap_mac
 # its password goes into the label QR: 8 to 63 characters and never the web password; without it Settings -> Network
 fr_val FR_AP_PSK STATION_WIFI_PASSWORD ""
@@ -175,7 +176,7 @@ fr_val FR_BIRDWEATHER_ID BIRDWEATHER_ID ""
 # notifications (Telegram etc.): Settings › Notifications; a seed file can carry APPRISE_URL
 FR_APPRISE_URL="${fr_seed[APPRISE_URL]:-}"
 
-echo "First-run settings: site '${FR_SITE_NAME:-BirdSuite-<MAC>}', ${FR_LATITUDE}/${FR_LONGITUDE}, timezone ${FR_TIMEZONE:-unchanged}, model ${FR_MODEL}, language ${FR_LANGUAGE}, state list ${FR_REGION:-none}, several locations $([ "$FR_MULTI_LOCATION" = 1 ] && echo yes || echo no), several stations $([ "$FR_MULTI_STATION" = 1 ] && echo yes || echo no), web password set, phone hotspot $([ -n "$FR_FLEET_SSID" ] && echo "'$FR_FLEET_SSID'" || echo 'not set'), station WiFi ${fr_ap_ssid} $([ -n "$FR_AP_PSK" ] && echo 'password set' || echo 'no password yet'), BirdWeather $([ -n "$FR_BIRDWEATHER_ID" ] && echo set || echo none), notifications $([ -n "$FR_APPRISE_URL" ] && echo set || echo none)"
+echo "First-run settings: site '${FR_SITE_NAME:-BirdSuite-<last 4 of the MAC>}', ${FR_LATITUDE}/${FR_LONGITUDE}, timezone ${FR_TIMEZONE:-unchanged}, model ${FR_MODEL}, language ${FR_LANGUAGE}, state list ${FR_REGION:-none}, several locations $([ "$FR_MULTI_LOCATION" = 1 ] && echo yes || echo no), several stations $([ "$FR_MULTI_STATION" = 1 ] && echo yes || echo no), web password set, phone hotspot $([ -n "$FR_FLEET_SSID" ] && echo "'$FR_FLEET_SSID'" || echo 'not set'), station WiFi ${fr_ap_ssid} $([ -n "$FR_AP_PSK" ] && echo 'password set' || echo 'no password yet'), BirdWeather $([ -n "$FR_BIRDWEATHER_ID" ] && echo set || echo none), notifications $([ -n "$FR_APPRISE_URL" ] && echo set || echo none)"
 
 # the fleet (US-58, owner 2026-11-04): the level, preset, context and access of the station, and a profile of settings,
 # SET_<KEY>=value lines made by Station › Network (Answer file, with this station's settings): only keys of

@@ -304,7 +304,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
   <div id="stnfound" style="display:none;margin:0 0 12px;padding:8px 10px;border:1px solid rgba(0,0,0,.15);border-radius:8px"></div>
   <p><?php echo t('str_add_here_the_list_of_stations_help'); ?></p>
   <?php // one place for the names (owner 2026-10-20): the row of this station (same MAC) is marked; its name, saved with
-        // the list, is also this station's own name (SITE_NAME: header, notifications); empty = BirdSuite-<MAC> ?>
+        // the list, is also this station's own name (SITE_NAME: header, notifications); empty = BirdSuite-<last 4 of the MAC> ?>
   <table class="stdtable" id="stntable" data-nosort>
     <tr><th><?php echo t('str_name_alias'); ?></th><th><?php echo t('str_addresses'); ?></th><th>ID</th><th><?php echo t('str_note'); ?></th><th><?php echo t('str_order'); ?></th></tr>
   </table>
@@ -355,7 +355,7 @@ function stnThis(name) {
 }
 var STN_DEFAULT = <?php echo json_encode(default_sitename()); ?>;
 // the ID of a station is the MAC of its own network port (the name is an alias, owner 2026-10-27): its WiFi name
-// (BirdSuite-<MAC>) on top, the MAC under it
+// (BirdSuite-<last 4 of the MAC>) on top, the MAC under it
 function stnIdCell(td, mac) {
   var w = stationWifi(mac);
   td.textContent = w || mac || '';

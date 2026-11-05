@@ -279,7 +279,8 @@ def _station_name():
                 except OSError:
                     continue
                 if own and m and m != '00:00:00:00:00:00':
-                    mac = m.replace(':', '').upper()
+                    mac = m.replace(':', '')[-4:].upper()
+        # the last 4 digits of the MAC (owner 2026-11-05, privacy), as field_net.py ap_ssid()
         station_name = 'BirdSuite' + ('-' + mac if mac else '')
     return station_name
 

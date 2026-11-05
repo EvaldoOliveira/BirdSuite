@@ -22,7 +22,7 @@ function fn_run($args, $stdin = null) {
 
 // the answer file of new stations (owner 2026-11-03): birdnet-setup.conf with this station's settings, read by the
 // installer of a new card (scripts/install_firstrun.sh, docs/birdnet-setup.conf.example), which then starts set up,
-// without First Run. Each station keeps its own name (BirdSuite-<MAC>), BirdWeather ID and live-stream password. The web
+// without First Run. Each station keeps its own name (BirdSuite-<last 4 of the MAC>), BirdWeather ID and live-stream password. The web
 // password is kept only as its hash, so the one of the new stations is typed here (empty = the factory one); the
 // phone hotspot and the station WiFi password are this station's, when asked for
 function seed_file($p) {

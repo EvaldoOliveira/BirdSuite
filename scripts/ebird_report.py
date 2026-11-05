@@ -464,8 +464,8 @@ def report_name(date_from, date_to, conf=None):
             return fmt(a if name == 'start' else b, pattern)
         if name == 'id':
             try:
-                from field_net import mac
-                return mac().replace(':', '').upper() or 'BirdSuite'
+                from field_net import mac_suffix
+                return mac_suffix() or 'BirdSuite'
             except Exception:  # noqa: BLE001  any error here is logged and the station goes on
                 return 'BirdSuite'
         if name == 'location':

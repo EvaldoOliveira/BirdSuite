@@ -4,11 +4,11 @@
 // stations without any server change); addresses that do not answer are greyed out. The station shown now is marked.
 // stationProbe() is also used by the Stations page (Test).
 
-// the station's own WiFi name, BirdSuite-<its ID> (scripts/field_net.py ap_ssid); the ID is the MAC of the Pi's own network
-// port (common.php station_mac), the key of stations.json; the name is an alias (owner 2026-10-27)
+// the station's own WiFi name, BirdSuite-<the last 4 digits of its MAC> (scripts/field_net.py ap_ssid, owner 2026-11-05:
+// privacy); the whole MAC of the Pi's own network port (common.php station_mac) stays the key of stations.json
 function stationWifi(mac) {
   mac = String(mac || '').replace(/:/g, '').toUpperCase();
-  return mac.length === 12 ? 'BirdSuite-' + mac : '';
+  return mac.length === 12 ? 'BirdSuite-' + mac.slice(-4) : '';
 }
 // the name of a station as the lists show it: with the last 6 digits of its MAC when another station of the list has the
 // same name (owner 2026-10-27: cloned stations may share a name), e.g. "BirdSuite · 1AEC7C"
