@@ -988,14 +988,7 @@ function ensure_authenticated($error_message = 'str_you_cannot_edit_the_settings
   if (!is_authenticated()) {
     if (factory_login()) {
       header('HTTP/1.0 403 Forbidden');
-      // a page gets the reason with the link; a request of a page's script (a save, a switch) gets plain text, which
-      // the script shows as it is (2026-11-05: the hearing window showed the table's markup)
-      if (($_SERVER['HTTP_SEC_FETCH_DEST'] ?? 'document') !== 'document' || ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-        header('Content-Type: text/plain; charset=utf-8');
-        echo t('str_factory_password_only_sets_help') . ' ' . menu_path('Access');
-      } else {
-        echo '<table><tr><td>' . htmlspecialchars(t('str_factory_password_only_sets_help')) . ' <a href="/views.php?view=Access">' . htmlspecialchars(menu_path('Access')) . '</a>' . '</td></tr></table>';
-      }
+      echo '<table><tr><td>' . htmlspecialchars(t('str_factory_password_only_sets_help')) . ' <a href="/views.php?view=Access">' . htmlspecialchars(menu_path('Access')) . '</a>' . '</td></tr></table>';
       exit;
     }
     if (login_user() !== null) refuse_role();
