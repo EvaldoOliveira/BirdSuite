@@ -20,7 +20,7 @@
       + '.hearcfg .hearclose{position:absolute;top:4px;right:6px;border:0;background:transparent;font-size:22px;cursor:pointer;color:inherit;'
       + 'width:32px;height:32px;padding:0;line-height:1;display:flex;align-items:center;justify-content:center}'
       + '.hearcfg .hearscales{margin:6px auto 0;max-width:300px;touch-action:none}.hearcfg .hearscales svg{width:100%;height:auto;display:block;user-select:none}'
-      + '.hearcfg .hearratio{text-align:center;font-weight:700;margin:4px 0}.hearcfg .small{font-size:12px}.hearcfg select{width:auto}'
+      + '.hearcfg .hearratio{text-align:center;font-weight:700;margin:4px 0;white-space:pre-line}.hearcfg .small{font-size:12px}.hearcfg select{width:auto}'
       + '.hearcfg .hearsetdef{width:auto}.hearcfg:focus{outline:none !important}';
     document.head.appendChild(s);
   }
@@ -80,8 +80,9 @@
       label(XL, t('str_real')); label(XR, t('str_you_hear'));
       svg.setAttribute('viewBox', '0 0 300 ' + (TOP + H + 26));
       defb.style.display = (hi !== def.hi || lo !== def.base || Math.abs(r - def.r) > 0.005) ? '' : 'none';
-      box.querySelector('.hearratio').textContent = '×' + fmt(r, 2) + ' · ' + fmt(1200 * Math.log(r) / Math.LN2 / 100, 1) + ' ' + t('str_semitones') + ': '
-        + fmt(hi, 0) + ' Hz → ' + fmt(Math.round(hi * r), 0) + ' Hz · ' + (lo > 0 ? t('str_cut_below_hz', {hz: fmt(lo, 0)}) : t('str_nothing_cut'));
+      // one line each (owner 2026-11-05): the ratio and semitones, the band, the cut
+      box.querySelector('.hearratio').textContent = '×' + fmt(r, 2) + ' · ' + fmt(1200 * Math.log(r) / Math.LN2 / 100, 1) + ' ' + t('str_semitones') + '\n'
+        + fmt(hi, 0) + ' Hz → ' + fmt(Math.round(hi * r), 0) + ' Hz\n' + (lo > 0 ? t('str_cut_below_hz', {hz: fmt(lo, 0)}) : t('str_nothing_cut'));
     }
     function save() {
       var me = box;
