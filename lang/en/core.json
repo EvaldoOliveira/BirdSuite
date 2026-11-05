@@ -162,7 +162,7 @@
   "str_from_to": "From {from} to {to}",
   "str_go_back_to_birdnet_pi": "Go back to BirdNET-Pi",
   "str_go_back_to_birdnet_pi_help": "Go back to BirdNET-Pi? BirdSuite is stopped and switched off, BirdNET-Pi is put back as it was and the station restarts. Detections made with BirdSuite stay in BirdSuite; take them along first with {menu:Backup/Import} › Export (BirdNET format).",
-  "str_hear_bands_help": "<b>Green band</b><br>Top: the highest song that matters<br>Bottom: high-pass filter, cuts the sounds below it (wind, traffic, hum)<br><b>Orange band</b><br>Maps the high songs into a band you can hear",
+  "str_hear_bands_help": "<b>Green band</b><br>&emsp;Top: the highest song that matters<br>&emsp;Bottom: high-pass filter, cuts the sounds below it (wind, traffic, hum)<br><b>Orange band</b><br>&emsp;Map the sound into a band you can hear",
   "str_hear_high_songs_lower": "Hear high songs lower",
   "str_hear_high_songs_lower_help": "For hearing loss, on this device: what goes to the speaker is lowered, as the frequency lowering of a hearing aid (the live sound and the clips); the recordings and the analysis do not change. The gear beside it sets it.",
   "str_heavy_rain": "heavy rain",
