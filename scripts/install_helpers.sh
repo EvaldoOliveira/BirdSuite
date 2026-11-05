@@ -505,7 +505,14 @@ install_tmp_mount() {
 #   clock protected, no set-uid, no namespaces); without a sound device when they do not record or stream
 # - the ones that start services or set the clock through sudo (birdsuite-svc / birdsuite-root: microphone hot-plug,
 #   field network, Bluetooth set-up) only the protections a root helper does not need
-# - the web terminal is a login shell for the administrator (su, sudo): left as it is
+# - field, Bluetooth and the password reset from the card (bug #61, run 5 HRD-01: 8.0 / 8.0 / 7.9): what their root
+#   steps leave room for, since sudo inherits the sandbox: the system read-only but for the files the helper writes
+#   (Caddyfile, captive portal, fake-hwclock, timezone, the card's reset file), the homes read-only but the station
+#   user's, private /tmp, no namespaces, only local, netlink and internet sockets, the system-service calls plus the
+#   clock (the time from the phone), no devices but the clock, rfkill and the sound cards (the gain read)
+# - the web terminal and the file browser (bug #61): the login is an ssh session to the station itself
+#   (scripts/web_console.sh), so the service itself only runs gotty and the ssh client: everything taken away, the
+#   network limited to the station itself
 hardening_dropin () {
   local unit=$1 level=$2 dir="/etc/systemd/system/$1.d"
   local common="ProtectKernelModules=yes
@@ -533,6 +540,55 @@ RestrictRealtime=yes" ;;
       body="ProtectControlGroups=yes
 RestrictRealtime=yes
 $common" ;;
+    console)
+      body="NoNewPrivileges=yes
+RestrictSUIDSGID=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateUsers=yes
+PrivateIPC=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryDenyWriteExecute=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+SystemCallErrorNumber=EPERM
+IPAddressDeny=any
+IPAddressAllow=localhost
+RemoveIPC=yes
+UMask=0077
+$common" ;;
+    sudo-net)
+      body="ProtectControlGroups=yes
+RestrictRealtime=yes
+PrivateTmp=yes
+ProtectSystem=full
+ReadWritePaths=-/etc/caddy -/etc/NetworkManager/dnsmasq-shared.d -/etc/fake-hwclock.data -/etc/timezone -/boot/firmware -/boot
+ProtectHome=read-only
+ReadWritePaths=${BS_HOME}
+RestrictNamespaces=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6
+SystemCallFilter=@system-service @clock
+SystemCallErrorNumber=EPERM
+DevicePolicy=closed
+DeviceAllow=char-rtc rw
+DeviceAllow=char-alsa rw
+DeviceAllow=/dev/rfkill rw
+RemoveIPC=yes
+ProtectProc=invisible
+$common" ;;
     *) return 1 ;;
   esac
   mkdir -p "$dir"
@@ -544,6 +600,49 @@ $common" ;;
   mv -f "$dir/10-birdsuite-hardening.conf.new" "$dir/10-birdsuite-hardening.conf"
 }
 
+# the web console's ssh (bug #61): an sshd for the station itself only, 127.0.0.1:BS_PORT_CONSOLE_SSH, started per
+# connection by systemd (sshd -i), whatever the owner chose for ssh on the network (the image's ssh may be off); the
+# station's sshd_config applies (no root login, the BirdSuite drop-ins), the password allowed, since only the web
+# terminal and files, behind the web login, reach it. Root-owned units in /etc/systemd/system, refreshed by every
+# update; returns 0 when something changed
+install_console_ssh () {
+  local n=$BS_SVC_CONSOLE_SSH dir=/etc/systemd/system changed=1 f body sshd=/usr/sbin/sshd
+  [ -x "$sshd" ] || { echo "web console: openssh-server is not installed, the web terminal and files cannot log in" >&2; return 1; }
+  # the host keys, when the image never started ssh (only the missing ones are made)
+  ssh-keygen -A > /dev/null 2>&1
+  for f in socket service; do
+    if [ $f = socket ]; then
+      body="[Unit]
+Description=BirdSuite web console login (ssh on the station itself only)
+[Socket]
+ListenStream=127.0.0.1:${BS_PORT_CONSOLE_SSH}
+Accept=yes
+MaxConnections=8
+[Install]
+WantedBy=sockets.target"
+      f=$dir/$n.socket
+    else
+      body="[Unit]
+Description=BirdSuite web console login session
+[Service]
+ExecStart=-${sshd} -i -o PasswordAuthentication=yes -o KbdInteractiveAuthentication=yes
+StandardInput=socket
+StandardError=journal
+RuntimeDirectory=sshd
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes"
+      f=$dir/$n@.service
+    fi
+    printf '# written by BirdSuite (install_helpers.sh install_console_ssh), refreshed by every update\n%s\n' "$body" > "$f.new"
+    chown root:root "$f.new"; chmod 0644 "$f.new"
+    if cmp -s "$f.new" "$f"; then rm -f "$f.new"; else mv -f "$f.new" "$f"; changed=0; fi
+  done
+  [ $changed = 1 ] || systemctl daemon-reload
+  systemctl is-enabled --quiet "$n.socket" 2> /dev/null || { systemctl enable "$n.socket" > /dev/null 2>&1; changed=0; }
+  [ $changed = 1 ] && systemctl is-active --quiet "$n.socket" || systemctl restart "$n.socket" 2> /dev/null
+  return $changed
+}
+
 # returns 0 when a drop-in changed (the caller reloads systemd and restarts what runs)
 install_unit_hardening () {
   local changed=1 u
@@ -553,8 +652,13 @@ install_unit_hardening () {
   for u in "$BS_SVC_RECORDING" "$BS_SVC_LIVESTREAM"; do
     hardening_dropin "$u.service" full-devices && changed=0
   done
-  for u in "$BS_SVC_MIC_HOTPLUG" "$BS_SVC_FIELD" "$BS_SVC_BLE" "$BS_SVC_PWRESET"; do
-    hardening_dropin "$u.service" sudo && changed=0
+  hardening_dropin "$BS_SVC_MIC_HOTPLUG.service" sudo && changed=0
+  for u in "$BS_SVC_TERMINAL" "$BS_SVC_FILES"; do
+    hardening_dropin "$u.service" console && changed=0
+  done
+  install_console_ssh && changed=0
+  for u in "$BS_SVC_FIELD" "$BS_SVC_BLE" "$BS_SVC_PWRESET"; do
+    hardening_dropin "$u.service" sudo-net && changed=0
   done
   return $changed
 }

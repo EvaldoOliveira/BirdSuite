@@ -1,12 +1,14 @@
 [Unit]
 Description=BirdSuite Web Terminal
 [Service]
-# hardening exception (release run 6, HRD-01): the console login runs su, which needs setuid and the whole system: no sandbox on purpose (the page and the web server ask for the login)
+# the login is an ssh session to the station itself (scripts/web_console.sh, bug #61): the shell has nothing taken away, this service is sandboxed (install_helpers.sh hardening_dropin console); the page and the web server ask for the web login first
 Restart=on-failure
 RestartSec=3
 Type=simple
 User=@USER@
 Environment=TERM=xterm-256color
-ExecStart=@BS_BIN@/gotty --address localhost -w -p @BS_PORT_TERMINAL@ --path terminal --title-format "BirdSuite Terminal" bash -c 'read -p "Login: " username && [[ "$username" =~ ^[-_.a-z0-9]{1,30}$ ]] && su --pty -l $username'
+RuntimeDirectory=birdsuite-terminal
+RuntimeDirectoryMode=0700
+ExecStart=@BS_BIN@/gotty --address localhost -w -p @BS_PORT_TERMINAL@ --path terminal --title-format "BirdSuite Terminal" @BS_SCRIPTS@/web_console.sh
 [Install]
 WantedBy=multi-user.target

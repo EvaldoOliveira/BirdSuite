@@ -8,7 +8,7 @@ source "$my_dir/install_helpers.sh"
 SCRIPTS=($(ls -1 ${my_dir}) ${HOME}/.gotty)
 set -x
 # every unit the station has (install_helpers.sh: the templates/units of this version and any older one of the station's)
-services=($(bs_unit_names) $(bs_owned_units) birdsuite-firewall.service)
+services=($(bs_unit_names) $(bs_owned_units) birdsuite-firewall.service "$BS_SVC_CONSOLE_SSH.socket" "$BS_SVC_CONSOLE_SSH@.service")
 
 remove_services() {
   for i in "${services[@]}"; do
