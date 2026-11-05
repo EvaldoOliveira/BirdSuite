@@ -164,8 +164,6 @@
   "str_go_back_to_birdnet_pi_help": "Wrócić do BirdNET-Pi? BirdSuite zostanie zatrzymany i wyłączony, BirdNET-Pi przywrócony w poprzednim stanie, a stacja uruchomi się ponownie. Wykrycia zrobione w BirdSuite zostają w BirdSuite; najpierw zabierz je przez {menu:Backup/Import} › Eksportuj (format BirdNET).",
   "str_hear_high_songs_lower": "Słuchaj wysokich śpiewów niżej",
   "str_hear_high_songs_lower_help": "Przy ubytku słuchu, na tym urządzeniu: to, co idzie do głośnika, jest obniżane, jak obniżanie częstotliwości w aparacie słuchowym (dźwięk na żywo i klipy); nagrania i analiza się nie zmieniają. Ustawia to zębatka obok.",
-  "str_hear_live_for_every_listener_help": "Włączone tylko na tym urządzeniu: to, co idzie do jego głośnika, jest obniżane, dźwięk na żywo i klipy. Nagrania i analiza nigdy się nie zmieniają; te ustawienia należą do stacji.",
-  "str_hear_scales_help": "Przeciągnij pomarańczowy pas w dół, aby słyszeć śpiewy niżej; kurczy się razem z nim, bo każda częstotliwość obniża się o ten sam krok. Górna krawędź zielonego pasa to najwyższy śpiew, który cię interesuje. Jego dolna krawędź to filtr: dźwięki poniżej (wiatr, ruch uliczny, buczenie) są obcinane; przy 0 nic nie jest obcinane. Zapisuje się po puszczeniu; dźwięk na żywo i klipy idą za tym.",
   "str_heavy_rain": "ulewa",
   "str_home": "Dom",
   "str_home_this_station": "dom (ta stacja)",

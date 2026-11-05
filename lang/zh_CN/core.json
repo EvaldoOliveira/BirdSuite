@@ -164,8 +164,6 @@
   "str_go_back_to_birdnet_pi_help": "回到 BirdNET-Pi？BirdSuite 将被停止并关闭，BirdNET-Pi 恢复原样，站点重启。用 BirdSuite 得到的检测记录留在 BirdSuite 中；请先通过 {menu:Backup/Import} › 导出 (BirdNET 格式) 带走它们。",
   "str_hear_high_songs_lower": "降低高音鸣声",
   "str_hear_high_songs_lower_help": "用于听力损失，仅限此设备：输出到扬声器的声音被降调，类似助听器的移频（直播声音和片段）；录音和分析不变。旁边的齿轮用于设置。",
-  "str_hear_live_for_every_listener_help": "仅对此设备切换：输出到其扬声器的声音被降调，包括直播声音和片段。录音和分析从不改变；这些设置属于站点。",
-  "str_hear_scales_help": "向下拖动橙色带可降低鸣声；由于每个频率都按相同幅度降低，它也随之缩小。绿色带的顶部是你关心的最高鸣声。其底部是滤波器：低于它的声音（风声、交通、嗡嗡声）被切除；为 0 时不切除。松开即保存；直播音频和片段随之更新。",
   "str_heavy_rain": "大雨",
   "str_home": "家",
   "str_home_this_station": "主站（本站点）",

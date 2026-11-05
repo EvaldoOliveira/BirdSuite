@@ -54,8 +54,7 @@
       + '<div class="hearscales"><svg viewBox="0 0 300 300" role="img" aria-label="' + t('str_hear_high_songs_lower') + '"></svg></div>'
       + '<div class="hearratio"></div>'
       + '<div style="text-align:center"><button type="button" class="setdefault hearsetdef" style="display:none">&#8634; ' + t('str_defaults') + '</button></div>'
-      + '<p class="small">' + t('str_hear_scales_help') + '</p>'
-      + '<p class="small">' + t('str_hear_live_for_every_listener_help') + '</p>'
+      + '<p class="small">' + t('str_hear_bands_help') + '</p>'
       + '<span class="hearmsg small"></span>';
     var svg = box.querySelector('svg'), msg = box.querySelector('.hearmsg'), defb = box.querySelector('.hearsetdef');
     var say = function (s) { if (msg) msg.textContent = s; };

@@ -164,8 +164,6 @@
   "str_go_back_to_birdnet_pi_help": "Terug naar BirdNET-Pi? BirdSuite wordt gestopt en uitgeschakeld, BirdNET-Pi wordt teruggezet zoals het was en het station herstart. Detecties gemaakt met BirdSuite blijven in BirdSuite; neem ze eerst mee met {menu:Backup/Import} › Exporteren (BirdNET-formaat).",
   "str_hear_high_songs_lower": "Hoge zang lager horen",
   "str_hear_high_songs_lower_help": "Bij gehoorverlies, op dit apparaat: wat naar de luidspreker gaat wordt verlaagd, zoals de frequentieverlaging van een hoortoestel (het live geluid en de clips); de opnames en de analyse veranderen niet. Het tandwiel ernaast stelt het in.",
-  "str_hear_live_for_every_listener_help": "Alleen voor dit apparaat ingeschakeld: wat naar zijn luidspreker gaat wordt verlaagd, het live geluid en de clips. De opnames en de analyse veranderen nooit; deze instellingen zijn van het station.",
-  "str_hear_scales_help": "Sleep de oranje band omlaag om de zang lager te horen; hij krimpt mee, want elke frequentie gaat met dezelfde stap omlaag. De bovenkant van de groene band is de hoogste zang die je belangrijk vindt. De onderkant is een filter: de geluiden eronder (wind, verkeer, brom) worden weggeknipt; bij 0 wordt niets weggeknipt. Opgeslagen als je loslaat; de live audio en de clips volgen.",
   "str_heavy_rain": "zware regen",
   "str_home": "Thuis",
   "str_home_this_station": "thuis (dit station)",

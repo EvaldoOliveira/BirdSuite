@@ -164,8 +164,6 @@
   "str_go_back_to_birdnet_pi_help": "Tornare a BirdNET-Pi? BirdSuite viene fermato e disattivato, BirdNET-Pi viene ripristinato com'era e la stazione si riavvia. I rilevamenti fatti con BirdSuite restano in BirdSuite; portali prima con te con {menu:Backup/Import} › Esporta (formato BirdNET).",
   "str_hear_high_songs_lower": "Ascolta i canti acuti più bassi",
   "str_hear_high_songs_lower_help": "Per la perdita dell'udito, su questo dispositivo: ciò che va all'altoparlante viene abbassato, come l'abbassamento di frequenza di un apparecchio acustico (il suono dal vivo e le clip); le registrazioni e l'analisi non cambiano. L'ingranaggio accanto lo regola.",
-  "str_hear_live_for_every_listener_help": "Attivato solo per questo dispositivo: ciò che va al suo altoparlante viene abbassato, il suono dal vivo e le clip. Le registrazioni e l'analisi non cambiano mai; queste impostazioni sono della stazione.",
-  "str_hear_scales_help": "Trascina in basso la banda arancione per sentire i canti più bassi; si restringe insieme, perché ogni frequenza scende dello stesso passo. La parte alta della banda verde è il canto più acuto che ti interessa. La sua base è un filtro: i suoni sotto di essa (vento, traffico, ronzio) vengono tagliati; a 0 non si taglia nulla. Salvato quando rilasci; l'audio dal vivo e le clip seguono.",
   "str_heavy_rain": "pioggia forte",
   "str_home": "Casa",
   "str_home_this_station": "casa (questa stazione)",

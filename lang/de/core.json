@@ -164,8 +164,6 @@
   "str_go_back_to_birdnet_pi_help": "Zurück zu BirdNET-Pi? BirdSuite wird gestoppt und abgeschaltet, BirdNET-Pi wird wiederhergestellt, wie es war, und die Station startet neu. Mit BirdSuite gemachte Erkennungen bleiben in BirdSuite; nimm sie vorher mit {menu:Backup/Import} › Exportieren (BirdNET-Format) mit.",
   "str_hear_high_songs_lower": "Hohe Gesänge tiefer hören",
   "str_hear_high_songs_lower_help": "Bei Hörverlust, auf diesem Gerät: was zum Lautsprecher geht, wird abgesenkt, wie die Frequenzabsenkung eines Hörgeräts (der Live-Ton und die Clips); die Aufnahmen und die Analyse ändern sich nicht. Das Zahnrad daneben stellt es ein.",
-  "str_hear_live_for_every_listener_help": "Nur für dieses Gerät eingeschaltet: was zu seinem Lautsprecher geht, wird abgesenkt, der Live-Ton und die Clips. Die Aufnahmen und die Analyse ändern sich nie; diese Einstellungen gehören der Station.",
-  "str_hear_scales_help": "Zieh das orange Band nach unten, um die Gesänge tiefer zu hören; es schrumpft dabei mit, weil jede Frequenz um denselben Schritt abgesenkt wird. Die Oberkante des grünen Bands ist der höchste Gesang, der dich interessiert. Seine Unterkante ist ein Filter: die Töne darunter (Wind, Verkehr, Brummen) werden abgeschnitten; bei 0 wird nichts abgeschnitten. Gespeichert beim Loslassen; das Live-Audio und die Clips folgen.",
   "str_heavy_rain": "starker Regen",
   "str_home": "Zuhause",
   "str_home_this_station": "Zuhause (diese Station)",
