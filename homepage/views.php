@@ -25,15 +25,18 @@ $view_now = $_GET['view'] ?? '';
 $view_e = view_entry($view_now);
 // the roles (US-53): a page opens with its 'open' role, a change on it needs its 'change' role (viewer = no login,
 // operator = a device on the LAN of a household station, admin = the login); the station's commands always the login
+// the page that sets the password opens with the factory password too (bug #60), which changes nothing else; First Run
+// is open while pending without a password, else it needs the login
+$setup_view = $view_now === 'Access';
 if (isset($_GET['submit'])) {
-  ensure_authenticated();
+  $setup_view ? ensure_password_setup() : ensure_authenticated();
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  ensure_role($view_e ? $view_e['change'] : 'admin');
+  $setup_view && factory_login() ? ensure_password_setup() : ensure_role($view_e ? $view_e['change'] : 'admin');
 } elseif ($view_now === 'First Run') {
   // open while the first run is pending and no password is set, else the login
   if (!(file_exists(BS_FIRSTRUN) && empty($config['CADDY_PWD']))) ensure_authenticated();
 } elseif ($view_e) {
-  ensure_role($view_e['open']);
+  $setup_view && factory_login() ? ensure_password_setup() : ensure_role($view_e['open']);
 }
 
 $restore = "cat " . BS_RECS . "/restore.log";
@@ -325,6 +328,10 @@ if ($pt) {
     . (isset($pt[1]) ? '<div class="small">' . htmlspecialchars(t($pt[1])) . '</div>' : '') . '</div>';
 }
 if (!in_array($pv, array('First Run', 'Kiosk'), true)) include('scripts/location_moved.php');
+// no password set yet with the login on (bug #60): said on every page, the factory password changes nothing but the password
+if (web_password_unset() && !in_array($pv, array('First Run', 'Kiosk'), true)) {
+  echo '<div class="small" style="margin:0 12px 8px;padding:6px 10px;border-radius:8px;background:#fff3cd;color:#000">&#128274; ' . htmlspecialchars(t('str_factory_password_only_sets_help')) . ' <a href="/views.php?view=Access">' . htmlspecialchars(menu_path('Access')) . '</a>' . '</div>';
+}
 // offline (US-57): the field service found no internet for a while; said once under the title, nothing blocks
 $fs = json_decode((string)@file_get_contents('/run/birdsuite/field_state.json'), true);
 if (is_array($fs) && array_key_exists('online', $fs) && !$fs['online'] && time() - intval($fs['updated'] ?? 0) < 900 && $pv !== 'Kiosk') {

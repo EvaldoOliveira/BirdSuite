@@ -10,7 +10,8 @@ $user = get_user();
 // Settings › Audio or Settings › Access (views.php sets it); both ask for the login when a web password is set (US-04:
 // RTSP URLs carry camera passwords, Access changes the login itself)
 $adv_page = (isset($adv_page) && $adv_page === 'access') ? 'access' : 'audio';
-ensure_authenticated();
+// Access opens with the factory password too, to set the station's own (bug #60)
+$adv_page === 'access' ? ensure_password_setup() : ensure_authenticated();
 
 // changes arrive by POST (2026-10-23 test run: sent by GET, the web password landed in the web server log and the
 // browser history); the handlers below read $_GET, so the posted fields join it, and a GET keeps only what chooses the
@@ -36,12 +37,12 @@ if(isset($_GET['submit'])) {
     if ($what === 'caddy') $update_caddyfile = true;
   };
 
-  // the page never shows the password (2026-10-23 test run): an empty field keeps it, the box puts the factory one back
-  // (there is always a password: owner 2026-11-02)
-  if(isset($_GET["caddy_pwd_remove"]) && ($config['CADDY_PWD'] ?? '') !== '') {
-    $changed('CADDY_PWD', '', 'caddy');
-  } elseif(isset($_GET["caddy_pwd"]) && $_GET["caddy_pwd"] !== '') {
+  // the page never shows the password (2026-10-23 test run): an empty field keeps it; the factory password is never a
+  // login (bug #60), so there is no way back to it here (the SD card file or the root action reset it)
+  if(isset($_GET["caddy_pwd"]) && $_GET["caddy_pwd"] !== '') {
     if (!web_password_ok($_GET["caddy_pwd"])) $fail(t('str_the_password_may_contain_help'));
+    // the factory password is public: never the station's own (bug #60)
+    if (hash_equals(BS_WEB_PASSWORD_DEFAULT, (string)$_GET["caddy_pwd"])) $fail(t('str_web_login_on_needs_a_password_help'));
     // kept only as its hash (SEC-15)
     if(!web_password_matches((string)$_GET["caddy_pwd"])) $changed('CADDY_PWD', web_password_hash((string)$_GET["caddy_pwd"]), 'caddy');
   }
@@ -57,6 +58,13 @@ if(isset($_GET['submit'])) {
       $fail(t('str_set_up_and_test_channel_first_help', array('channel' => t($rec === 'email' ? 'str_e_mail' : 'str_telegram'), 'menu' => menu_path($rec === 'email' ? 'E-mail' : 'Telegram'))));
     $changed('PWD_RECOVERY', $rec);
   }
+  // Web login On needs a password of the station's own (bug #60, US-53): without one the login stays Off
+  // a password of its own after this save: a new one typed here, else the one kept (the factory one counts as none)
+  $own_after = array_key_exists('CADDY_PWD', $set) ? (string)$set['CADDY_PWD'] !== '' : !web_password_is_factory();
+  $wl_after = strtolower(trim((string)($set['WEB_LOGIN'] ?? ($config['WEB_LOGIN'] ?? 'on')), " \"'"));
+  if (!$own_after && $wl_after !== 'off') $fail(t('str_web_login_on_needs_a_password_help'));
+  // the factory password changes only the access (the password, the login, recovery), nothing else
+  if (factory_login() && $adv_page !== 'access') $fail(t('str_factory_password_only_sets_help') . ' ' . menu_path('Access'));
   if (isset($set['CADDY_PWD']) && $set['CADDY_PWD'] !== '' && ($set['PWD_RECOVERY'] ?? (string)($config['PWD_RECOVERY'] ?? '')) === '') $fail(t('str_choose_how_to_recover_help'));
   // the user name of the web login (owner 2026-10-25), letters and digits
   if(isset($_GET["caddy_user"]) && $_GET["caddy_user"] !== web_user()) $changed('CADDY_USER', (string)$_GET["caddy_user"], 'caddy');
@@ -262,14 +270,13 @@ $newconfig = get_config();
         <option value="household"<?php echo $lt === 'household' ? ' selected' : ''; ?>><?php echo t('str_lan_trust_household'); ?></option>
       </select></label>
         <div class="small"><?php echo t('str_lan_trust_help'); ?></div></div>
-      <?php $has_pwd = ($newconfig['CADDY_PWD'] ?? '') !== ''; $factory = web_password_is_factory(); ?>
+      <?php $factory = web_password_is_factory(); ?>
       <div class="knownnet"><div class="kn">&#128274; <b><?php echo htmlspecialchars(web_user()); ?></b> <?php echo $factory ? '<b style="color:#c62828">' . t('str_factory_password_change_it') . '</b>' : ''; ?></div></div>
       <div class="netform"><label for="caddy_user"><?php echo t('str_user_name'); ?></label>
         <input name="caddy_user" id="caddy_user" type="text" pattern="[A-Za-z0-9]+" required value="<?php echo htmlspecialchars(web_user(), ENT_QUOTES); ?>" autocomplete="username" />
         <label for="caddy_pwd"><?php echo t('str_new_password'); ?></label>
         <input name="caddy_pwd" id="caddy_pwd" type="password" pattern="<?php echo htmlspecialchars(web_password_pattern(), ENT_QUOTES); ?>" title="<?php echo htmlspecialchars(t('str_letters_digits_and_pct_and_plus'), ENT_QUOTES); ?>" value="" autocomplete="new-password" placeholder="<?php echo htmlspecialchars(t('str_empty_keep_it'), ENT_QUOTES); ?>" /></div>
       <div class="small"><?php echo t('str_every_page_asks_for_this_login_help'); ?></div>
-      <?php if ($has_pwd) { ?><label><input type="checkbox" name="caddy_pwd_remove" value="1"> <?php echo t('str_back_to_the_factory_password'); ?></label><br><?php } ?>
       <?php $rc = (string)($newconfig['PWD_RECOVERY'] ?? ''); ?>
       <div class="knownnet"><b><?php echo t('str_how_will_you_recover_it'); ?></b><br>
         <?php foreach (array('email' => 'str_recovery_email', 'telegram' => 'str_recovery_telegram', 'sdcard' => 'str_recovery_sdcard') as $rk => $rl) { ?>
