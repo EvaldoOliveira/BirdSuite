@@ -85,8 +85,6 @@ if (isset($_POST['wizard_save'])) {
   $pwd = $open_station ? '' : ($p['password'] ?? '');
   if ($pwd !== '' && !web_password_ok($pwd)) $errors[] = t('str_the_password_may_contain_help');
   if (!$open_station && $pwd !== ($p['password2'] ?? '')) $errors[] = t('str_the_two_passwords_differ');
-  // Web login On needs a password of the station's own (bug #60): the factory one is never kept as the login
-  if (!$open_station && $pwd === '' && (string)($config['CADDY_PWD'] ?? '') === '') $errors[] = t('str_web_login_on_needs_a_password_help');
   $lan_trust = in_array($p['lan_trust'] ?? '', array('everyone', 'household'), true) ? $p['lan_trust'] : 'everyone';
   $recovery = (string)($p['pwd_recovery'] ?? 'sdcard');
   if (!in_array($recovery, array('email', 'telegram', 'sdcard'), true) || ($recovery !== 'sdcard' && !notify_channel_confirmed($recovery))) $recovery = 'sdcard';
