@@ -126,7 +126,8 @@ if (isset($_POST['wizard_save'])) {
     $set = array();
     $old_model = $config['MODEL'] ?? '';
     $old_lang = $config['DATABASE_LANG'] ?? '';
-    $set['SITE_NAME'] = $site_name;
+    // the default name stays computed (bug #65): only a name of the owner's own is written
+    $set['SITE_NAME'] = $site_name === default_sitename() ? '' : $site_name;
     $set['LATITUDE'] = round((float)$lat, 4);
     $set['LONGITUDE'] = round((float)$lon, 4);
     $set['MODEL'] = $model;
