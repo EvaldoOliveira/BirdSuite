@@ -1,0 +1,39 @@
+#!/usr/sbin/nft -f
+# BirdSuite inbound firewall (2026-10-23): only what the station serves is reachable from the network; everything the
+# station sends out (notifications, BirdWeather, updates, NTP, the station-to-station API it calls) and the answers to it
+# pass. Its own table: NetworkManager's hotspot (nm-shared-*) and other tables are left alone. Loaded by
+# birdsuite-firewall.service; "nft delete table inet birdsuite" (or stopping that service) turns it off.
+table inet birdsuite
+delete table inet birdsuite
+
+table inet birdsuite {
+  chain input {
+    type filter hook input priority filter; policy drop;
+
+    iif lo accept
+    ct state established,related accept
+    ct state invalid drop
+
+    # ping and the ICMP the network needs (path MTU, unreachable, IPv6 neighbour and router discovery)
+    ip protocol icmp icmp type { echo-request, destination-unreachable, time-exceeded, parameter-problem } limit rate 20/second accept
+    ip6 nexthdr icmpv6 icmpv6 type { echo-request, destination-unreachable, packet-too-big, time-exceeded, parameter-problem,
+      nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert, mld-listener-query } accept
+
+    # ssh, the web pages through Caddy (80, and 443 when a domain is set), mDNS for BirdSuite.local
+    tcp dport 22 accept
+    tcp dport { 80, 443 } accept
+    udp dport 443 accept
+    udp dport 5353 accept
+
+    # address from the router: DHCPv4 / DHCPv6 answers
+    udp sport 67 udp dport 68 accept
+    ip6 saddr fe80::/10 udp sport 547 udp dport 546 accept
+
+    # field mode: the station's own WiFi (NetworkManager shared mode, 10.42.0.0/24) gives the phone an address and
+    # answers its names (dnsmasq, captive setup page); a DHCP request comes from 0.0.0.0, so it is matched by its ports
+    # (only the hotspot's dnsmasq listens on 67)
+    udp sport 68 udp dport 67 accept
+    ip saddr 10.42.0.0/24 udp dport 53 accept
+    ip saddr 10.42.0.0/24 tcp dport 53 accept
+  }
+}

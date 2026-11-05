@@ -1,0 +1,27 @@
+v0.14.5 - Notifications only on confirmed channels, open the station by its name
+
+New
+- Notifications are sent only on a channel the user confirmed: e-mail and Telegram send after a test was sent from
+  their page and answered "Yes, it arrived". A channel never confirmed, set up again, or whose message failed while
+  the station was online is disabled (nothing sent, nothing queued) until the next confirmed test; the page says so,
+  with the reason, the test and the answer. The rule is shown on both pages, set up or not.
+- A confirmed channel has an on/off switch on its page (Turn notifications off / on); on again needs no new test.
+- Nothing is sent nor queued while no channel is set up (no e-mail recipient, no Telegram token): the offline queue
+  and the new-address notice no longer fill up on a station without notifications.
+- Open the station by its name on any network: https://birdsuite.local (one station) or the station's own
+  https://birdsuite-<MAC>.local; the name follows the station when it changes network. The README, the new-address
+  notification (name first, the address after it), Settings > Network and the label say so; the label's second QR
+  opens the name. Fresh installs are named birdsuite (was birdnetpi).
+- Cable unplugged: the station tries its known networks in range at once and opens its own WiFi only when none takes
+  it (it joined the home network in 5 s instead of about a minute).
+- Review player: a Species card button (icon and text) beside the detection's confidence opens the species page.
+
+Fixes
+- A Telegram clip or photo that fails to upload no longer disables the channel; only the text message decides.
+
+Notes
+- After the update, an e-mail or Telegram channel set up before stays disabled until a test is sent from its page and
+  confirmed once (Notifications > E-mail / Telegram).
+- Names (.local) need mDNS on the device: iPhone/iPad and Mac, Android 12 or later, Linux with nss-mdns, Windows
+  10/11 on a Private network. A device without it uses the address on Settings > Network, the label or the
+  notification. A device may keep the old address a minute or two after a network change (Windows: ipconfig /flushdns).

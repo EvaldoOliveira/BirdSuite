@@ -1,0 +1,2 @@
+#birdsuite
+*/5 * * * * @USER@ sudo -n @BS_ROOT_HELPER@ update -a >/dev/null 2>&1

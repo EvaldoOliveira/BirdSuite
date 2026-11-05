@@ -1,0 +1,11 @@
+[Unit]
+Description=BirdSuite Recording
+[Service]
+# hardening exception (release run 6, HRD-01): the recorder opens the microphone (ALSA devices) and the shared memory of the shared device: device isolation would cut it off
+Restart=always
+Type=simple
+RestartSec=3
+User=@USER@
+ExecStart=@BS_BIN@/birdnet_recording.sh
+[Install]
+WantedBy=multi-user.target

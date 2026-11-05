@@ -1,0 +1,30 @@
+[Unit]
+Description=BirdSuite Spectrogram Viewer
+[Service]
+Restart=always
+RestartSec=10
+Type=simple
+User=@USER@
+# hardening (release run 5, HRD-01): this service needs no root, no sudo, no device and no shared /tmp, so it gets
+# no new privileges, its own /tmp, /usr /boot /etc read-only and no access to kernel settings (the station user's home
+# stays writable: it keeps its data there)
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+# no devices, clock, hostname, kernel log, namespaces or realtime; no capabilities (release run 6)
+PrivateDevices=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+ExecStart=@BS_BIN@/spectrogram.sh
+[Install]
+WantedBy=multi-user.target

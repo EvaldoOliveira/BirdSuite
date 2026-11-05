@@ -1,0 +1,11 @@
+[Unit]
+Description=BirdSuite sound repository upload timer (US-40)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+Unit=@BS_SVC_SOUND_UPLOAD@.service
+
+[Install]
+WantedBy=timers.target

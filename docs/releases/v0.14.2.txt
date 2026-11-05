@@ -1,0 +1,20 @@
+v0.14.2 - Login only where it matters, the Simple menu without it, updates that survive a rewritten tag
+
+New
+- The login is asked only by the pages that show secrets or exact positions or reach the machine: Notifications >
+  Content and Repositories, Model, Audio, Locations, Defaults, Stations, the Tools and the Detection Log. They are
+  in the Advanced menu only.
+- The Simple menu holds the pages that open without login: Now, Spectrogram (its live audio asks), Species, Lists,
+  Reports, E-mail, Telegram, Themes, Network, Access and Status. A change on any page still asks.
+- The microphone window shows the coordinates of a new place only after the login.
+
+Fixes
+- The update fetches the tags with --force: a rewritten tag (v0.14.0) stopped it with "would clobber existing tag".
+  A station stuck on it needs once: sudo -u <user> git -C ~/BirdNET-Pi fetch --tags --force origin main
+- The release workflow never rewrites a tag that exists.
+
+Changes
+- The Minimalist option is gone from the Spectrogram page (RAW_SPECTROGRAM stays in Settings > Defaults).
+
+Notes
+- The web server configuration is rewritten by the update (login rules).

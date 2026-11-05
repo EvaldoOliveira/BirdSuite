@@ -1,0 +1,13 @@
+[Unit]
+Description=BirdSuite Analysis
+[Service]
+# hardening exception (release run 6, HRD-01): the analysis runs the model in native code (tflite / onnxruntime, executable memory) and writes the database, clips and spectrograms across the station's folders: left unsandboxed until a profile is proven on a test station (it is the station's core service)
+Restart=always
+Type=simple
+RestartSec=2
+User=@USER@
+# the web pages before the analysis (it has ~7 s to spare per 15 s recording), owner 2026-10-20
+Nice=10
+ExecStart=@BS_PYTHON@ @BS_BIN@/birdnet_analysis.py
+[Install]
+WantedBy=multi-user.target

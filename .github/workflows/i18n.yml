@@ -1,0 +1,25 @@
+# The text keys of the interface (US-122): every t('str_...') of the program exists in lang/en, every key of lang/en is
+# used, pt_BR translates every key (python3 lang/check.py over the whole program, as the pre-commit hook of
+# tools/hooks does for the staged files)
+name: Text keys
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Check the text keys and the catalogues
+      run: python3 lang/check.py

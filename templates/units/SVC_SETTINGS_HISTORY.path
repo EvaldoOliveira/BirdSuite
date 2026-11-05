@@ -1,0 +1,6 @@
+[Unit]
+Description=BirdSuite settings history (watches the settings file)
+[Path]
+PathChanged=@BS_CONF@
+[Install]
+WantedBy=multi-user.target

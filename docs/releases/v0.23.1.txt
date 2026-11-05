@@ -1,0 +1,57 @@
+v0.23.1 - BirdSuite: menu by task, experience levels, open station, hearing aid, audio loss, lists, hardening
+
+Everything since v0.22.0 (soft releases v0.22.1, v0.22.2 and v0.23.0 included).
+
+New
+- Menu by task: Now; Watch (Latest, Sonogram, Analysis log); Review; Species (Species and the four lists); Reports;
+  Alerts; Station (Locations, Microphone, Model, Model comparison, Network...); Tools; System. Pages are named after
+  what the user does: Review (was Validation), Species (Species Cards), Model comparison (Shadow), Allowed species,
+  Never accept, Always accept, Night-only species, Sonogram (was Spectrogram). Old addresses keep working.
+- Experience level (Essential, Birder, Expert) for the whole station instead of the per-browser Simple / Advanced
+  menu; an updated station stays on Expert and keeps every page.
+- Open station: with Web login off there is no login dialog anywhere; who on the network may change things
+  (everyone or the household) is a setting. Named users with a role (viewer, operator, admin) and a level each.
+- First Run in six steps on one page with one save (language, location, use, microphone test with the live sonogram,
+  alerts, protection); System > All settings can start it again.
+- All settings links every group of settings to the page that owns it.
+- Field page (Expert, or a station that runs outdoors): recording, last detection, disk, power, temperature, clock,
+  internet, phone connection, Start / Stop recording, Raw Recording, Shut down safely.
+- Fleet: the answer file (birdnet-setup.conf) carries the level, access and a profile of changed settings, so new
+  stations start like this one.
+- Hearing aid: one switch beside Live Audio in the header, kept per device. While it is on, what goes to the speaker
+  is lowered in the browser (the sound below a cut frequency removed, every frequency lowered by one ratio); the
+  recordings and clips are never changed. A gear beside the switch opens the settings window with two scales (Real
+  and You hear). The Sonogram and the review player show the real scale and the heard one side by side.
+- Station > Microphone: every microphone found with its USB port and speed, the one in use, its gain, the live
+  sonogram. Every detection keeps the microphone, port and gain it was recorded with.
+- Audio loss: the losses of the last 24 h on Station > Microphone; detections whose own seconds lost audio can be
+  discarded (a limit in ms); Watch > Latest filters by audio loss.
+- The scene of every detection is kept for later study: time zone, model, software version, species list, audio
+  loss, sample rate, channels.
+- Recordings in 24 bits (REC_BITS 24 or 16).
+- Now page: the period (factory 1 hour) and the minimum confidence (30 %) are station settings in All settings.
+- Species lists (Allowed species, Never accept, Always accept, Night-only species): one line under the table with the
+  current list, a changed mark, Save (over the current list, one click) and Save as (the current name first, a
+  picklist of the saved lists or a new name, a question before replacing one). The tables show common, scientific or
+  English names like the other species tables; a name not found in the language shown is in parentheses and sorts as
+  if it had none.
+
+Changed
+- Review player: the palette and the speed / loop fold behind their icons beside the file on every screen; the lock,
+  hearing and share icons at the right; parameters wrap instead of being cut.
+- The Defaults buttons of Sonogram and Latest show only while a value differs from its default.
+
+Fixes
+- Sonogram hardening: no slow down or freeze after an hour, live sound reconnects by itself with backoff, a tap to
+  start the sound where the browser asks for it, the picture follows a resize.
+- Now and Latest hardening: periodic requests one at a time with a timeout, the list kept when the station answers
+  with an error, no doubled timers.
+- Review player: a player opened over another removes the old one whole (its keys could answer the hidden detection).
+- One update at a time; the recorder restores the shared microphone device when it is missing.
+- A failed recording no longer stays in the RAM drive (cross-device move into the quarantine).
+- First Run step 4 no longer stops loading the microphones.
+
+Notes
+- Translations: every text in English, Portuguese (Brazil), German, Spanish, French, Italian, Japanese, Dutch, Polish,
+  Russian and Chinese (Simplified).
+- Hard release: no test campaign was run for this release.

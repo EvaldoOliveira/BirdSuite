@@ -1,0 +1,25 @@
+v0.15.0 - Stations map, station ID, station list sync
+
+New
+- Stations map (Settings › Stations): every registered station at its current location, green when it answers, red
+  at the last position it reported (with the time it was seen), its other locations in yellow with their names. The
+  list of the stations sits beside the map (under it on a phone): a checkbox per station (its layer), its state and
+  location; a click on a name centres the map there. Refresh asks every station now; Maximize (bottom right) shows the
+  map and the list in the whole window, Back or Esc returns. Offline world map without internet.
+- Search the network: finds the BirdSuite stations of the local network that are not registered yet (an mDNS
+  broadcast, not over the VPN) and adds the chosen ones with their position.
+- Sync with a station: reads the list of another registered station and adds the stations it has that are not here.
+- Station ID: a station is identified by the MAC of the Pi's own network port (else its own WiFi), never a USB
+  adapter's; the Stations table shows its WiFi name (BirdSuite-<ID>) with the MAC under it. The name is an alias: two
+  stations may share it (the lists then add the last 6 digits of the ID), and Import replaces the station with the
+  same ID.
+- Export / Import of the station list carry the last known positions (the newer one wins).
+- Danger zone: Clear ALL data and Factory settings run on a screen of their own, with their output, as the update.
+- Review player on a phone: the top cells read Detection conf. and Prob. at the location.
+- Tools › Defaults › Sharing › ACTIVATE_BIRDDB (false by default) shows or hides the BirdDB-Br section of Settings ›
+  Repositories.
+
+Notes
+- The BirdDB-Br section is hidden until the upload without an account per station is decided (US-124); the upload
+  code is unchanged and a settings form without the section keeps BIRDDB_ENABLED as it is.
+- Backup/Restore › Settings points to Settings › Stations for the station list sync.

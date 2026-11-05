@@ -1,0 +1,11 @@
+v0.14.7 - Review player top cells, species card on the phone
+
+New
+- Review player, top cells: Conf. and Prob. on the left, each with its minimum inside ("38% (min. 30%)"; the manual
+  confidence when the species has one), then Sigm. Sens., Rec. Length and Overlap aligned on the right. A phone shows
+  the species card as the first cell, then Conf. and Prob. only.
+- Validation: the row button reads Delete (every detection of the species still goes to the Removed folder after the
+  confirmation).
+
+Notes
+- README review screenshot retaken in English.

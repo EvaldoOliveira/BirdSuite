@@ -1,0 +1,12 @@
+#birdsuite
+*/5 * * * * @USER@ @BS_BIN@/disk_check.sh >/dev/null 2>&1
+#birdsuite
+0 2 * * * @USER@ @BS_BIN@/disk_species_clean.sh >/dev/null 2>&1
+#birdsuite
+*/3 * * * * @USER@ @BS_BIN@/cleanup.sh >/dev/null 2>&1
+#birdsuite
+@reboot @USER@ @BS_BIN@/cleanup.sh >/dev/null 2>&1
+#birdsuite
+* * * * * @USER@ @BS_PYTHON@ @BS_SCRIPTS@/recording_watchdog.py >/dev/null 2>&1
+#birdsuite
+*/15 * * * * @USER@ @BS_PYTHON@ @BS_SCRIPTS@/ebird_report.py due >/dev/null 2>&1

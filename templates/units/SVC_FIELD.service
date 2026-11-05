@@ -1,0 +1,15 @@
+[Unit]
+Description=BirdSuite field access (station WiFi on demand, mDNS name, clock, offline queue)
+After=NetworkManager.service avahi-daemon.service
+[Service]
+User=@USER@
+SupplementaryGroups=netdev bluetooth
+# /run/birdsuite (the station WiFi state, read by the pages) made for the station user by systemd
+RuntimeDirectory=birdsuite
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+Restart=always
+RestartSec=10
+ExecStart=/usr/bin/python3 @BS_SCRIPTS@/field_daemon.py
+[Install]
+WantedBy=multi-user.target

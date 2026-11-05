@@ -1,0 +1,17 @@
+[Unit]
+Description=BirdSuite Live Stream
+After=network-online.target
+Requires=network-online.target
+# keep restarting however often ffmpeg stops (a busy or replugged microphone), never give up
+StartLimitIntervalSec=0
+[Service]
+# hardening exception (release run 6, HRD-01): the live stream reads the microphone (ALSA devices) and feeds the stream server: device isolation would cut it off
+Restart=always
+Type=simple
+RestartSec=3
+# ffmpeg may not answer SIGTERM while it reads the microphone: SIGKILL after 5 s (owner 2026-10-22)
+TimeoutStopSec=5
+User=@USER@
+ExecStart=@BS_BIN@/livestream.sh
+[Install]
+WantedBy=multi-user.target

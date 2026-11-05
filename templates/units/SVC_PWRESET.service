@@ -1,0 +1,12 @@
+[Unit]
+Description=BirdSuite web password reset from the card (reset-web-password on the boot partition)
+After=local-fs.target
+ConditionPathExists=|/boot/firmware/reset-web-password
+ConditionPathExists=|/boot/reset-web-password
+[Service]
+Type=oneshot
+User=@USER@
+# root's part (remove the file, write the web server) through the closed task list of the root helper
+ExecStart=/usr/bin/sudo -n @BS_ROOT_HELPER@ pwreset-boot
+[Install]
+WantedBy=multi-user.target

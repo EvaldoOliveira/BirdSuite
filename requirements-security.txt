@@ -1,0 +1,8 @@
+# Security floors of the station's Python packages (pip-audit of the pilot, 2026-11-02 release run 4).
+# Read by requirements.txt (a new install) and by every update (scripts/python_security.sh): a package that is
+# installed below its floor is raised to it, nothing else is touched. Raise a floor when pip-audit names a fix.
+pillow>=13.0.0
+urllib3>=2.8.0
+certifi>=2026.10.18
+oauthlib>=4.0.1
+msgpack>=1.2.3

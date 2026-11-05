@@ -1,0 +1,11 @@
+[Unit]
+Description=BirdSuite USB microphone hot-plug (state-driven)
+After=sound.target
+[Service]
+# hardening exception (release run 6, HRD-01): the hot-plug handler reads the sound cards and restarts the recording through the station's helper with sudo: NoNewPrivileges would block it
+Type=oneshot
+# the unplug path waits until the analysis has emptied the queue
+TimeoutStartSec=infinity
+User=@USER@
+SupplementaryGroups=audio
+ExecStart=@BS_BIN@/mic_hotplug.sh

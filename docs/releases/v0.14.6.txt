@@ -1,0 +1,28 @@
+v0.14.6 - Species card and review from every list, defaults 0.3, Locations page, fixes
+
+New
+- Every detection list: the species name opens the review player; the species card (species page) has a narrow
+  column of its own, first on the left, headed by its icon (Now cards: the icon before the name). Validation has the
+  same column; on a phone the column is hidden and the review player's Species card link (under the name) opens the
+  species page.
+- Review player: a Species card button (icon and text) beside the confidence.
+- Factory defaults of BirdNET+ V3: Min. Conf. 0.3 (was 0.2), Min. Prob. 0.3 (was 0.03), sensitivity 1, overlap 0;
+  stations still on the old defaults take the new ones.
+- E-mail / Telegram pages: the title says set up or not set up, and when set up active or disabled; a confirmed
+  channel has an on/off switch.
+- Themes: the Dark preview switches to its own stylesheet, so the text colours change in the preview too.
+- Locations: the locations table (with its Save) in a section of its own above Current location; titled fields in
+  New location; order buttons only with two or more locations besides Test / Playback; clearer boot check and GPS
+  notes; the intro paragraph removed.
+- Model page: privacy threshold explained one sentence per line (V3 has no human voice class; Shadow with V2.4 for
+  privacy; the Pi's load goes up); the Shadow mode hint points to the model comparison in the Shadow menu.
+- Maps open on the registered location; with none, (0, 0) with the whole world in view.
+
+Fixes
+- The e-mail test was held back by the new channel confirmation and still said sent: the test now goes out (it is
+  what confirms a channel) and says ok only when the e-mail service reports it sent.
+- Microphone unplugged while the recording was restarting: recording and livestream were not stopped and restarted
+  hundreds of times; units restarting in a loop now count as running and are stopped.
+
+Notes
+- README screenshots retaken in English.

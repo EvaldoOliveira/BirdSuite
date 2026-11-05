@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Upstream BirdNET-Pi (Nachtzuster) — local backup copy
+    url: file:///mnt/nas/github/favorites/BirdNET-Pi
+    about: Problems in the original project belong upstream

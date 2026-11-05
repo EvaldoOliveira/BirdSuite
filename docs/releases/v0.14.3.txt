@@ -1,0 +1,31 @@
+v0.14.3 - Plans A and B for several stations, https everywhere, pages that fit a phone
+
+New
+- Station WiFi (Plan B): also turns on after 5 minutes without any network (not only at start-up), for 15 minutes,
+  then the station tries its known networks again. Each station has its own address 10.42.N.1 (from its MAC; was
+  10.42.0.1 for all), so the certificates and logins of two stations no longer collide; Network and the label show it.
+- Network: Plan A recommended for several stations (one hotspot, the station switch at the top); the three WiFi
+  sections alike, with Show password for every known network, the phone hotspot and the station WiFi; every address a
+  link; URL https://<name>.local instead of Name.
+- https in every address the station shows or links: Network, the label, the notification links (Listen here), the
+  move to another station, the station switch.
+- Now: a Rare filter beside Uncommon (species with no detection in the N days before today); its days are the rare
+  species threshold (RARE_SPECIES_THRESHOLD), saved with Set as default.
+- The web password accepts symbols: ! @ # % ^ & * ( ) - _ = + [ ] { } . , : ? ~ /
+- Settings > Access: the login in use with Show password, then User name and New password; Custom URL shows the one in
+  use, else every address the station answers on.
+- Menus: Now, Spectrogram, Species, Reports, Settings, Notifications & Sharing, Lists, Tools, System.
+- On a phone: Locations and Stations as one card per entry, the Data life cycle settings as one block each, Status
+  services with the state under the name and the buttons on two lines, the Now page image fields inside their box.
+
+Changes
+- Themes: no Light / Dark buttons (the scheme follows the theme); the rare species days moved to the Now page.
+
+Fixes
+- The installer checks the web password and writes it quoted (a password with & or ( broke the settings file).
+- The captive page of the station WiFi is written on a least-privilege station too (birdsuite-root captive).
+- Station switch: an https page reaches the other stations (it probed them over http, which the browser blocked).
+
+Notes
+- An older station's WiFi moves from 10.42.0.1 to its own address the next time it turns on.
+- Not tested on a station yet: Plan B after a lost network, the new station WiFi address (see docs/RELEASING.md).

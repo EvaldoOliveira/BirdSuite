@@ -1,0 +1,14 @@
+[Unit]
+Description=BirdSuite Bluetooth field service (find and set up the station from a phone)
+After=bluetooth.service @BS_SVC_FIELD@.service
+Requires=bluetooth.service
+[Service]
+User=@USER@
+SupplementaryGroups=bluetooth netdev
+# the radio unblocked first, the only root step of this service (the unit is a root-owned copy)
+ExecStartPre=+/usr/sbin/rfkill unblock bluetooth
+Restart=always
+RestartSec=10
+ExecStart=/usr/bin/python3 @BS_SCRIPTS@/field_ble.py
+[Install]
+WantedBy=multi-user.target

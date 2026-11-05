@@ -1,0 +1,2 @@
+# BirdSuite (least privilege): the station user runs only the two named root helpers as root
+@USER@ ALL=(root) NOPASSWD: @BS_SVC_HELPER@, @BS_ROOT_HELPER@

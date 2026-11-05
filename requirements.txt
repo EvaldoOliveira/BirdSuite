@@ -1,0 +1,14 @@
+tensorflow
+librosa
+pytz
+tzlocal
+numpy
+apprise==1.13.1
+paho-mqtt!=2.0
+suntime==1.3.2
+inotify
+requests
+soundfile
+onnxruntime; platform_machine == "aarch64" or platform_machine == "x86_64"
+# the security floors of the packages above and of what they pull in (also applied by every update)
+-r requirements-security.txt

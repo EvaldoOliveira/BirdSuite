@@ -1,0 +1,5 @@
+# BirdSuite USB microphone hot-plug (US-51b): sorts after 78-sound-card.rules, which sets ID_BUS (sysfs is gone on remove).
+# The remove event marks the removal at once (owner 2026-10-24: a microphone plugged back within seconds restarted the
+# hot-plug unit before it had written the mark)
+ACTION=="add",    SUBSYSTEM=="sound", KERNEL=="card[0-9]*", SUBSYSTEMS=="usb", RUN+="/usr/bin/systemctl --no-block restart @BS_SVC_MIC_HOTPLUG@.service"
+ACTION=="remove", SUBSYSTEM=="sound", KERNEL=="card[0-9]*", ENV{ID_BUS}=="usb", RUN+="/usr/bin/touch @BS_MIC_REMOVED@", RUN+="/usr/bin/systemctl --no-block restart @BS_SVC_MIC_HOTPLUG@.service"

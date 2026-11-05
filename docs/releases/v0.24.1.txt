@@ -1,0 +1,56 @@
+v0.24.1 - BirdSuite: one index (scientific names), eBird import that matches every species, list and eBird name pickers
+
+Everything since v0.23.1 (soft release v0.24.0 included). Full release: the gate and the test campaign run 5 on the
+pilot (read-only); the destructive phase and the acceptance install were not run for this release (owner's decision).
+
+New
+- One index only: inside, a species is its scientific name everywhere - the database, the analysis, the species lists,
+  the reviews, remove / restore / change species, backups, imports and exports. The common name (in the Common name
+  Language) and the English name are looked up only when they are shown: pages, notifications, sharing, eBird.
+  Changing the Common name Language renames nothing and restarts nothing; it only changes what is shown.
+- The species lists hold one scientific name per line (older lines with the common name are still read).
+- English names are always the model's own (BirdNET+ V3 labels, else BirdNET's English names for V2.4 / 6K).
+- eBird page:
+  - opens By day; a week or a month exports one eBird file per day (a zip from the page, one attachment per day in
+    the e-mail, the periodic weekly e-mail too);
+  - the file matches the species by Genus and Species (Common Name left blank), in any eBird account language;
+  - checklists are complete (All observations reported = Y); no quotation marks in the file;
+  - one location name for every checklist: a picklist of the names used before and a box with the last one used,
+    kept by the station and used by the periodic e-mail; Delete a saved name below the picklist;
+  - the page says how to import: eBird > Submit > Import data, "eBird Record Format (Extended)".
+- Species lists (Allowed species, Never accept, Always accept, Night-only species): Delete a saved list below the
+  picklist (the file is moved to .deleted/, never the active Allowed species list).
+- Database statistics kept current: PRAGMA optimize every night and on every update.
+
+Changed
+- Station > Model: a button per section; the BirdNET 6K help points at the Models section's Apply.
+- Header: a new hearing aid icon (an ear, two sound waves and a slider); the ear switch is filled only while on.
+
+Fixes
+- The update stops the analysis while the database schema changes (the old analysis could fail to write
+  detections for about a minute during an update).
+- Species page: the newest detections picked through the species index (up to 1 s faster on a common species).
+- Pages slow right after the migration (the recreated indexes had no statistics) - ANALYZE is part of the migration.
+- The species lists are rewritten once with scientific names only on the update (the old lines kept the common names).
+- Tools > Data shows the removed detections of a location deleted since ("Outside every location") with Restore and
+  Purge Removed; a location that still has removed detections asks first before it is deleted.
+- The password reset link points only at the station's own name or address (never at the Host the request named).
+- The eBird page keeps the saved location name unless the request carries one (a download without it cleared it).
+- Alerts > What and when shows the real state of the e-mail channel (off, test it, set up); the variables example is
+  the newest detection; the Telegram link and the First Run name the current menu.
+- Station > Model help: a language change only changes the names shown. First Run shows the language names.
+- The list pages are lighter again (about 1.55 MB instead of 2.2 MB) and sort their names faster.
+- Accessibility: a focus ring on the header buttons; the question windows are dialogs (role, labels, Tab kept inside,
+  focus back); readable red states on every theme; the ear switch, the microphone notice and the location window
+  readable in Dark; the hearing window takes the focus; a refused level or language choice goes back.
+- Links use the current page names; the old addresses (Purge Files, Backup/Restore, Advanced Settings) open their pages.
+- Esc on the review player no longer confirms the microphone notice underneath.
+
+Notes
+- The update migrates the database once: the common-name columns are dropped (a copy of the database is kept as
+  birds.db.before-sci-only). Export (old model) to BirdNET-Pi still writes the common name, in the chosen language.
+- Tests (run 5, on the pilot, read-only): 978 lines - 801 OK, 4 FAIL (owner decisions on the Mesh card's sudo and ssh,
+  the systemd exposure of five units, the factory web password accepted while the login is on without a password),
+  136 BLOCKED (real writes, the microphones, credentials, the destructive phase), 37 N/A.
+- Translations: every text in English, Portuguese (Brazil), German, Spanish, French, Italian, Japanese, Dutch,
+  Polish, Russian and Chinese (Simplified).

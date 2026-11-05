@@ -1,0 +1,58 @@
+v0.22.0 - BirdSuite: First Run in the browser, raw recording per microphone, Now wallpapers, Disk Space, sharing, hardening
+
+Everything since v0.21.0 (soft releases v0.21.1 to v0.21.10 included).
+
+New
+- Installation without questions in the terminal: the first visit opens System > First Run in the browser (microphone
+  and its gain, location on a map with the device's GPS, time zone, model, species names and list, several locations or
+  stations, phone hotspot and station WiFi password, theme, web password). An answer file (birdnet-setup.conf), made by
+  a working station in Settings > Network, sets new stations up without First Run.
+- Tools > Raw Recording, one group per microphone (the analysis one or another), each with its own schedule, folder
+  (card, USB disk or network share), sample rate and Record now / Stop; sessions named <start>-<station>-<microphone>
+  with every metadata in a log; Process and Import a session with the station's model into a new or existing location.
+- Microphone hot-plug by name: a window on every page names each microphone unplugged or connected and what used it
+  (the analysis, Raw Recording), the microphone the analysis records with, or that recording stopped; the notification
+  names them too. Without a choice in Settings > Audio the station keeps the microphone it was using.
+- Now: a wallpaper per location, square cards from 80 px, a click on a picture opens the review.
+- System > Disk Space: what fills the card day by day, the forecast, the disk size needed, the logs.
+- Share a detection from the review player (a short MP4 with spectrogram and audio, or the picture).
+- Settings > Audio: Microphone in use and Microphone gain; Species page: best xeno-canto recording, link icons.
+- Validation: removal by period with a preview; Tools > Data: restore of removed detections.
+- Settings history: every change of a setting with old and new value and where it came from.
+- System hardening: ssh limited (3 tries, 2 sessions, no forwarding beyond the station itself), fail2ban, unused network
+  protocols kept out of the kernel; Lynis hardening index 65 -> 71 on a fresh install.
+- RAM drive by the Pi's memory: on with 2 GB or more (at most 512 MB on 2-4 GB, 1 GB on 4 GB and more), so the card is
+  not rewritten every 15 seconds; System > Status switches it and warns when it fills up.
+
+Changed
+- The station folder is ~/BirdSuite and its services birdsuite_*; every name comes from one core definitions file.
+  A station of an older version (~/BirdNET-Pi) is installed again and its history imported (Tools > Backup/Import).
+- Every page address is its English menu name (view=Now, view=Latest, view=First Run, ...).
+- A login on every page from another device; the web password is kept only as its hash.
+- Notifications: a saved bot or app password is offered first ("Use it?"); "Restart the setup" instead of Remove runs
+  the guide again with everything filled in; a saved secret shows as dots (kept), another value replaces it, an emptied
+  box deletes it; what is typed in the guides is kept.
+- The clock warning ("Use this device's time") on every page; the GPS in Settings > Locations asks to update the
+  location with the position.
+- Host name birdsuite (lower case) by default.
+- Every page follows the same Filter icon rule; links between pages keep the location shown; pictures always whole.
+- The review player lists exactly what the table passed; answers No / Ignore, a cause or Review later take a detection
+  off Now. Status loads in about 1 to 2 s.
+
+Fixes
+- Installer: the tflite wheel was not found (new installs stopped), the program folder was closed to the web server,
+  a failed run left passwordless sudo behind.
+- No page could change the web password (the settings writer refused the hash).
+- The recording service stayed down after a microphone replug while a Raw Recording session ran; a Raw session went on
+  recording the other microphone under its name; a WAV cut by a power loss announced its planned length.
+- An External files analysis killed by a power loss stayed "running" for ever; Analyse again now continues it.
+- Tools > Data took 3 s with ten times the data (now 0.3 s); Detection Log / Console Login / Browse files showed an
+  empty frame with their service off.
+- First Run: a BirdWeather token did not switch the upload on; the Telegram guide lost the bot on a reload.
+- Caddy no longer tries to add its local CA to the system trust store (a sudo alert at every GPS https start).
+
+Notes
+- Translations: every text in English, Portuguese (Brazil), German, Spanish, French, Italian, Japanese, Dutch, Polish,
+  Russian and Chinese (Simplified).
+- Tests: release campaign run 4 (BirdSuite-test-results-2026-11-02-run4.xlsx): 836 OK, 0 FAIL, the destructive phase on
+  a test station and an acceptance install on a clean card.

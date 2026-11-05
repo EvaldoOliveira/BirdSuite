@@ -1,0 +1,29 @@
+v0.14.1 - Settings regrouped, Defaults that save by themselves, login only where it is needed
+
+New
+- Menus in a new order: Now, Spectrogram, Species, Lists, Reports, Notifications & Sharing, Settings, Tools, System.
+  Model Comparison is in Reports, Repositories in Notifications & Sharing, Raw Recording in Tools (no Scheduling
+  menu), Stations in System; Settings follow the order a station is set up.
+- Settings > Advanced split: Settings > Audio (audio input, live audio pitch shift) and Settings > Access (user name,
+  password, address). Privacy Threshold is in Settings > Model, automatic update and the update badge on
+  System > Status, Minimalist on the Spectrogram page, the Now page image and the rare species days in
+  Settings > Themes, the log levels on System > Detection Log; those options save as soon as they change.
+- The login is asked only on the pages of the Advanced menu and for a change; the pages of the Simple menu open
+  without it. The user name can be changed (Settings > Access, default birdsuite).
+- Settings > Defaults: grouped in sections, a short "What it is" for every setting in every language, a list of the
+  possible values where they are known, each field saved when it is left (no Save button), "Select set" with Load
+  and Delete (the factory defaults cannot be deleted).
+- Network > Plan A shows the saved phone hotspot's password, as Plan B.
+- Locations: the default radius is 1 km (was 5), now that the device's GPS gives the position.
+
+Fixes
+- Defaults: the Default and Save buttons sent no setting since the sections came.
+- A microphone replug no longer counts as a recording watchdog restart; Status warns from 3 restarts a day.
+- Status: the purge protection list not built yet is no warning.
+
+Notes
+- Renamed settings (the update renames them in the station's settings and in the saved sets):
+  APPRISE_MIN_SEC_PER_SPECIES (was APPRISE_MINIMUM_SECONDS_BETWEEN_NOTIFICATIONS_PER_SPECIES),
+  APPRISE_EXCLUDE_SPECIES (was APPRISE_ONLY_NOTIFY_SPECIES_NAMES), APPRISE_ONLY_SPECIES (was ..._NAMES_2).
+- Existing locations keep their radius; change it in Settings > Locations.
+- The web server configuration is rewritten by the update (login rules).

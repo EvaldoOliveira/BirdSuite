@@ -1,0 +1,19 @@
+#!/bin/sh
+# BirdSuite pre-commit hook (US-122): the text keys of the staged pages and scripts must exist in lang/en, every key of
+# lang/en must be used, pt_BR must translate every key (python3 lang/check.py). Versioned with the program; a clone
+# turns it on once with:  git config core.hooksPath tools/hooks
+# It checks the files as they are in the working tree. Skip it once (not advised): git commit --no-verify
+cd "$(git rev-parse --show-toplevel)" || exit 1
+command -v python3 > /dev/null 2>&1 || { echo "pre-commit: python3 not found, text keys not checked" >&2; exit 0; }
+code=$(git diff --cached --name-only --diff-filter=ACMR -- homepage scripts templates | grep -E '\.(php|js|py|html)$')
+other=$(git diff --cached --name-only --diff-filter=DR -- homepage scripts templates lang; git diff --cached --name-only -- lang)
+if [ -z "$code" ] && [ -z "$other" ]; then
+	exit 0
+fi
+if [ -n "$other" ]; then
+	# a catalogue changed or a file was removed / renamed: the whole program
+	python3 lang/check.py || { echo "pre-commit: text keys check failed (python3 lang/check.py)" >&2; exit 1; }
+else
+	# shellcheck disable=SC2086 # one path per line, no spaces in the program's file names
+	python3 lang/check.py $code || { echo "pre-commit: text keys check failed (python3 lang/check.py <staged files>)" >&2; exit 1; }
+fi

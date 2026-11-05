@@ -1,0 +1,15 @@
+/* BirdSuite look for the Adminer editor (owner 2026-10-21: Tools › Database › Advanced editor): the app's font,
+   rounded boxes and outline buttons; Adminer loads this file by itself when it sits beside adminer.php. */
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 14px; background: #eef4f9; color: #222; }
+#menu { background: #e3f0fa; border-right: 1px solid rgba(0,0,0,.08); }
+h1 { background: #a9cce3; border-bottom: 0; font-size: 1.3em; padding: 10px 16px; }
+h2 { background: #e3f0fa; border-bottom: 0; padding: 8px 12px; border-radius: 10px; }
+a, a:visited { color: #1f4e79; }
+table { border-collapse: separate; border-spacing: 0; border: 0; border-radius: 10px; overflow: hidden; box-shadow: 0 0 17px 1px rgba(0,0,0,.10); background: rgba(255,255,255,.7); }
+th, td { border: 0; border-top: 1px solid rgba(128,128,128,.18); padding: 4px 8px; }
+thead th, thead td { background: #a9cce3; border-top: 0; }
+input[type=submit], input[type=button], button { font-size: 13px; padding: 4px 12px; border-radius: 12px; border: 1px solid #1f4e79; background: #fff; color: #1f4e79; font-weight: 600; cursor: pointer; }
+input[type=submit]:hover, input[type=button]:hover, button:hover { background: #1f4e79; color: #fff; }
+input, select, textarea { border-radius: 6px; border: 1px solid #aaa; padding: 3px 6px; }
+fieldset { border-radius: 10px; border: 1px solid rgba(0,0,0,.12); }
+.error, .message { border-radius: 10px; }

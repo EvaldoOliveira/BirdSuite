@@ -1,0 +1,15 @@
+# Python lint of BirdSuite (release run 7, MNT-04/05): the rule set the release campaign checks, so every run is the
+# same. Run: ruff check   (from the repository root; ruff 0.17.x)
+line-length = 160
+include = ["scripts/**/*.py", "tests/**/*.py", "lang/*.py"]
+extend-exclude = ["custom", "model", "homepage"]
+
+[lint]
+select = ["E", "F", "W", "C90", "I", "UP", "B", "BLE", "SIM", "PLW", "RUF"]
+ignore = [
+    "PLW0603",  # module-level state set by functions is the style of the station's long-running scripts
+    "RUF001", "RUF002", "RUF003",  # the texts use typographic characters on purpose (› … – ×)
+]
+
+[lint.mccabe]
+max-complexity = 15

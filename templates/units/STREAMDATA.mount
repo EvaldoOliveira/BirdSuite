@@ -1,0 +1,12 @@
+[Unit]
+Description=BirdSuite tmpfs for transient files
+ConditionPathExists=@BS_STREAMDATA@
+
+[Mount]
+What=tmpfs
+Where=@BS_STREAMDATA@
+Type=tmpfs
+Options=mode=1777,nosuid,nodev
+
+[Install]
+WantedBy=multi-user.target

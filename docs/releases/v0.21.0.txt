@@ -1,0 +1,16 @@
+v0.21.0 - nocturnal species by day, the station opens on Now
+
+New
+- Lists › Nocturnal: the species that only sing at night are dropped by day, from 30 minutes after sunrise to 30 minutes
+  before sunset at the location. Both margins and today's times are on the same page. Diurnal species are never
+  filtered, and an empty list changes nothing.
+
+Changed
+- Menu names: the page of the birds singing (See in v0.20.0) is now Now, first in the menu and the page the station
+  opens on; the former Now is Latest, right below it. Old addresses keep working.
+- The question "did the station move?" shows on every page, not only on Latest.
+
+Notes
+- The list of nocturnal species starts empty: fill it in Lists › Nocturnal to use the rule.
+- Translations: the new texts are in all eleven languages.
+- v0.20.1 and v0.20.2 were development milestones with these same changes.

@@ -1,0 +1,393 @@
+#!/usr/bin/env bash
+# birdsuite-root TASK [ARG] - the few steps of BirdSuite that need root, each one named and its argument checked (owner
+# 2026-10-23, least privilege). Installed root-owned in /usr/local/sbin by the installer and the updater (a copy, not a
+# link); the sudoers rule of a least-privilege install allows only this and birdsuite-svc.
+# Tasks:
+#   timezone ZONE      set the timezone (a zone of timedatectl list-timezones) and /etc/timezone
+#   ntp on|off         network time on or off
+#   settime EPOCH      set the clock (seconds since 1970, after 2025) and switch network time back on
+#   reboot | shutdown  restart or power off the station
+#   throttled          the under-voltage / throttling flags (vcgencmd get_throttled)
+#   identify [SECONDS] blink the board's LEDs, activity and power (30 to 600 s, default 300), to tell this station from others
+#   caddyfile          write the web server configuration made by the station user's generator, after Caddy checks it
+#   numeric LANG       number format (decimal / thousands separator) of the station = the BirdSuite language LANG
+#                      (en pt_BR es zh_CN ja de fr it nl pl ru): LC_NUMERIC only, the system messages keep their language
+#   captive ADDR       the captive setup page of the station WiFi: its DNS answers every name with ADDR (10.42.N.1)
+#   logs DAYS          the log policy (owner 2026-11-01, Disk Space): the system journal kept DAYS days (7 30 90 365, or 0 =
+#                      manual: no time limit) and at most 200 MB (1 GB for a year or manual), the rotated files of /var/log
+#                      compressed
+#   logs-clean DAYS    apply it now: the journal trimmed to DAYS days (manual: 7) and its size limit, /var/log rotated and
+#                      its rotated files older than those days removed
+#   logs-export DAYS   a .tar.gz on stdout: the journal of the last DAYS days as text, /var/log and the station's logs
+#   logs-sizes         the bytes of the journal and of /var/log, one "name bytes" line each
+#   mic-gain [ID] [PERCENT]  the capture volume of the microphone (US-07, Settings › Audio): the card whose ALSA id is
+#                      ID (the one the shared device points to), else the first USB capture card; prints
+#                      "card=N control=NAME percent=P db=D" (D in dB, - when the card gives none) or "none". With PERCENT
+#                      (0 to 100) it is set first and kept for the next start and replug (alsactl store)
+#   update [-a]        the BirdSuite update (Status › Update, the automatic one with -a): the station user updates its
+#                      working copy (update_birdnet.sh, no root); root then runs the system steps
+#                      (update_birdnet_snippets.sh) from its own copy of the program, /usr/local/lib/birdsuite/src,
+#                      fetched by root from the address recorded at install (/usr/local/lib/birdsuite/origin): never
+#                      code from the station user's folder, never BirdSuite.conf sourced (security 2026-11-02)
+#   migration-remove   the end of a migration from BirdNET-Pi on the same card (US-01, US-05): the kept *.old program and
+#                      data folders, config/BIRDNET.OLD.gz, the database copy aside and the records deleted
+#   migration-back     Go back to BirdNET-Pi (copy mode only, while root's record of the migration exists): BirdSuite's
+#                      services stopped and disabled, its data folder renamed *.birdsuite, the *.old folders back in
+#                      place, the system files the installation changed restored from root's record, the BirdNET-Pi
+#                      units enabled again and started, the first user's sudo rule given back
+#                      Both work only on the paths of root's own core definitions (the station user's home + the fixed
+#                      names) and root's record, never on paths read from the station user's files
+#   webpassword-reset  a new web password typed twice on the console (no echo; US-53, a forgotten password): stored only
+#                      as its hash, the web login switched on, the web server configuration written again
+#   pwreset-boot       at start-up (BS_SVC_PWRESET): when the card's boot partition holds the file reset-web-password,
+#                      the web password goes back to the factory one, the file is removed, the web server written again
+set -u
+usage() { echo "usage: birdsuite-root webpassword-reset | pwreset-boot | timezone ZONE | ntp on|off | settime EPOCH | reboot | shutdown | throttled | identify [SECONDS] | caddyfile | numeric LANG | captive ADDR | logs DAYS | logs-clean DAYS | logs-export DAYS | logs-sizes | mic-gain [ID] [PERCENT] | update [-a] | migration-remove | migration-back" >&2; exit 2; }
+log_days() { case "${1:-}" in 0|7|30|90|365) return 0 ;; *) echo "birdsuite-root: DAYS must be 7, 30, 90, 365 or 0 (manual)" >&2; exit 2 ;; esac; }
+[ $# -ge 1 ] || usage
+task=$1; shift
+# the station user: the owner of the program folder this copy was installed from (recorded at install time), and the
+# layout of its home from root's own copy of the core definitions (installed with this helper; the one fixed path)
+station_user=$(cat /usr/local/lib/birdsuite/station_user 2>/dev/null)
+home=
+[ -n "$station_user" ] && home=$(getent passwd "$station_user" | cut -d: -f6)
+if [ -n "$home" ] && [ -r /usr/local/lib/birdsuite/core.sh ]; then
+  BS_HOME=$home
+  # shellcheck disable=SC1091
+  source /usr/local/lib/birdsuite/core.sh
+fi
+# the web password written by the station user (its file, its rules: common.php conf_set_many), read from stdin
+set_web_password() {
+  sudo -u "$station_user" env BS_PROG="$BS_PROG" php -r '
+    require getenv("BS_PROG") . "/scripts/common.php";
+    $p = stream_get_contents(STDIN);
+    $set = $p === "" ? array("CADDY_PWD" => "", "WEB_LOGIN" => "on") : array("CADDY_PWD" => web_password_hash($p), "WEB_LOGIN" => "on");
+    exit(($p === "" || web_password_ok($p)) && conf_set_many($set) ? 0 : 1);'
+}
+case "$task" in
+  webpassword-reset)
+    [ $# -eq 0 ] || usage
+    [ -n "${BS_PROG:-}" ] || { echo "birdsuite-root: station user unknown" >&2; exit 1; }
+    [ -t 0 ] || { echo "birdsuite-root: webpassword-reset is typed on a terminal" >&2; exit 2; }
+    read -r -s -p "New web password: " p1; echo
+    read -r -s -p "The same again: " p2; echo
+    [ -n "$p1" ] && [ "$p1" = "$p2" ] || { echo "birdsuite-root: the two passwords are empty or differ, nothing changed" >&2; exit 1; }
+    printf '%s' "$p1" | set_web_password || { echo "birdsuite-root: not saved (accepted characters: A-Z a-z 0-9 ! @ # % ^ & * ( ) - _ = + [ ] { } . , : ? ~ /)" >&2; exit 1; }
+    unset p1 p2
+    logger -t birdsuite "web password changed on the console (birdsuite-root webpassword-reset)"
+    "$0" caddyfile > /dev/null 2>&1
+    echo "The web password is changed." ;;
+  pwreset-boot)
+    [ $# -eq 0 ] || usage
+    [ -n "${BS_PROG:-}" ] || exit 0
+    f=
+    for c in /boot/firmware/reset-web-password /boot/reset-web-password; do [ -e "$c" ] && f=$c && break; done
+    [ -n "$f" ] || exit 0
+    rm -f "$f"
+    printf '' | set_web_password || { logger -t birdsuite "reset-web-password found, but the settings could not be written"; exit 1; }
+    logger -t birdsuite "web password back to the factory one (reset-web-password on the boot partition)"
+    "$0" caddyfile > /dev/null 2>&1 || true ;;
+  timezone)
+    [ $# -eq 1 ] || usage
+    zone=$1
+    timedatectl list-timezones | grep -qxF -- "$zone" || { echo "birdsuite-root: unknown timezone: $zone" >&2; exit 2; }
+    timedatectl set-timezone "$zone" || exit 1
+    [ -f /etc/timezone ] && printf '%s\n' "$zone" > /etc/timezone
+    exit 0 ;;
+  ntp)
+    [ $# -eq 1 ] || usage
+    case "$1" in on) timedatectl set-ntp true ;; off) timedatectl set-ntp false ;; *) usage ;; esac
+    exit $? ;;
+  settime)
+    [ $# -eq 1 ] && [[ "$1" =~ ^[0-9]{10}$ ]] && [ "$1" -gt 1735689600 ] || usage
+    timedatectl set-ntp false 2>/dev/null
+    date -s "@$1" > /dev/null || { timedatectl set-ntp true 2>/dev/null; exit 1; }
+    command -v hwclock > /dev/null && hwclock -w 2>/dev/null
+    command -v fake-hwclock > /dev/null && fake-hwclock save force 2>/dev/null
+    timedatectl set-ntp true 2>/dev/null
+    exit 0 ;;
+  reboot) [ $# -eq 0 ] || usage; exec /usr/bin/systemctl reboot ;;
+  shutdown) [ $# -eq 0 ] || usage; exec /usr/bin/systemctl poweroff ;;
+  throttled) [ $# -eq 0 ] || usage; exec vcgencmd get_throttled ;;
+  identify)
+    secs=${1:-300}
+    [ $# -le 1 ] && [[ "$secs" =~ ^[0-9]{2,3}$ ]] && [ "$secs" -ge 30 ] && [ "$secs" -le 600 ] || usage
+    # every LED of the board, activity and power (owner 2026-10-24: a board with only the power LED lit showed nothing
+    # when only the activity LED blinked): ACT / led0 and PWR / led1, each restored to its own trigger afterwards
+    n=0
+    for led in /sys/class/leds/ACT /sys/class/leds/led0 /sys/class/leds/PWR /sys/class/leds/led1; do
+      [ -d "$led" ] || continue
+      case "$led" in */led0) [ -d /sys/class/leds/ACT ] && continue ;; */led1) [ -d /sys/class/leds/PWR ] && continue ;; esac
+      old=$(sed -n 's/.*\[\([^]]*\)\].*/\1/p' "$led/trigger"); old=${old:-none}
+      # the kernel's timer trigger when the board has it, else the LED switched on and off here; in its own session
+      # (setsid), so the end of sudo or of the web request does not stop it
+      # the power LED is switched by hand (owner 2026-10-24: the green one blinked, the red did not): on many boards it
+      # sits behind the firmware, where the timer trigger is accepted but does nothing
+      case "$led" in */PWR|*/led1) pwr=1 ;; *) pwr= ;; esac
+      if [ -z "$pwr" ] && { echo timer > "$led/trigger" && echo 100 > "$led/delay_on" && echo 100 > "$led/delay_off"; } 2>/dev/null; then
+        setsid -f sh -c 'sleep "$1"; echo "$2" > "$3/trigger"' _ "$secs" "$old" "$led" > /dev/null 2>&1 < /dev/null
+      else
+        echo none > "$led/trigger" 2>/dev/null
+        max=$(cat "$led/max_brightness" 2>/dev/null || echo 1)
+        setsid -f sh -c 'end=$(( $(date +%s) + $1 )); while [ "$(date +%s)" -lt "$end" ]; do echo "$4" > "$3/brightness"; sleep 0.3; echo 0 > "$3/brightness"; sleep 0.3; done; echo "$2" > "$3/trigger"; echo "$4" > "$3/brightness"' \
+          _ "$secs" "$old" "$led" "$max" > /dev/null 2>&1 < /dev/null || continue
+      fi
+      n=$((n + 1))
+    done
+    [ "$n" -gt 0 ] || { echo "birdsuite-root: no LED on this board ($(ls /sys/class/leds 2>/dev/null | tr '\n' ' '))" >&2; exit 1; }
+    exit 0 ;;
+  caddyfile)
+    [ $# -eq 0 ] || usage
+    [ -n "${BS_PROG:-}" ] || { echo "birdsuite-root: station user unknown" >&2; exit 1; }
+    tmp=$(mktemp)
+    # the generator runs as the station user and writes to a temporary file; root only checks and installs it
+    chown "$station_user" "$tmp"
+    sudo -u "$station_user" env CADDYFILE_OUT="$tmp" "$BS_SCRIPTS/update_caddyfile.sh" > /dev/null 2>&1
+    if [ -s "$tmp" ] && caddy validate --adapter caddyfile --config "$tmp" > /dev/null 2>&1; then
+      install -o root -g root -m 0644 "$tmp" "$BS_CADDYFILE"
+      rm -f "$tmp"
+      # the check above, as root, creates the access log as root: the web server could not write it (2026-10-31)
+      chown caddy:caddy /var/log/caddy/access.log* 2> /dev/null
+      exec /usr/bin/systemctl reload "$BS_SVC_WEB"
+    fi
+    rm -f "$tmp"
+    echo "birdsuite-root: the generated web server configuration did not pass Caddy's check" >&2
+    exit 1 ;;
+  captive)
+    # the station WiFi's own address (owner 2026-10-25: 10.42.N.1 per station, scripts/field_net.py ap_addr)
+    [ $# -eq 1 ] && [[ "$1" =~ ^10\.42\.([0-9]{1,3})\.1$ ]] && [ "${BASH_REMATCH[1]}" -le 254 ] || usage
+    mkdir -p /etc/NetworkManager/dnsmasq-shared.d
+    printf '# BirdSuite (scripts/field_net.py): on the station WiFi every name is the station = captive setup page\naddress=/#/%s\n' "$1" \
+      > /etc/NetworkManager/dnsmasq-shared.d/birdsuite-captive.conf
+    exit 0 ;;
+  numeric)
+    [ $# -eq 1 ] || usage
+    case "$1" in
+      en) loc=en_GB.UTF-8 ;; pt_BR) loc=pt_BR.UTF-8 ;; es) loc=es_ES.UTF-8 ;; zh_CN) loc=zh_CN.UTF-8 ;; ja) loc=ja_JP.UTF-8 ;;
+      de) loc=de_DE.UTF-8 ;; fr) loc=fr_FR.UTF-8 ;; it) loc=it_IT.UTF-8 ;; nl) loc=nl_NL.UTF-8 ;; pl) loc=pl_PL.UTF-8 ;;
+      ru) loc=ru_RU.UTF-8 ;; *) echo "birdsuite-root: unknown language: $1" >&2; exit 2 ;;
+    esac
+    # the locale generated once when missing (locale -a lists it as e.g. pt_BR.utf8)
+    if ! locale -a 2>/dev/null | grep -qix "${loc%.UTF-8}.utf8"; then
+      grep -q "^# *${loc} UTF-8" /etc/locale.gen && sed -i "s/^# *${loc} UTF-8/${loc} UTF-8/" /etc/locale.gen
+      grep -q "^${loc} UTF-8" /etc/locale.gen || echo "${loc} UTF-8" >> /etc/locale.gen
+      locale-gen > /dev/null || exit 1
+    fi
+    touch /etc/default/locale
+    if grep -q '^LC_NUMERIC=' /etc/default/locale; then sed -i "s/^LC_NUMERIC=.*/LC_NUMERIC=${loc}/" /etc/default/locale
+    else echo "LC_NUMERIC=${loc}" >> /etc/default/locale; fi
+    exit 0 ;;
+  logs)
+    [ $# -eq 1 ] || usage; log_days "$1"
+    conf=/etc/systemd/journald.conf.d/birdsuite.conf
+    # a year or manual (0 = no time limit) need room: 1 GB; otherwise 200 MB
+    case "$1" in 0|365) max=1G ;; *) max=200M ;; esac
+    if [ "$1" = 0 ]; then ret=0; else ret="${1}day"; fi
+    want=$(printf '# BirdSuite log policy (Disk Space, birdsuite-root logs)\n[Journal]\nSystemMaxUse=%s\nMaxRetentionSec=%s\n' "$max" "$ret")
+    mkdir -p /etc/systemd/journald.conf.d
+    if [ "$(cat "$conf" 2>/dev/null)" != "$want" ]; then
+      printf '%s\n' "$want" > "$conf" && systemctl restart systemd-journald
+    fi
+    # the rotated files of /var/log compressed (Debian's logrotate.conf ships "#compress")
+    grep -q '^#compress' /etc/logrotate.conf && sed -i 's/^#compress/compress/' /etc/logrotate.conf
+    exit 0 ;;
+  logs-clean)
+    [ $# -eq 1 ] || usage; log_days "$1"
+    # manual (0): Clean now keeps the last 7 days
+    days=$1; [ "$days" = 0 ] && days=7
+    case "$1" in 0|365) max=1G ;; *) max=200M ;; esac
+    journalctl --vacuum-time="${days}d" --vacuum-size="$max" > /dev/null 2>&1
+    logrotate -f /etc/logrotate.conf > /dev/null 2>&1
+    find /var/log -xdev -type f \( -name '*.gz' -o -name '*.[0-9]' -o -name '*.old' \) -mtime +"$days" -delete 2>/dev/null
+    exit 0 ;;
+  logs-export)
+    [ $# -eq 1 ] || usage; log_days "$1"
+    [ -n "${BS_STATE:-}" ] || { echo "birdsuite-root: station user unknown" >&2; exit 1; }
+    tmp=$(mktemp -d) || exit 1
+    trap 'rm -rf "$tmp"' EXIT
+    # manual (0): the whole journal
+    if [ "$1" = 0 ]; then journalctl -o short-iso --no-pager > "$tmp/journal.txt" 2>/dev/null
+    else journalctl --since "-${1}d" -o short-iso --no-pager > "$tmp/journal.txt" 2>/dev/null; fi
+    mkdir -p "$tmp/station" && cp -p "$BS_STATE"/*.log* "$tmp/station/" 2>/dev/null
+    tar -czf - -C "$tmp" journal.txt station -C / --exclude=var/log/journal var/log 2>/dev/null
+    exit 0 ;;
+  logs-sizes)
+    [ $# -eq 0 ] || usage
+    echo "journal $(du -sb /var/log/journal /run/log/journal 2>/dev/null | awk '{s+=$1} END {print s+0}')"
+    echo "varlog $(du -sb --exclude=journal /var/log 2>/dev/null | awk '{print $1+0}')"
+    exit 0 ;;
+  mic-gain)
+    # arguments: an ALSA card id (letters, digits, _ ; never only digits) and / or a percent 0-100 without leading zeros
+    id=; pct=
+    [ $# -le 2 ] || usage
+    if [ $# -ge 1 ] && ! [[ $1 =~ ^[0-9]+$ ]]; then
+      [[ $1 =~ ^[A-Za-z_][A-Za-z0-9_]{0,31}$ ]] || usage
+      id=$1; shift
+    fi
+    if [ $# -eq 1 ]; then
+      [[ $1 =~ ^(0|[1-9][0-9]?|100)$ ]] || usage
+      pct=$1; shift
+    fi
+    [ $# -eq 0 ] || usage
+    # cap_ctl N: the simple control of card N that has a capture volume, 'Mic' / 'Capture' / 'Mic Capture' first
+    cap_ctl() {
+      amixer -c "$1" scontents 2>/dev/null | awk '
+        function keep() { if (n != "" && (cv || (v && cc))) list[++k] = n; n = "" }
+        /^Simple mixer control / { keep(); n = $0; sub(/^Simple mixer control /, "", n); cv = 0; v = 0; cc = 0; next }
+        /^  Capabilities:/ { cv = ($0 ~ / cvolume/); v = ($0 ~ / volume( |$)/); next }
+        /^  Capture channels:/ { cc = 1; next }
+        END {
+          keep()
+          for (p = 1; p <= 4; p++) for (i = 1; i <= k; i++) {
+            nm = list[i]; sub(/,[0-9]+$/, "", nm); gsub(/\047/, "", nm)
+            if ((p == 1 && nm == "Mic") || (p == 2 && nm == "Capture") || (p == 3 && nm == "Mic Capture") || p == 4) { print list[i]; exit }
+          }
+        }'
+    }
+    card=; ctl=
+    for d in /proc/asound/card[0-9]*; do
+      [ -d "$d" ] || continue
+      n=${d##*card}
+      if [ -n "$id" ]; then
+        [ "$(cat "$d/id" 2>/dev/null)" = "$id" ] || continue
+      else
+        [ -e "$d/usbid" ] && grep -qs '^Capture:' "$d"/stream* || continue
+      fi
+      c=$(cap_ctl "$n")
+      [ -n "$c" ] && { card=$n; ctl=$c; break; }
+      [ -n "$id" ] && break
+    done
+    [ -n "$card" ] || { echo none; [ -z "$pct" ]; exit $?; }
+    # amixer takes the control as NAME,INDEX (its scontents line, quotes removed)
+    name=${ctl%,*}; name=${name#\'}; name=${name%\'}; idx=${ctl##*,}
+    if [ -n "$pct" ]; then
+      amixer -q -c "$card" sset "$name,$idx" capture "${pct}%" > /dev/null 2>&1 || { echo "birdsuite-root: the capture volume could not be set" >&2; exit 1; }
+      alsactl store "$card" > /dev/null 2>&1 || echo "birdsuite-root: the volume is set but could not be kept (alsactl store)" >&2
+    fi
+    line=$(amixer -c "$card" sget "$name,$idx" 2>/dev/null | grep -m1 -oE 'Capture [0-9]+ \[[0-9]+%\]( \[-?[0-9.]+dB\])?')
+    [[ $line =~ \[([0-9]+)%\] ]] || { echo "birdsuite-root: the capture volume could not be read" >&2; exit 1; }
+    p=${BASH_REMATCH[1]}; db=-
+    [[ $line =~ \[(-?[0-9.]+)dB\] ]] && db=${BASH_REMATCH[1]}
+    echo "card=$card control=$name percent=$p db=$db"
+    exit 0 ;;
+  update)
+    [ $# -eq 0 ] || { [ $# -eq 1 ] && [ "$1" = "-a" ]; } || usage
+    [ -n "${BS_PROG:-}" ] || { echo "birdsuite-root: station user unknown" >&2; exit 1; }
+    # one update at a time (2026-11-03: the automatic check of every 5 minutes ran into an update started by hand, both
+    # went on with the system steps, and the pilot lost its microphone device): the automatic one steps aside, one by
+    # hand waits up to 30 minutes
+    exec 9> /run/birdsuite-update.lock
+    if [ "${1:-}" = -a ]; then flock -n 9 || exit 0; else flock -w 1800 9 || { echo "birdsuite-root: another update is still running" >&2; exit 1; }; fi
+    prog=$BS_PROG
+    lib=$BS_LIB
+    src=$lib/src
+    origin=$(cat "$lib/origin" 2>/dev/null)
+    [[ $origin =~ ^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[A-Za-z0-9._/~-]+$ ]] || { echo "birdsuite-root: no valid program address in $lib/origin" >&2; exit 1; }
+    as_user() { sudo -u "$station_user" -H "$@"; }
+    # 1. the working copy, updated by the station user (-a: only on the chosen days and time, only when behind)
+    before=$(as_user git -C "$prog" rev-parse HEAD 2>/dev/null)
+    as_user "$prog/scripts/update_birdnet.sh" "$@" || exit $?
+    after=$(as_user git -C "$prog" rev-parse HEAD 2>/dev/null)
+    [ "${1:-}" = -a ] && [ "$before" = "$after" ] && exit 0
+    # 2. root's own copy of the same branch (the settings read as text, the name checked), shallow, only the folders
+    #    the system steps use; refused names or a failed fetch stop here, before anything runs as root
+    branch=$(as_user git -C "$prog" rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ "$branch" = HEAD ] || [ -z "$branch" ]; then
+      branch=$(sed -n 's/^UPDATE_BRANCH=["'\'']\{0,1\}\([A-Za-z0-9._\/-]*\).*/\1/p' "$BS_CONF" 2>/dev/null | tail -1)
+    fi
+    [[ $branch =~ ^[A-Za-z0-9._][A-Za-z0-9._/-]{0,99}$ ]] || branch=main
+    if [ ! -d "$src/.git" ]; then
+      rm -rf "$src"
+      install -d -o root -g root -m 0755 "$src"
+      # only the blobs of the checked-out folders are downloaded (partial clone), not the models
+      git -C "$src" init -q && git -C "$src" remote add origin "$origin" && git -C "$src" config remote.origin.promisor true \
+        && git -C "$src" config remote.origin.partialclonefilter blob:none && git -C "$src" sparse-checkout set scripts templates config \
+        || { echo "birdsuite-root: could not prepare $src" >&2; exit 1; }
+    fi
+    git -C "$src" remote set-url origin "$origin"
+    git -C "$src" fetch -q --depth 1 --filter=blob:none --force origin "$branch" || { echo "birdsuite-root: fetch of $branch from $origin failed: the system steps did not run" >&2; exit 1; }
+    git -C "$src" checkout -q --force --detach FETCH_HEAD && git -C "$src" clean -q -fdx || exit 1
+    chown -R root:root "$src" && chmod -R go-w "$src"
+    want=$(git -C "$src" rev-parse HEAD)
+    [ "$want" = "$after" ] || echo "birdsuite-root: note: the working copy is at ${after:0:8}, root's copy of $branch at ${want:0:8} (the system steps come from root's copy)"
+    # 3. the system steps, root's copy, on the station's data; the station user's name from the record
+    exec env BIRDNET_USER="$station_user" "$src/scripts/update_birdnet_snippets.sh" ;;
+  migration-remove|migration-back)
+    [ $# -eq 0 ] || usage
+    [ -n "${BS_PROG:-}" ] && [ -n "${BS_UPSTREAM_PROG_DIR:-}" ] && [ -n "${BS_OLD_SUFFIX:-}" ] || { echo "birdsuite-root: station user unknown" >&2; exit 1; }
+    # the paths come from root's core definitions only; the station user's record (state/migration.json) only decides
+    # whether to refuse (an import still running or not done would lose its source)
+    up=$BS_HOME/$BS_UPSTREAM_PROG_DIR
+    old_prog=$up$BS_OLD_SUFFIX
+    old_data=$BS_RECS$BS_OLD_SUFFIX
+    rec=$BS_MIGRATION_ROOT
+    [ -e "$BS_MIGRATION" ] || [ -d "$rec" ] || { echo "birdsuite-root: no migration from BirdNET-Pi recorded" >&2; exit 1; }
+    # rec_has TEXT: the station user's record says so (a regular file only: never a link or a pipe followed by root)
+    rec_has() { [ -f "$BS_MIGRATION" ] && [ ! -L "$BS_MIGRATION" ] && grep -q "$1" "$BS_MIGRATION" 2>/dev/null; }
+    if rec_has '"import": *"running"'; then
+      echo "birdsuite-root: the import of the BirdNET-Pi detections is running: wait until it ends" >&2; exit 1
+    fi
+    # rm_tree PATH: a real folder deleted on its own file system; a symbolic link in its place only unlinked
+    rm_tree() {
+      if [ -L "$1" ]; then rm -f -- "$1"
+      elif [ -d "$1" ]; then rm -rf --one-file-system -- "$1"
+      elif [ -e "$1" ]; then rm -f -- "$1"; fi
+    }
+    if [ "$task" = migration-remove ]; then
+      # the source of an import not done yet would be lost
+      if [ -e "$BS_MIGRATION" ] && ! rec_has '"import": *"done"'; then
+        echo "birdsuite-root: the BirdNET-Pi detections are not imported yet: remove refused" >&2; exit 1
+      fi
+      for p in "$old_prog" "$old_data" "$BS_UPSTREAM_ARCHIVE" "$BS_MIGRATION_DIR" "$rec" "$BS_MIGRATION"; do rm_tree "$p"; done
+      echo "BirdNET-Pi leftovers removed"
+      exit 0
+    fi
+    # Go back: only from root's record of a copy-mode migration and with the kept program folder whole
+    [ -d "$rec" ] && [ ! -L "$rec" ] && [ "$(stat -c %u "$rec")" = 0 ] || { echo "birdsuite-root: no record of a copy-mode migration: going back is not possible" >&2; exit 1; }
+    [ -d "$old_prog" ] && [ ! -L "$old_prog" ] || { echo "birdsuite-root: $old_prog is missing: the BirdNET-Pi program was removed" >&2; exit 1; }
+    [ ! -e "$up" ] && [ ! -L "$up" ] || { echo "birdsuite-root: $up exists: nothing changed" >&2; exit 1; }
+    [ ! -e "$BS_RECS.birdsuite" ] && [ ! -L "$BS_RECS.birdsuite" ] || { echo "birdsuite-root: $BS_RECS.birdsuite exists: nothing changed" >&2; exit 1; }
+    # 1. BirdSuite stopped and switched off (not the web and stream servers: BirdNET-Pi uses them too)
+    svc=()
+    for k in ${!BS_SVC_@}; do
+      case "$k" in BS_SVC_HELPER|BS_SVC_WEB|BS_SVC_ICECAST) continue ;; esac
+      svc+=("${!k}.service")
+    done
+    /usr/bin/systemctl disable --now "${svc[@]}" > /dev/null 2>&1
+    # 2. the folders: BirdSuite's data aside, BirdNET-Pi's back (renames on the same disk, owners unchanged)
+    if [ -d "$old_data" ] && [ ! -L "$old_data" ]; then
+      if [ -e "$BS_RECS" ] || [ -L "$BS_RECS" ]; then mv -T -- "$BS_RECS" "$BS_RECS.birdsuite" || exit 1; fi
+      mv -T -- "$old_data" "$BS_RECS" || exit 1
+    fi
+    mv -T -- "$old_prog" "$up" || exit 1
+    # 3. the system files as they were before BirdSuite (cron lines, web server, PHP pool, stream server), from root's
+    #    archive made at install; the first user's sudo rule BirdSuite had switched off
+    if [ -f "$rec/system.tar.gz" ] && [ ! -L "$rec/system.tar.gz" ] && [ "$(stat -c %u "$rec/system.tar.gz")" = 0 ]; then
+      tar -xzPf "$rec/system.tar.gz" || echo "birdsuite-root: the system files could not all be restored" >&2
+    fi
+    rule=/etc/sudoers.d/010_${station_user}-nopasswd
+    [ -f "$rule.birdsuite-disabled" ] && [ ! -e "$rule" ] && mv -- "$rule.birdsuite-disabled" "$rule"
+    # 4. the BirdNET-Pi units again (their unit files are links into the program folder, back in place now), and its
+    #    commands in BS_BIN as its installer made them (links only: nothing of the station user's runs here)
+    #    only .sh / .py / .php names that are no system command, so no link can stand in for one of root's commands
+    for f in "$up"/scripts/*.sh "$up"/scripts/*.py "$up"/scripts/*.php; do
+      [ -f "$f" ] || continue
+      n=$(basename "$f")
+      [[ $n =~ ^[A-Za-z0-9_.-]+$ ]] || continue
+      command -v -- "$n" > /dev/null 2>&1 && [ ! -L "$BS_BIN/$n" ] && continue
+      ln -sfn -- "$f" "$BS_BIN/$n"
+    done
+    /usr/bin/systemctl daemon-reload
+    while IFS= read -r u; do
+      [[ $u =~ ^[A-Za-z0-9_.@-]+\.(service|timer|path|mount)$ ]] || continue
+      [ -e "$BS_UNIT_DIR/$u" ] || [ -e "/etc/systemd/system/$u" ] || continue
+      /usr/bin/systemctl enable "$u" > /dev/null 2>&1
+    done < "$rec/units"
+    rm_tree "$BS_UPSTREAM_ARCHIVE"; rm_tree "$BS_MIGRATION_DIR"; rm_tree "$BS_MIGRATION"; rm_tree "$rec"
+    echo "BirdNET-Pi restored: the station restarts in a few seconds"
+    # the PHP pool and the web server take their old configuration, the units start: a restart is the clean way; a few
+    # seconds later, in its own session, so the page that asked still gets its answer
+    setsid -f sh -c 'sleep 5; exec /usr/bin/systemctl reboot' > /dev/null 2>&1 < /dev/null
+    exit 0 ;;
+  *) usage ;;
+esac
