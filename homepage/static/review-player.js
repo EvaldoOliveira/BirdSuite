@@ -74,7 +74,7 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-params{display:flex;flex-wrap:nowrap;gap:5px;margin:0 4px 6px;color:#fff;min-width:0}'
     + '#rpDialog .rp-params span{display:flex;flex-direction:column;background:#2a2a2a;border-radius:6px;padding:4px 7px;flex:1 1 auto;min-width:0}'
     + '#rpDialog .rp-params small{color:#aaa;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#rpDialog .rp-params b{font-size:14px;white-space:nowrap}'
-    + '#rpDialog .rp-params b small.rp-min{display:inline;font-size:11px;color:#bbb;font-weight:normal}#rpDialog .rp-params span{flex:0 0 auto}#rpDialog .rp-params .rp-pr1{margin-left:auto}#rpDialog .rp-params .rp-pr{align-items:flex-end}'
+    + '#rpDialog .rp-params b small.rp-min{display:inline;font-size:11px;color:#bbb;font-weight:normal}#rpDialog .rp-params span{flex:0 0 auto}#rpDialog .rp-params .rp-pr1{margin-left:auto}#rpDialog .rp-params .rp-grp{margin-left:9px}#rpDialog .rp-params .rp-pr{align-items:flex-end}'
     + '#rpDialog .rp-close{position:absolute;top:6px;right:8px;width:auto;min-width:32px;min-height:32px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer}'
     + '#rpDialog .rp-side{flex:0 0 270px;background:#fff;color:#000;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:7px;text-align:left;font-size:13px;margin-top:26px}'
     + '#rpDialog .rp-now{font-size:12px;color:#444}'
@@ -168,7 +168,8 @@ function reviewPlayerStyle() {
     // desktop the same (owner 2026-11-01): one dark piece without a scroll, the side panel on the dark of the player, the
     // spectrogram shrinking whole to fit the window
     // desktop: the answers, Previous / Next and No / Ignore at the bottom of the panel (owner 2026-11-06)
-    + '@media (min-width:801px){#rpDialog .rp-main{margin-top:auto}#rpDialog .rp-tl2{position:relative}#rpDialog .rp-tl2 .rp-vol{position:absolute;top:0;left:50%;transform:translateX(-50%)}}'
+    + '#rpDialog.notmode .rp-side>.rp-nav:not(.rp-spnav){display:none}'
+    + '@media (min-width:801px){#rpDialog:not(.notmode) .rp-side>.rp-prog{margin-top:auto}#rpDialog .rp-tl2{position:relative}#rpDialog .rp-tl2 .rp-vol{position:absolute;top:0;left:50%;transform:translateX(-50%)}}'
     // phone: the volume on a centred row of its own under the icons (they keep their place when Audio opens it)
     + '@media (max-width:800px){#rpDialog .rp-tl2 .rp-vol{order:6;flex:1 1 100%;justify-content:center}}'
     + '@media (min-width:801px){#rpDialog .rp-side{background:#1b1b1b;color:#fff;border:1px solid #333}#rpDialog .rp-side .rp-prog small,#rpDialog .rp-side .rp-skip,#rpDialog .rp-side .rp-bigconf small,#rpDialog .rp-side .rp-bigconf b{color:#fff}'
@@ -450,14 +451,15 @@ function openReviewPlayer(el, opts) {
     // side panel (owner 2026-10-18): progress and the species row on top — visible on a phone without scrolling —, the
     // answers, then the clip tools (change species, protect, frequency shift) at the bottom
     + '<div class="rp-side">'
-    + '<div class="rp-prog"><small class="rp-now"></small><div class="rp-bar"></div></div>'
     // Skip reviewed between Previous species and Next species (owner 2026-11-01); the row stays without them outside a
     // Curation review
-    + '<div class="rp-nav rp-spnav"><button type="button" data-spnav="-1" title="' + t('str_previous_species') + '">&#9664; ' + t('str_prev_sp') + '</button><label class="rp-skip" title="' + t('str_next_previous_and_the_answers_help') + '"><input type="checkbox" class="rp-skipbox"> ' + t('str_skip_reviewed') + '</label><button type="button" data-spnav="1" title="' + t('str_next_species') + '">' + t('str_next_sp') + ' &#9654;</button></div>'
     // the detection's confidence, large (owner 2026-10-22), beside it the species page (owner 2026-10-26); above the
     // answers, which sit at the bottom of the panel on a desktop (owner 2026-11-06)
     + '<div class="rp-bigconf"><small>' + t('str_conf') + '</small><b></b>'
     + '<a class="rp-sppage" href="#" target="_blank" rel="noopener" title="' + t('str_open_the_species_page') + '"><img src="images/species.svg" alt=""><span>' + t('str_species_card') + '</span></a></div>'
+    // desktop (owner 2026-11-06): the progress right above the answers, Skip reviewed right under them (on a phone the
+    // progress moves into the answer bar and the species row is the bar's)
+    + '<div class="rp-prog"><small class="rp-now"></small><div class="rp-bar"></div></div>'
     + '<div class="rp-main"><div class="rp-opts">'
     + '<div class="rp-mbar"><button type="button" data-nav="-1">&#9664; ' + t('str_previous') + '</button><button type="button" class="rp-mdel" title="' + t('str_not_a_bird_worth_keeping_the_help') + '">&#128683; ' + t('str_no_ignore') + '</button><button type="button" data-nav="1">' + t('str_next_skip') + ' &#9654;</button></div>'
     // Previous / Next species in the phone's fixed bar too (owner 2026-10-25: out of sight under it before)
@@ -471,8 +473,9 @@ function openReviewPlayer(el, opts) {
     // Human and Noise left the answers (owner 2026-11-03): they stay as causes in Change species
     + '</div>'
     + '<div class="rp-msg"></div>'
-    + '<div class="rp-nav"><button type="button" data-nav="-1">&#9664; ' + t('str_previous') + '</button><button type="button" data-nav="1">' + t('str_next_skip') + ' &#9654;</button></div>'
     + '</div>'
+    + '<div class="rp-nav rp-spnav"><button type="button" data-spnav="-1" title="' + t('str_previous_species') + '">&#9664; ' + t('str_prev_sp') + '</button><label class="rp-skip" title="' + t('str_next_previous_and_the_answers_help') + '"><input type="checkbox" class="rp-skipbox"> ' + t('str_skip_reviewed') + '</label><button type="button" data-spnav="1" title="' + t('str_next_species') + '">' + t('str_next_sp') + ' &#9654;</button></div>'
+    + '<div class="rp-nav"><button type="button" data-nav="-1">&#9664; ' + t('str_previous') + '</button><button type="button" data-nav="1">' + t('str_next_skip') + ' &#9654;</button></div>'
     + '<div class="rp-not"><h4>' + t('str_change_species_which_was_it') + '</h4>'
     // the causes first (owner 2026-10-22): shown at once, they no longer move down when the model's species arrive
     + '<div class="rp-sub">' + t('str_reject_it_with_the_cause') + '</div>'
@@ -537,7 +540,10 @@ function openReviewPlayer(el, opts) {
       + cell('Conf.', 'str_conf', pe(params['Conf.']) + (cmin ? ' <small class="rp-min">(' + cmin + ')</small>' : ''), '', t('str_detection_conf'))
       + cell('Prob.', 'str_prob', pe(params['Prob.']) + (pmin ? ' <small class="rp-min">(' + pmin + ')</small>' : ''), '', t('str_prob_at_the_location'))
 
-      + [['Sigm. Sens.', 'str_sigm_sens'], ['Rec. Length', 'str_rec_length'], ['Overlap', 'str_overlap'], ['Microphone', 'str_microphone'], ['Port', 'str_port'], ['Gain', 'str_gain'], ['Model', 'str_model_lc_short'], ['Audio loss', 'str_audio_loss']].map(function (p, i) { return cell(p[0], p[1], pe(params[p[0]]), 'rp-pr' + (i === 0 ? ' rp-pr1' : '')); }).join('');
+      + [['Microphone', 'str_microphone'], ['Port', 'str_port'], ['Gain', 'str_gain'], ['Audio loss', 'str_audio_loss'],
+         ['Sigm. Sens.', 'str_sigm_sens', 1], ['Rec. Length', 'str_rec_length'], ['Overlap', 'str_overlap'], ['Model', 'str_model_lc_short', 1]]
+        // three groups (owner 2026-11-06): the microphone, the recording, the model; a gap before each new group
+        .map(function (p, i) { return cell(p[0], p[1], pe(params[p[0]]), 'rp-pr' + (i === 0 ? ' rp-pr1' : '') + (p[2] ? ' rp-grp' : '')); }).join('');
     progress();
     d.querySelector('.rp-msg').textContent = msg || '';
     var v = verdictOf(item);
