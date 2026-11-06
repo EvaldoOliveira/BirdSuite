@@ -338,13 +338,18 @@ def period_preview(start, end, sci=''):
     detections and files (clips and spectrograms on disk)."""
     con = connect()
     rows = period_rows(con, start, end, sci)
-    species, files = {}, 0
+    species, files, listed = {}, 0, {}
     for r in rows:
         s = species.setdefault(r['Sci_Name'], {'sci': r['Sci_Name'], 'com': common_name(r['Sci_Name']), 'n': 0})
         s['n'] += 1
         rel = clip_dir(r)
-        files += sum(1 for name in (r['File_Name'], r['File_Name'] + '.png', r['File_Name'] + '.jpg')
-                     if os.path.exists(os.path.join(BY_DATE, rel, name)))
+        # one listing per day-and-species folder (Gitea #104: three stat calls per detection on an SD card)
+        if rel not in listed:
+            try:
+                listed[rel] = set(os.listdir(os.path.join(BY_DATE, rel)))
+            except OSError:
+                listed[rel] = set()
+        files += sum(1 for name in (r['File_Name'], r['File_Name'] + '.png', r['File_Name'] + '.jpg') if name in listed[rel])
     return {'species': sorted(species.values(), key=lambda x: -x['n']), 'detections': len(rows), 'files': files}
 
 

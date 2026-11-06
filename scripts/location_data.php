@@ -32,6 +32,7 @@ function ld_job() {
 
 if (isset($_GET['job'])) { header('Content-Type: application/json'); echo json_encode(ld_job(), JSON_UNESCAPED_UNICODE); die(); }
 if (isset($_GET['peek'])) { // a folder to import: what it holds, BirdSuite or BirdNET, and the language (location_data.py peek)
+  ensure_authenticated();   // as every other endpoint of the page (Gitea #103: it ran the engine on any folder without the login)
   header('Content-Type: application/json');
   $d = ld_folder($_GET['peek']);
   $m = $d ? json_decode((string)shell_exec(station_prefix() . 'timeout 60 python3 ' . escapeshellarg(BS_SCRIPTS . '/location_data.py')
@@ -83,9 +84,12 @@ if (isset($_GET['period'])) {
   $from = str_replace('T', ' ', (string)($_GET['from'] ?? '')); $to = str_replace('T', ' ', (string)($_GET['to'] ?? ''));
   $sci = (string)($_GET['sci'] ?? '');
   if (!ld_period_ok($from, $to) || !preg_match('/^[A-Za-z .()\'-]{0,80}$/', $sci)) { echo json_encode(array('error' => t('str_choose_a_valid_period'))); die(); }
-  $out = shell_exec(station_prefix() . 'timeout 60 python3 ' . escapeshellarg(BS_SCRIPTS . '/location_data.py') . ' period '
-    . escapeshellarg($from) . ' ' . escapeshellarg($to) . ($sci !== '' ? ' ' . escapeshellarg($sci) : '') . ' 2>/dev/null');
-  echo json_decode((string)$out, true) !== null ? $out : json_encode(array('error' => t('str_choose_a_valid_period')));
+  // a timeout (exit 124) or a failure of the engine is said as such (Gitea #104: both read "choose a valid period")
+  exec(station_prefix() . 'timeout 60 python3 ' . escapeshellarg(BS_SCRIPTS . '/location_data.py') . ' period '
+    . escapeshellarg($from) . ' ' . escapeshellarg($to) . ($sci !== '' ? ' ' . escapeshellarg($sci) : '') . ' 2>/dev/null', $lines, $rc);
+  $out = implode("\n", $lines);
+  if (json_decode($out, true) !== null) echo $out;
+  else echo json_encode(array('error' => t($rc === 124 ? 'str_the_preview_took_too_long_help' : 'str_the_preview_failed_help')));
   die();
 }
 if (isset($_GET['disk_count'])) {
@@ -299,7 +303,7 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
   <table class="settingstable"><tr><td>
   <h2 id="ldformats"><?php echo t('str_locations_data'); ?></h2>
   <table class="stdtable">
-    <tr><th><?php echo t('str_location'); ?></th><th><?php echo t('str_detections'); ?></th><th title="<?php echo $h(t('str_removed_detections_out_of_the_help')); ?>"><?php echo t('str_deleted'); ?></th><th title="<?php echo $h(t('str_answered_human_noise_or_ignore_help')); ?>"><?php echo t('str_ignored'); ?></th><th><?php echo t('str_first'); ?></th><th><?php echo t('str_last'); ?></th><th><?php echo t('str_format'); ?></th><th></th></tr>
+    <tr><th><?php echo t('str_location'); ?></th><th><?php echo t('str_detections'); ?></th><th title="<?php echo $h(t('str_removed_detections_out_of_the_help')); ?>"><?php echo t('str_deleted'); ?></th><th title="<?php echo $h(t('str_answered_human_noise_or_ignore_help')); ?>"><?php echo t('str_ignored_col'); ?></th><th><?php echo t('str_first'); ?></th><th><?php echo t('str_last'); ?></th><th><?php echo t('str_format'); ?></th><th></th></tr>
     <?php foreach ($rows as $l) {
       $is_cur = $cur && intval($cur['id']) === intval($l['id']);
       echo '<tr data-id="' . intval($l['id']) . '" data-name="' . $h($l['name']) . '" data-n="' . $l['n'] . '"><td><b>' . $h($l['name']) . '</b> ' . ($is_cur ? '<span class="curbadge">' . t('str_current') . '</span>' : '') . '</td>'
