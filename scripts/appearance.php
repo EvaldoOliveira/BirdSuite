@@ -106,7 +106,7 @@ $hs = function ($x) { return htmlspecialchars((string)$x, ENT_QUOTES); };
 .app .mm { width: 26%; border-radius: 4px; } .app .mp { flex: 1; border-radius: 4px; display: flex; align-items: flex-end; gap: 4px; padding: 6px; }
 .app .mp i { display: block; width: 28px; height: 12px; border-radius: 6px; }
 .app .custom { margin-top: 16px; border: 1px solid rgba(0,0,0,.08); background: var(--panel, #f4f6f8); color: var(--text, #000); border-radius: 12px; padding: 10px 12px; }
-.app #cwarn { font-size: 12px; margin-top: 8px; color: #c62828; font-weight: 600; }
+.app #cwarn { font-size: 12px; margin-top: 8px; color: var(--text, #000); font-weight: 600; }  /* in the theme's text colour: red was unreadable on a dark panel */
 .app .custom label { display: inline-flex; flex-direction: column; font-size: 12px; margin: 6px 12px 0 0; }
 .app .custom label.clr { width: 64px; align-items: center; text-align: center; font-size: 11px; line-height: 1.2; gap: 2px; }
 .app .custom input[type=color] { width: 64px; height: 34px; padding: 0; border: 1px solid #888; border-radius: 6px; background: none; cursor: pointer; }
@@ -205,11 +205,13 @@ function contrastRatio(a, b) {
 }
 // the pairs of the editor's colours that cannot be read (under 4.5:1, WCAG AA; Gitea #100): Text on Background, Menu
 // and Table, Buttons on Table; the stored order is bg, menu, panel, accent, accent2, text
-function cuWarn(cols) {
+function cuWarn(cols, show) {
+  // only for a custom theme, new or edited (a fixed theme's own colours are drawn by its stylesheet and cannot be changed here)
+  if (show === false) { document.getElementById('cwarn').textContent = ''; return; }
   var names = {0: t('str_background'), 1: t('str_menu'), 2: t('str_table'), 3: t('str_buttons'), 5: t('str_text')};
   var bad = [[5, 0], [5, 1], [5, 2], [3, 2]].filter(function (p) { return contrastRatio(cols[p[0]], cols[p[1]]) < 4.5; })
     .map(function (p) { return t('str_a_on_b', {a: names[p[0]], b: names[p[1]]}) + ' (' + fmtNum(contrastRatio(cols[p[0]], cols[p[1]]), 1) + ':1)'; });
-  document.getElementById('cwarn').textContent = bad.length ? t('str_low_contrast_pairs_help', {pairs: bad.join(', ')}) : '';
+  document.getElementById('cwarn').textContent = bad.length ? '\u26a0 ' + t('str_low_contrast_pairs_help', {pairs: bad.join(', ')}) : '';
 }
 // the six colours in their stored order (bg, menu, panel, accent, accent2, text), whatever the order on the page
 function colorsNow() { var c = []; document.querySelectorAll('.custom input[type=color]').forEach(function (x) { c[+x.dataset.i] = x.value; }); return c; }
@@ -220,7 +222,7 @@ function setEditor(name, colors, index) {
   document.getElementById('edtitle').textContent = index >= 0 ? t('str_edit_name', {name: name}) : t('str_new_custom_theme');
   document.getElementById('btnupd').style.display = index >= 0 ? '' : 'none';
   document.getElementById('btndel').style.display = index >= 0 ? '' : 'none';
-  cuWarn(colors);
+  cuWarn(colors, index >= 0);
 }
 function thPick(card) {
   document.querySelectorAll('.thcard').forEach(function (c) { c.classList.toggle('on', c === card); c.setAttribute('aria-pressed', c === card ? 'true' : 'false'); });
@@ -237,13 +239,13 @@ var nc = document.getElementById('newcard');
 if (nc) nc.onclick = function () {
   var sel = document.querySelector('.thcard[data-theme="' + thTheme + '"]');
   var cols = sel ? sel.dataset.colors.split(',') : colorsNow();
-  setEditor('', cols, -1); thShow(cols, "custom"); document.getElementById('cname').focus();
+  setEditor('', cols, -1); thShow(cols, "custom"); cuWarn(cols, true); document.getElementById('cname').focus();
 };
 document.querySelectorAll('.custom input[type=color]').forEach(function (inp) {
   inp.oninput = function () {
     var cols = colorsNow();
     thShow(cols, "custom");
-    cuWarn(cols);
+    cuWarn(cols, true);
     if (edIndex >= 0) {
       var card = document.querySelector('.thcard[data-theme="' + thCustoms[edIndex].id + '"]');
       card.dataset.colors = cols.join(',');
