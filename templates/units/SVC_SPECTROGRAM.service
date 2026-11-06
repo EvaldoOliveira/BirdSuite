@@ -4,6 +4,9 @@ Description=BirdSuite Spectrogram Viewer
 Restart=always
 RestartSec=10
 Type=simple
+# below the analysis (Nice=10, SVC_ANALYSIS): the overview picture is drawn only with CPU the analysis does not need
+# (owner 2026-11-06: the spectrogram must never slow the analysis down)
+Nice=15
 User=@USER@
 # hardening (release run 5, HRD-01): this service needs no root, no sudo, no device and no shared /tmp, so it gets
 # no new privileges, its own /tmp, /usr /boot /etc read-only and no access to kernel settings (the station user's home

@@ -25,9 +25,9 @@ esac
 # US-42: colour sensitivity — floor and range (dB) become the sox Z-axis
 # (-Z = top of the scale in dBFS, -z = range below it). Contrast has no sox
 # equivalent (canvas only).
-_floor=${SPECTROGRAM_FLOOR_DB:--100}; _range=${SPECTROGRAM_RANGE_DB:-70}
-[[ "$_floor" =~ ^-?[0-9]+$ ]] || _floor=-100
-[[ "$_range" =~ ^[0-9]+$ ]] || _range=70
+_floor=${SPECTROGRAM_FLOOR_DB:--95}; _range=${SPECTROGRAM_RANGE_DB:-50}
+[[ "$_floor" =~ ^-?[0-9]+$ ]] || _floor=-95
+[[ "$_range" =~ ^[0-9]+$ ]] || _range=50
 (( _floor < -120 )) && _floor=-120; (( _floor > -40 )) && _floor=-40
 (( _range < 30 )) && _range=30; (( _range > 120 )) && _range=120
 _top=$(( _floor + _range )); (( _top > 0 )) && _top=0
@@ -45,9 +45,11 @@ while read; do
       spectrogram_png=${EXTRACTED}/spectrogram.png
         raw_opt=""; [ "$RAW_SPECTROGRAM" == "1" ] && raw_opt="-r"
         # drawn with the live Spectrogram page's palette, floor, range and contrast; sox stays the fallback
-        if ! "$BS_PYTHON" "$BS_SCRIPTS/spectrogram_png.py" "${analyzing_now}" "${spectrogram_png}" \
+        # each drawing has a time limit (owner 2026-11-06): a stuck drawing never freezes this loop
+        if ! timeout 30 "$BS_PYTHON" "$BS_SCRIPTS/spectrogram_png.py" "${analyzing_now}" "${spectrogram_png}" \
             "${analyzing_now//$HOME\//}" ${raw_opt:+--raw} 2> /dev/null; then
-          sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" $raw_opt
+          timeout 30 sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" $raw_opt \
+            || echo "spectrogram not drawn: ${analyzing_now##*/}" >&2
         fi
     fi
     next=$(( now + looptime ))

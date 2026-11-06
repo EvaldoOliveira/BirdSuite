@@ -39,8 +39,9 @@ def extract(in_file, out_file, start, stop, comments=None):
     tags = []
     for i, c in enumerate(comments or []):
         tags += ['--comment' if i == 0 else '--add-comment', c]
+    # a time limit (owner 2026-11-06): the analysis waits for the reporting thread, a stuck sox must not hold it
     result = subprocess.run(['sox', '-V1', f'{in_file}', *tags, f'{out_file}', 'trim', f'={start}', f'={stop}'],
-                            check=True, capture_output=True)
+                            check=True, capture_output=True, timeout=60)
     ret = result.stdout.decode('utf-8')
     err = result.stderr.decode('utf-8')
     if err:
@@ -76,13 +77,13 @@ PALETTE_SOX_OPTS = {
 def sensitivity_sox_opts(conf):
     """US-42: SPECTROGRAM_FLOOR_DB / SPECTROGRAM_RANGE_DB -> sox -Z (top, dBFS) / -z (range)."""
     try:
-        floor = max(-120, min(-40, int(float(conf.get('SPECTROGRAM_FLOOR_DB', -100)))))
+        floor = max(-120, min(-40, int(float(conf.get('SPECTROGRAM_FLOOR_DB', -95)))))
     except (TypeError, ValueError):
-        floor = -100
+        floor = -95
     try:
-        rng = max(30, min(120, int(float(conf.get('SPECTROGRAM_RANGE_DB', 70)))))
+        rng = max(30, min(120, int(float(conf.get('SPECTROGRAM_RANGE_DB', 50)))))
     except (TypeError, ValueError):
-        rng = 70
+        rng = 50
     return ['-Z', str(min(0, floor + rng)), '-z', str(rng)]
 
 
@@ -106,7 +107,8 @@ def spectrogram(in_file, title, comment, raw=0, palette='turbo', sens_opts=None)
     args += sens_opts or []
     args += ['-r'] if int(raw) else []
 
-    result = subprocess.run(args, check=True, capture_output=True)
+    # a time limit (owner 2026-11-06): the analysis waits for this thread, a stuck sox must not hold it
+    result = subprocess.run(args, check=True, capture_output=True, timeout=60)
     ret = result.stdout.decode('utf-8')
     err = result.stderr.decode('utf-8')
     if err:
@@ -392,8 +394,14 @@ def extract_detection(file: ParseFileName, detection: Detection):
     else:
         os.makedirs(new_dir, exist_ok=True)
         extract_safe(file.file_name, new_file, detection.start, detection.stop, clip_tags(detection, conf, file=file))
-        spectrogram(new_file, detection.common_name, new_file.replace(os.path.expanduser('~/'), ''), conf['RAW_SPECTROGRAM'],
-                    conf.get('SPECTROGRAM_PALETTE', 'turbo'), sensitivity_sox_opts(conf))
+        # the picture is optional, the detection is not (owner 2026-11-06): a spectrogram that cannot be drawn is logged
+        # and the clip is kept without it (it can be drawn again from the clip); before, the error failed the whole
+        # recording's reporting and sent it to quarantine with every detection in it unsaved
+        try:
+            spectrogram(new_file, detection.common_name, new_file.replace(os.path.expanduser('~/'), ''), conf['RAW_SPECTROGRAM'],
+                        conf.get('SPECTROGRAM_PALETTE', 'turbo'), sensitivity_sox_opts(conf))
+        except Exception as e:  # noqa: BLE001  any error here is logged and the station goes on
+            log.error('spectrogram not drawn for %s: %s', os.path.basename(new_file), e)
     return new_file
 
 

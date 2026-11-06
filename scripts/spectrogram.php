@@ -32,12 +32,12 @@ if(!empty($config['SPECTROGRAM_PALETTE']) && array_key_exists($config['SPECTROGR
     $SPECTROGRAM_PALETTE = $config['SPECTROGRAM_PALETTE'];
 }
 // US-42: colour sensitivity — dB floor, dB range and contrast (gamma) of the ramp
-$SPECTROGRAM_FLOOR_DB = (isset($config['SPECTROGRAM_FLOOR_DB']) && is_numeric($config['SPECTROGRAM_FLOOR_DB'])) ? max(-120, min(-40, intval($config['SPECTROGRAM_FLOOR_DB']))) : -100;
-$SPECTROGRAM_RANGE_DB = (isset($config['SPECTROGRAM_RANGE_DB']) && is_numeric($config['SPECTROGRAM_RANGE_DB'])) ? max(30, min(120, intval($config['SPECTROGRAM_RANGE_DB']))) : 70;
-$SPECTROGRAM_CONTRAST = (isset($config['SPECTROGRAM_CONTRAST']) && is_numeric($config['SPECTROGRAM_CONTRAST'])) ? max(0.5, min(2.0, floatval($config['SPECTROGRAM_CONTRAST']))) : 1.0;
+$SPECTROGRAM_FLOOR_DB = (isset($config['SPECTROGRAM_FLOOR_DB']) && is_numeric($config['SPECTROGRAM_FLOOR_DB'])) ? max(-120, min(-40, intval($config['SPECTROGRAM_FLOOR_DB']))) : -95;
+$SPECTROGRAM_RANGE_DB = (isset($config['SPECTROGRAM_RANGE_DB']) && is_numeric($config['SPECTROGRAM_RANGE_DB'])) ? max(30, min(120, intval($config['SPECTROGRAM_RANGE_DB']))) : 50;
+$SPECTROGRAM_CONTRAST = (isset($config['SPECTROGRAM_CONTRAST']) && is_numeric($config['SPECTROGRAM_CONTRAST'])) ? max(0.5, min(2.0, floatval($config['SPECTROGRAM_CONTRAST']))) : 1.7;
 
 // the factory values of the four picture settings (config/factory_defaults.conf), for the Defaults button
-$SPECTROGRAM_FACTORY = array('palette' => 'turbo', 'floor' => -100, 'range' => 70, 'contrast' => 1.0);
+$SPECTROGRAM_FACTORY = array('palette' => 'turbo', 'floor' => -95, 'range' => 50, 'contrast' => 1.7);
 $fd = @file_get_contents(BS_DEFAULTS);
 foreach (array('palette' => 'SPECTROGRAM_PALETTE', 'floor' => 'SPECTROGRAM_FLOOR_DB', 'range' => 'SPECTROGRAM_RANGE_DB', 'contrast' => 'SPECTROGRAM_CONTRAST') as $k => $key) {
   if ($fd !== false && preg_match('/^' . $key . '="?([^"\n]*)"?/m', $fd, $m)) {

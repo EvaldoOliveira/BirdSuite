@@ -456,8 +456,8 @@ if (isset($_GET['review_worker'])) {
   $c = get_config();
   if (is_authenticated()) review_worker_get('/ping', 1, false);
   header('Content-Type: application/json');
-  echo json_encode(array('palette' => $c['SPECTROGRAM_PALETTE'] ?? 'turbo', 'floor' => $c['SPECTROGRAM_FLOOR_DB'] ?? -100,
-    'range' => $c['SPECTROGRAM_RANGE_DB'] ?? 70, 'contrast' => $c['SPECTROGRAM_CONTRAST'] ?? 1));
+  echo json_encode(array('palette' => $c['SPECTROGRAM_PALETTE'] ?? 'turbo', 'floor' => $c['SPECTROGRAM_FLOOR_DB'] ?? -95,
+    'range' => $c['SPECTROGRAM_RANGE_DB'] ?? 50, 'contrast' => $c['SPECTROGRAM_CONTRAST'] ?? 1.7));
   die();
 }
 
