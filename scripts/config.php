@@ -221,7 +221,7 @@ if(($_GET['submit'] ?? '') === 'settings') try {
   if (isset($_GET['birdweather_id']) && isset($_GET['bw_loc']) && is_array($_GET['bw_loc'])) {
     foreach ($_GET['bw_loc'] as $bw_t) {
       $bw_t = trim((string)$bw_t);
-      if ($bw_t !== '' && !preg_match('/^[A-Za-z0-9_-]{4,64}$/', $bw_t)) throw new RuntimeException(t('str_birdweather_token') . ': ' . t('str_4_to_64_letters_digits_or'));
+      if ($bw_t !== '' && !preg_match('/^[A-Za-z0-9_-]{4,64}$/', $bw_t)) throw new RuntimeException(rtrim(t('str_birdweather_token'), ': ') . ': ' . t('str_4_to_64_letters_digits_or'));
     }
   }
   $same = function ($a, $b) { return is_numeric($a) && is_numeric($b) ? floatval($a) == floatval($b) : (string)$a === (string)$b; };
