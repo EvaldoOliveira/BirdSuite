@@ -62,7 +62,24 @@ def current_id(conf):
         loc = at_point(float(conf.get('LATITUDE') or 0), float(conf.get('LONGITUDE') or 0), locs)
     except (TypeError, ValueError):
         loc = None
+    if loc is None and locs:
+        # nothing holds the coordinates (a fresh station before its first run set them): the first location, never a
+        # detection without a place (Gitea #91: the first 23 minutes of a new station belonged to no location)
+        loc = next((l for l in locs if l.get('builtin') != 'test'), locs[0])
     return int(loc['id']) if loc else None
+
+
+def assign_orphans(con, lid, locs=None):
+    """Files the detections that belong to no location (an empty tag, or the id of a location that no longer exists)
+    under location lid (Station > Locations, Gitea #93); returns how many."""
+    ids = [int(l['id']) for l in (locs if locs is not None else load())]
+    if int(lid) not in ids:
+        return 0
+    cond = "Location IS NULL OR TRIM(CAST(Location AS TEXT)) = '' OR CAST(Location AS INTEGER) NOT IN (%s)" % ','.join(str(i) for i in ids)
+    n = con.execute('UPDATE detections SET Location = ? WHERE ' + cond, (int(lid),)).rowcount
+    con.execute('UPDATE deleted_detections SET Location = ? WHERE ' + cond, (int(lid),))
+    con.commit()
+    return n
 
 
 def current(conf):
@@ -155,6 +172,13 @@ if __name__ == '__main__':
             c = sqlite3.connect(db, timeout=60)
             biome_rows(c)
             c.close()
+    elif len(sys.argv) == 3 and sys.argv[1] == 'assign-orphans' and sys.argv[2].isdigit():
+        # python3 locations.py assign-orphans <id>: the detections without a location filed under that one; prints the count
+        c = sqlite3.connect(core.BS_DB, timeout=60)
+        n = assign_orphans(c, int(sys.argv[2]))
+        biome_rows(c)   # their biome columns follow the location
+        c.close()
+        print(n)
     else:
-        print('usage: python3 locations.py biomes')
+        print('usage: python3 locations.py biomes | assign-orphans <location id>')
         sys.exit(2)

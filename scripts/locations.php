@@ -24,6 +24,25 @@ function locations_with_counts() {
   $db->close();
   return $out;
 }
+// the detections that belong to no location (Gitea #93): an empty tag (a station analysed before its first run set the
+// place) or the id of a location that no longer exists; they count nowhere and the location filter never shows them
+function locations_orphans() {
+  $ids = array_map('intval', array_column(locations_load(), 'id')) ?: array(0);
+  $db = new SQLite3(BS_DB, SQLITE3_OPEN_READONLY);
+  $db->busyTimeout(5000);
+  $n = intval($db->querySingle("SELECT COUNT(*) FROM main.detections WHERE Location IS NULL OR TRIM(CAST(Location AS TEXT)) = '' OR CAST(Location AS INTEGER) NOT IN (" . implode(',', $ids) . ')'));
+  $db->close();
+  return $n;
+}
+// Assign (Gitea #93): the detections without a location filed under the chosen one, by the station's own tool
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['assign_orphans'])) {
+  ensure_authenticated(t('str_you_must_change_the_locations_help'));
+  $l = location_by_id($_GET['assign_orphans']);
+  if (!$l) { echo t('str_unknown_location'); die(); }
+  $n = trim((string)shell_exec(station_prefix() . 'python3 ' . escapeshellarg(__ROOT__ . '/scripts/utils/locations.py') . ' assign-orphans ' . intval($l['id']) . ' 2>/dev/null'));
+  echo ctype_digit($n) ? 'OK:' . $n : t('str_error_writing_the_settings');
+  die();
+}
 
 if (isset($_GET['json'])) {
   header('Content-Type: application/json');
@@ -130,6 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['setcur'])) {
   $name = mb_substr(trim(preg_replace('/[\x00-\x1F\x7F<>"]/', '', (string)($p['name'] ?? ''))), 0, 60);
   // the location's own timezone and species list (owner 2026-10-20), stored with it, then applied with the coordinates
   $list = locations_complete(locations_load());
+  // a name another location carries is refused, as Add does (Gitea #92)
+  if ($here && $name !== '' && location_name_taken($name, $list, intval($here['id']))) { echo t('str_a_location_named_exists_already', array('name' => $name)); die(); }
   foreach ($list as &$x) if ($here && intval($x['id']) === intval($here['id'])) {
     $x['lat'] = $lat; $x['lon'] = $lon;
     if ($name !== '') $x['name'] = $name;
@@ -183,6 +204,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['save'])) {
     $th = strtolower(trim((string)($l['theme'] ?? location_theme($old[$id]))));
     $new[$id]['theme'] = $th === '' || theme_valid($th) ? $th : location_theme($old[$id]);
   }
+  // two rows with the same name are refused, as Add does (Gitea #92)
+  foreach ($new as $id => $l) if (location_name_taken($l['name'], array_values($new), $id)) { echo t('str_a_location_named_exists_already', array('name' => $l['name'])); die(); }
   // the test location is built in: it is kept even when the list sent leaves it out
   foreach ($old as $id => $l) if (!isset($new[$id]) && ($l['builtin'] ?? '') === 'test') $new[$id] = $l;
   // a location with detections (removed ones too: they keep its id until restored or purged), or the current one,
@@ -285,6 +308,30 @@ function loc_bg_cell($l) {
         . (($l['builtin'] ?? '') === 'test' ? '' : '<div class="ordrow"><button type="button" class="locbtn del" onclick="locRemove(this)">' . t('str_remove') . '</button></div>') . '</td></tr>';
     } ?>
   </table>
+  <?php // detections without a location (Gitea #93): said under the table with the way to file them; nothing automatic,
+  // the detections are the owner's
+  if (($orph = locations_orphans()) > 0) { ?>
+  <p style="margin:8px 0 0"><b><?php echo t('str_without_a_location'); ?></b> &middot; <?php echo t('str_n_detections', array('n' => fmt_num($orph))); ?>
+    <label style="margin-left:8px"><?php echo t('str_assign_to'); ?> <select id="orphsel"><?php foreach ($rows as $l) echo '<option value="' . intval($l['id']) . '"' . ($cur && intval($cur['id']) === intval($l['id']) ? ' selected' : '') . '>' . $h($l['name']) . '</option>'; ?></select></label>
+    <button type="button" class="locbtn" onclick="locAssign(this)"><?php echo t('str_assign'); ?></button> <span id="orphmsg" style="font-weight:600"></span></p>
+  <script>
+  function locAssign(b) {
+    var sel = document.getElementById('orphsel'), name = sel.options[sel.selectedIndex].text, m = document.getElementById('orphmsg');
+    askModal(t('str_assign'), t('str_file_the_n_detections_under', {n: <?php echo json_encode(fmt_num($orph)); ?>, name: name}), t('str_assign')).then(function (ok) {
+      if (!ok) return;
+      b.disabled = true;
+      var x = new XMLHttpRequest();
+      x.onload = function () {
+        b.disabled = false;
+        var r = this.responseText.trim();
+        if (r.indexOf('OK:') === 0) { m.textContent = t('str_n_detections_filed_under', {n: fmtNum(parseInt(r.slice(3), 10), 0), name: name}); setTimeout(function () { location.reload(); }, 1200); }
+        else m.textContent = this.status === 401 ? t('str_log_in_first') : r;
+      };
+      x.open('POST', 'scripts/locations.php?assign_orphans=' + encodeURIComponent(sel.value), true); x.send();
+    });
+  }
+  </script>
+  <?php } ?>
   <?php // the test location note under the table, not in its name cell (owner 2026-10-21) ?>
   <p style="font-size:.85em;margin:6px 0 0"><?php echo t('str_the_test_playback_location_help'); ?></p>
   <p style="margin:8px 0 0"><button type="button" class="locbtn" onclick="locSave()"><?php echo t('str_save'); ?></button><span id="locmsg"></span></p>

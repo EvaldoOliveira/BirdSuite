@@ -1222,7 +1222,11 @@ function location_current() {
   $c = get_config();
   $id = trim((string)($c['LOCATION_ID'] ?? ''), " \"'");
   if (ctype_digit($id) && ($l = location_by_id($id))) return $l;
-  return location_at(floatval($c['LATITUDE'] ?? 0), floatval($c['LONGITUDE'] ?? 0));
+  $l = location_at(floatval($c['LATITUDE'] ?? 0), floatval($c['LONGITUDE'] ?? 0));
+  // a station without the tag (updated from before it, or set up before Gitea #91) gets it from the coordinates once,
+  // so two locations sharing coordinates never make the tag ambiguous again
+  if ($l) conf_set('LOCATION_ID', intval($l['id']), $err);
+  return $l;
 }
 // The radius is the one distance of a location (owner 2026-10-21): a point within it is this location (the phone's GPS,
 // a restored backup, the boot check). The boot check places the station by its public IP, which is 10 to 30 km off in a
@@ -1366,22 +1370,76 @@ function apply_station_coordinates($lat, $lon) {
   }
   return '';
 }
+// a name no other location carries (Gitea #92: only Add refused a repeated name): the name itself, else "name 2",
+// "name 3"...; compared without case, against the names shown and the English names of the built-in locations;
+// $except = the id of the location being renamed
+function location_unique_name($name, $list, $except = 0) {
+  $taken = array();
+  foreach ($list as $l) {
+    if (intval($l['id'] ?? 0) === intval($except)) continue;
+    $taken[] = mb_strtolower((string)$l['name']);
+    if (isset(location_builtin_names()[$l['builtin'] ?? ''])) $taken[] = mb_strtolower(location_builtin_names()[$l['builtin']]);
+  }
+  $base = $name; $n = 1;
+  while (in_array(mb_strtolower($name), $taken, true)) $name = $base . ' ' . (++$n);
+  return $name;
+}
+// true when another location already carries this name (the same comparison as location_unique_name)
+function location_name_taken($name, $list, $except = 0) {
+  return location_unique_name($name, $list, $except) !== $name;
+}
+// the detections a location holds, removed ones included (the whole table, not the location shown)
+function location_detection_count($id) {
+  $db = new SQLite3(BS_DB, SQLITE3_OPEN_READONLY);
+  $db->busyTimeout(5000);
+  $n = intval($db->querySingle('SELECT COUNT(*) FROM main.detections WHERE Location = ' . intval($id)))
+    + intval($db->querySingle('SELECT COUNT(*) FROM deleted_detections WHERE Location = ' . intval($id)));
+  $db->close();
+  return $n;
+}
 // Settings › Locations and First Run (owner 2026-10-20): the location holding these coordinates takes this name, or a new
-// location is made for them when none holds them (name empty = Home, the default location)
+// location is made for them when none holds them (name empty = Home, the default location).
+// A fresh station (Gitea #91): its only location is the factory Home, made at the network position before the first run
+// and empty; the first run's coordinates MOVE it (Test / Playback, which mirrors it, follows) instead of adding a second
+// "Home" 14 km away. Either way the location becomes the current one (LOCATION_ID), so the tag never depends on the
+// coordinates alone.
 function location_set_named($lat, $lon, $name) {
   $name = mb_substr(trim(preg_replace('/[\x00-\x1F\x7F<>"]/', '', (string)$name)), 0, 60);
   $lat = round(floatval($lat), 4); $lon = round(floatval($lon), 4);
   $list = locations_load();
   $l = location_at($lat, $lon);
+  $id = 0;
   if ($l) {
-    if ($name === '' || $name === $l['name']) return true;
-    foreach ($list as &$x) if (intval($x['id']) === intval($l['id'])) $x['name'] = $name;
-    unset($x);
+    $id = intval($l['id']);
+    if ($name !== '' && $name !== $l['name']) {
+      $name = location_unique_name($name, $list, $id);
+      foreach ($list as &$x) if (intval($x['id']) === $id) $x['name'] = $name;
+      unset($x);
+      if (!locations_save($list)) return false;
+    }
   } else {
-    $list[] = array('id' => max(array_map('intval', array_column($list, 'id'))) + 1, 'name' => $name !== '' ? $name : 'Home',
-                    'lat' => $lat, 'lon' => $lon, 'radius_km' => LOCATION_RADIUS_KM);
+    $real = array_values(array_filter($list, function ($x) { return ($x['builtin'] ?? '') !== 'test'; }));
+    $fresh = count($real) === 1 && ($real[0]['builtin'] ?? '') === 'home' && location_detection_count($real[0]['id']) === 0;
+    if ($fresh) {
+      $id = intval($real[0]['id']);
+      $old = array($real[0]['lat'], $real[0]['lon']);
+      foreach ($list as &$x) {
+        if (intval($x['id']) === $id || (($x['builtin'] ?? '') === 'test' && $x['lat'] == $old[0] && $x['lon'] == $old[1])) {
+          $x['lat'] = $lat; $x['lon'] = $lon;
+          unset($x['biome'], $x['ecoregion'], $x['biome_br'], $x['biome_at'], $x['land_cover'], $x['built_up_pct'], $x['land_at'], $x['setting'], $x['built_up_500_pct']);
+        }
+        if (intval($x['id']) === $id && $name !== '') $x['name'] = location_unique_name($name, $list, $id);
+      }
+      unset($x);
+    } else {
+      $id = max(array_map('intval', array_column($list, 'id'))) + 1;
+      $list[] = array('id' => $id, 'name' => location_unique_name($name !== '' ? $name : 'Home', $list),
+                      'lat' => $lat, 'lon' => $lon, 'radius_km' => LOCATION_RADIUS_KM);
+    }
+    if (!locations_save($list)) return false;
   }
-  return locations_save($list);
+  if ($id > 0) conf_set('LOCATION_ID', $id, $err);
+  return true;
 }
 // Is the clock right? (US-120, owner 2026-10-20) The Pi has no battery clock: it is right once NTP synchronised it or
 // the phone set it (scripts/field_net.py time writes /run/birdsuite/time_confirmed). Detections are stamped with it.

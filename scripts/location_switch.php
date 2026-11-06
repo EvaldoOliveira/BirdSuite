@@ -135,6 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_GET['mic'] ?? '', array(
     $lat = floatval($_GET['lat'] ?? ''); $lon = floatval($_GET['lon'] ?? '');
     if ($name === '' || abs($lat) > 90 || abs($lon) > 180 || ($lat == 0 && $lon == 0)) { echo t('str_a_name_and_valid_coordinates_help'); die(); }
     $list = locations_load();
+    // a name another location carries is refused, as Add does (Gitea #92)
+    if (location_name_taken(mb_substr($name, 0, 60), $list)) { echo t('str_a_location_named_exists_already', array('name' => $name)); die(); }
     $id = max(array_map('intval', array_column($list, 'id'))) + 1;
     $list[] = array('id' => $id, 'name' => mb_substr($name, 0, 60), 'lat' => round($lat, 4), 'lon' => round($lon, 4), 'radius_km' => LOCATION_RADIUS_KM,
                     'timezone' => station_timezone(), 'species_list' => (string)(get_config()['SPECIES_LIST'] ?? ''));
