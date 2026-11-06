@@ -557,14 +557,12 @@ function initialize() {
   let W = CVS.width = CVS.clientWidth;
   let H = CVS.height = CVS.clientHeight;
 
-  ACTX = new AudioContext();
-  ANALYSER = ACTX.createAnalyser();
-
-  ANALYSER.fftSize = 2048;  
-  applySensitivity();
-  drawFrequencyAxis();
-  
   try{
+    ACTX = new AudioContext();
+    ANALYSER = ACTX.createAnalyser();
+    ANALYSER.fftSize = 2048;
+    applySensitivity();
+    drawFrequencyAxis();
     process();
   } catch(e) {
     // the browser cannot draw the live sound (no Web Audio, the stream refused as a source): the picture mode of this
