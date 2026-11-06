@@ -42,7 +42,7 @@ $temp = @file_get_contents('/sys/class/thermal/thermal_zone0/temp');
 $conn = array();
 foreach ((array)($st['active'] ?? array()) as $a) if (($a['name'] ?? '') !== '') $conn[] = $a['name'];
 $ap = !empty($st['ap_on']);
-$cmd = function ($c) { return 'views.php?submit=' . rawurlencode($c); };
+// the commands go to views.php by POST (2026-11-06 deep review S1)
 $rec_on = 'sudo -n ' . BS_SVC_HELPER . ' enable-now ' . BS_SVC_RECORDING . '.service';
 $rec_off = 'sudo -n ' . BS_SVC_HELPER . ' disable-now ' . BS_SVC_RECORDING . '.service';
 $halt = 'sudo -n ' . BS_ROOT_HELPER . ' shutdown';
@@ -58,6 +58,7 @@ $row = function ($label, $value, $bad = false) use ($h) {
 	.field .fbtns { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
 	.field .fbtns a, .field .fbtns button { font-size: 17px; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--accent, #2b5e22); background: var(--accent, #2b5e22); color: #fff; text-decoration: none; cursor: pointer; }
 	.field .fbtns .sec { background: transparent; color: inherit; }
+	.field .fbtns form { display: inline; margin: 0; }
 </style>
 <div class="field">
 <?php
@@ -71,11 +72,11 @@ echo $row(t('str_internet'), !empty($st['online']) ? t('str_yes') : t('str_no'))
 echo $row(t('str_connected_through'), $h(($ap ? t('str_station_wifi_n_phones', array('n' => intval($st['ap_clients'] ?? 0))) : '') . ($ap && $conn ? ', ' : '') . implode(', ', $conn)) ?: '-');
 ?>
 	<div class="fbtns">
-		<?php if ($recording) { ?><a class="sec" href="<?php echo $h($cmd($rec_off)); ?>"><?php echo $h(t('str_stop_recording')); ?></a>
-		<?php } else { ?><a href="<?php echo $h($cmd($rec_on)); ?>"><?php echo $h(t('str_start_recording')); ?></a><?php } ?>
+		<?php if ($recording) { ?><form method="POST" action="views.php"><button type="submit" class="sec" name="submit" value="<?php echo $h($rec_off); ?>"><?php echo $h(t('str_stop_recording')); ?></button></form>
+		<?php } else { ?><form method="POST" action="views.php"><button type="submit" name="submit" value="<?php echo $h($rec_on); ?>"><?php echo $h(t('str_start_recording')); ?></button></form><?php } ?>
 		<a class="sec" href="views.php?view=Raw%20Recording"><?php echo $h(t('str_raw_recording_menu')); ?></a>
 		<a class="sec" href="views.php?view=Disk%20Space"><?php echo $h(t('str_disk_space')); ?></a>
-		<button type="button" class="sec" onclick="askModal(t('str_shut_down_the_station_help'), function () { location.href = <?php echo $h(json_encode($cmd($halt))); ?>; })"><?php echo $h(t('str_shut_down_safely')); ?></button>
+		<form method="POST" action="views.php"><button type="button" class="sec" onclick="var f = this.form; askModal(t('str_shut_down_the_station_help'), function () { f.submit(); })"><?php echo $h(t('str_shut_down_safely')); ?></button><input type="hidden" name="submit" value="<?php echo $h($halt); ?>"></form>
 	</div>
 	<p class="small"><?php echo $h(t('str_field_page_help')); ?></p>
 </div>

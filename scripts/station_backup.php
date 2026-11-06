@@ -137,8 +137,10 @@ $sb_h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 			FileUploaded: function () {
 				var x = new XMLHttpRequest();
 				x.onload = function () { if (this.responseText.length > 0) document.body.innerHTML = this.responseText; };
-				x.open('GET', 'views.php?submit=<?php echo rawurlencode($sb_restore); ?>');
-				x.send();
+				// by POST (2026-11-06 deep review S1: views.php refuses a command by GET)
+				x.open('POST', 'views.php');
+				x.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+				x.send('submit=' + encodeURIComponent(<?php echo json_encode($sb_restore); ?>));
 			},
 			Error: function (up, err) {
 				document.getElementById('console').appendChild(document.createTextNode('\n' + t('str_error_code_message', {code: err.code, message: err.message})));

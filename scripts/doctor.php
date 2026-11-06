@@ -49,7 +49,9 @@ $age = function ($seconds) {
 // services: enabled but not running = failure, with a restart button (the commands views.php allows)
 // one systemctl call for every service the checks look at (one process instead of three per service)
 $svc_info = array();
-$svc_names = array(BS_SVC_RECORDING, BS_SVC_ANALYSIS, BS_SVC_SPECTROGRAM, BS_SVC_LOG, BS_SVC_LIVESTREAM, BS_SVC_ICECAST, BS_SVC_TERMINAL, 'caddy', 'php8.4-fpm');
+// the PHP-FPM unit of this OS (2026-11-06 deep review S3: the name was fixed to one version; Bookworm runs 8.2)
+$php_unit = preg_replace('/\.service$/', '', trim((string)$sh("systemctl list-units 'php*-fpm.service' --no-legend --plain | awk '{print \$1}' | head -n1"))) ?: 'php8.4-fpm';
+$svc_names = array(BS_SVC_RECORDING, BS_SVC_ANALYSIS, BS_SVC_SPECTROGRAM, BS_SVC_LOG, BS_SVC_LIVESTREAM, BS_SVC_ICECAST, BS_SVC_TERMINAL, 'caddy', $php_unit);
 foreach (preg_split('/\n\s*\n/', $sh('systemctl show -p Id,ActiveState,UnitFileState,NRestarts ' . implode(' ', array_map(function ($u) { return escapeshellarg($u . '.service'); }, $svc_names)))) as $blk) {
 	$kv = array();
 	foreach (explode("\n", trim($blk)) as $l) { $p = strpos($l, '='); if ($p !== false) $kv[substr($l, 0, $p)] = substr($l, $p + 1); }
@@ -60,7 +62,7 @@ $fixable = array(BS_SVC_ANALYSIS, BS_SVC_RECORDING, BS_SVC_LOG, BS_SVC_SPECTROGR
 foreach (array(BS_SVC_RECORDING => 'str_recording', BS_SVC_ANALYSIS => 'str_analysis',
 							 BS_SVC_SPECTROGRAM => 'str_spectrogram', BS_SVC_LOG => 'str_log_viewer', 
 							 BS_SVC_LIVESTREAM => 'str_live_audio', BS_SVC_ICECAST => 'str_live_audio_server', BS_SVC_TERMINAL => 'str_web_term',
-							 'caddy' => 'str_web_server', 'php8.4-fpm' => 'str_php') as $svc => $label) {
+							 'caddy' => 'str_web_server', $php_unit => 'str_php') as $svc => $label) {
 	$active = $svc_info[$svc]['ActiveState'] ?? 'unknown';
 	$svc_state[$svc] = $active;
 	$enabled = $svc_info[$svc]['UnitFileState'] ?? '';
@@ -367,7 +369,7 @@ $icon = array('ok' => '✅', 'warn' => '⚠️', 'fail' => '❌', 'info' => 'ℹ
 			// a page to open (the setting is changed there), not a command
 			$fix = ' <form action="views.php" method="GET" style="display:inline"><button type="submit" name="view" value="' . $h($c['fix'][1]) . '">' . $h($c['fix'][0]) . '</button></form>';
 		} elseif ($c['fix']) {
-			$fix = ' <form action="views.php" method="GET" style="display:inline"><button type="submit" name="submit" value="' . $h($c['fix'][1]) . '">' . $h($c['fix'][0]) . '</button></form>';
+			$fix = ' <form action="views.php" method="POST" style="display:inline"><button type="submit" name="submit" value="' . $h($c['fix'][1]) . '">' . $h($c['fix'][0]) . '</button></form>';
 		}
 		echo '<tr><td class="st">' . $icon[$c['status']] . '</td><td class="nm">' . $h(t($c['name'])) . '</td><td>' . $h($c['detail']) . $fix . '</td></tr>';
 	} ?>

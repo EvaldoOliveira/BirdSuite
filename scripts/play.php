@@ -478,8 +478,17 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
 	// the answer it had (owner 2026-11-06, Gitea #69): clear on a detection that came from Change species keeps its row,
 	// the only place of the species the model gave and its confidence, back as Change species wrote it (Yes, 'changed');
 	// clear of a Yes takes the species off the Confirmed list when it was its last Yes
-	$was = $verdict === 'clear' ? $rw->querySingle("SELECT r.Verdict, r.Orig_Sci, COALESCE(d.Sci_Name, r.Sci_Name) AS Sci FROM detection_reviews r
-    LEFT JOIN detections d ON d.File_Name = r.File_Name WHERE r.File_Name = '" . SQLite3::escapeString($file_name) . "' LIMIT 1", true) : array();
+	// the answer it had, for every verdict (2026-11-06 deep review R1: a Yes answered again as a cause kept the species confirmed)
+	$was = $rw->querySingle("SELECT r.Verdict, r.Reason, r.Orig_Sci, COALESCE(d.Sci_Name, r.Sci_Name) AS Sci FROM detection_reviews r
+    LEFT JOIN detections d ON d.File_Name = r.File_Name WHERE r.File_Name = '" . SQLite3::escapeString($file_name) . "' LIMIT 1", true) ?: array();
+	// no other Yes of the species left: it leaves the Confirmed list (the Undo of a Yes, and a Yes answered again)
+	$last = function () use ($rw, $was) {
+		$c = $rw->prepare("SELECT COUNT(*) FROM detection_reviews WHERE Verdict = 'yes' AND Sci_Name = :s");
+		$c->bindValue(':s', $was['Sci'] ?? '');
+		$res = $c ? $c->execute() : false;
+		$row = $res ? $res->fetchArray(SQLITE3_NUM) : false;
+		return $row !== false && intval($row[0]) === 0;
+	};
 	if ($verdict === 'clear' && !empty($was['Orig_Sci'])) {
 		$st = $rw->prepare("UPDATE detection_reviews SET Verdict = 'yes', Reason = 'changed' WHERE File_Name = :f");
 		$st->bindValue(':f', $file_name);
@@ -509,13 +518,11 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
 	// Species Management is never dropped by a Clear): the species leaves the Confirmed list only when no other Yes of it
 	// remains (a Yes written by Change species is a Yes too)
 	if ($ok && $verdict === 'clear' && isset($_GET['unconfirm']) && ($was['Verdict'] ?? '') === 'yes' && empty($was['Orig_Sci']) && !empty($was['Sci'])) {
-		$last = function () use ($rw, $was) {
-			$c = $rw->prepare("SELECT COUNT(*) FROM detection_reviews WHERE Verdict = 'yes' AND Sci_Name = :s");
-			$c->bindValue(':s', $was['Sci']);
-			$res = $c ? $c->execute() : false;
-			$row = $res ? $res->fetchArray(SQLITE3_NUM) : false;
-			return $row !== false && intval($row[0]) === 0;
-		};
+		if (!confirmed_list_set($was['Sci'], false, $last)) error_log('BirdSuite: confirmed_species_list.txt not written (' . $was['Sci'] . ')');
+	}
+	// a Yes answered again as a cause or Review later (2026-11-06 deep review R1): the species leaves the Confirmed list
+	// when no other Yes of it remains, as the Undo of that Yes does (a Yes written by Change species confirms nothing)
+	if ($ok && in_array($verdict, array('no', 'unsure'), true) && ($was['Verdict'] ?? '') === 'yes' && ($was['Reason'] ?? '') !== 'changed' && empty($was['Orig_Sci']) && !empty($was['Sci'])) {
 		if (!confirmed_list_set($was['Sci'], false, $last)) error_log('BirdSuite: confirmed_species_list.txt not written (' . $was['Sci'] . ')');
 	}
 	// a clip staged for purge at night goes back at once when its answer is no longer a cause (owner 2026-10-22: it can be

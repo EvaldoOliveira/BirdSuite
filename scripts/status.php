@@ -158,7 +158,8 @@ if (isset($_GET['migration'])) {
 	die();
 }
 if (isset($_GET['check'])) {
-	shell_exec("timeout 25 " . $git . "fetch --tags --force origin " . escapeshellarg($update_branch) . " > /dev/null 2>&1");
+	// one fetch a minute at most (2026-11-06 deep review S2: every call fetched, and the call needs no login)
+	if (update_fetch_age() > 60) shell_exec("timeout 25 " . $git . "fetch --tags --force origin " . escapeshellarg($update_branch) . " > /dev/null 2>&1");
 	header('Content-Type: application/json');
 	echo json_encode(array('behind' => update_behind(), 'latest' => status_latest_tag($git)));
 	die();
@@ -292,7 +293,7 @@ $mount = get_service_mount_name();
 			<div style="text-align:right"><button type="button" class="stdbtn" onclick="this.closest('dialog').close()"><?php echo t('str_close'); ?></button></div>
 		</dialog>
 		<?php } ?>
-		<form action="views.php" method="GET" class="actions">
+		<form action="views.php" method="POST" class="actions">
 			<button type="submit" class="stdbtn" name="submit" value="sudo -n /usr/local/sbin/birdsuite-root reboot" onclick="return bsAskSubmit(this, <?php echo $h(json_encode(t('str_are_you_sure_you_want_to_reboot_help'))); ?>, true)"><?php echo t('str_reboot'); ?></button>
 			<button type="button" class="stdbtn" id="updatebtn" onclick="stUpdate();"<?php echo $up_to_date ? ' disabled title="' . $h(t('str_birdsuite_is_up_to_date')) . '"' : ''; ?>><?php echo $h($update_label); ?></button>
 			<button type="submit" class="stdbtn del" name="submit" value="sudo -n /usr/local/sbin/birdsuite-root shutdown" onclick="return bsAskSubmit(this, <?php echo $h(json_encode(t('str_are_you_sure_you_want_to_help'))); ?>, true)"><?php echo t('str_shutdown'); ?></button>
@@ -369,7 +370,7 @@ $mount = get_service_mount_name();
 	<?php } ?>
 
 	<h3><?php echo t('str_services'); ?></h3>
-	<form action="views.php" method="GET">
+	<form action="views.php" method="POST">
 	<table class="stdtable">
 		<?php // narrower for the phone (owner 2026-10-25): the service in green (running) or red with its state under it; the
 		// buttons in two lines, Stop / Restart and Disable / Enable ?>

@@ -65,6 +65,9 @@ def get_model(model=None):
         return BirdNETGo20250916(conf.getfloat('SENSITIVITY'))
     elif model == BirdNETPlusV3.model_name:
         return BirdNETPlusV3(conf.getfloat('SENSITIVITY'), conf.getfloat('SF_THRESH'))
+    # a name no model has (a hand-edited or imported BirdSuite.conf; 2026-11-06 deep review E3: None came back and every
+    # recording failed with an attribute error, the station deaf with only log lines): the service stops with the reason
+    raise ValueError(f'unknown MODEL {model!r} in BirdSuite.conf: the analysis cannot run (Station > Model lists the models installed)')
 
 
 def get_meta_model(model=None, version=None):

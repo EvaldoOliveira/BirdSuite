@@ -50,6 +50,11 @@ LAST_MODEL_HAS_HUMAN = True
 SHADOW_HUMAN_SLOTS = []
 
 
+class UnreadableRecording(Exception):
+    """A recording the engine cannot read (not an audio file, a name that is not the station's): birdnet_analysis.py puts
+    it in the quarantine (2026-11-06 deep review E1: it failed again at every start, from the backlog)."""
+
+
 def loadCustomSpeciesList(path):
     species_list = []
     if os.path.isfile(path):
@@ -121,7 +126,10 @@ def readAudioData(path, overlap, sample_rate, chunk_duration):
 
     # Open file with librosa (uses ffmpeg or libav)
     # soxr ships with librosa; 'kaiser_fast' needs resampy, which is only missed once a model is not 48 kHz
-    sig, rate = librosa.load(path, sr=sample_rate, mono=True, res_type='soxr_hq')
+    try:
+        sig, rate = librosa.load(path, sr=sample_rate, mono=True, res_type='soxr_hq')
+    except Exception as e:  # noqa: BLE001  whatever the reader raises: the file is not a recording the station can read
+        raise UnreadableRecording(f'cannot read {os.path.basename(path)}: {e}') from e
 
     # Split audio into chunks
     chunks = splitSignal(sig, rate, overlap, seconds=chunk_duration)
@@ -269,12 +277,8 @@ def run_analysis(file):
     model = load_global_model()
     names = get_language(conf['DATABASE_LANG'])
 
-    # Read audio data & handle errors
-    try:
-        audio_data = readAudioData(file.file_name, conf.getfloat('OVERLAP'), model.sample_rate, model.chunk_duration)
-    except (NameError, TypeError) as e:
-        log.error("Error with the following info: %s", e)
-        return []
+    # Read audio data (an unreadable file raises UnreadableRecording: the service quarantines it)
+    audio_data = readAudioData(file.file_name, conf.getfloat('OVERLAP'), model.sample_rate, model.chunk_duration)
 
     # Process audio data and get detections
     raw_detections, predicted_species_list = analyzeAudioData(audio_data, conf.getfloat('OVERLAP'), conf.getfloat('LATITUDE'),

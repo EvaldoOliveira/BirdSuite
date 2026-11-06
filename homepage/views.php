@@ -49,6 +49,11 @@ set_timezone();
 // sensitive or reach the machine (owner 2026-10-25); a change on any page asks (any POST here, and the endpoints).
 // An old view key opens its page (US-50): the address is resolved to the current key before anything else.
 if (isset($_GET['view']) && ($resolved = view_resolve($_GET['view'])) !== '') $_GET['view'] = $resolved;
+// a command of the station (Status, Field, the Doctor's fixes, the settings restore) arrives by POST (2026-11-06 deep
+// review S1: the same URL in a bookmark or the history ran the command again); the settings forms post submit=settings
+// with their own view and are not commands
+if (isset($_POST['submit']) && !isset($_GET['view']) && !isset($_GET['submit'])) $_GET['submit'] = $_POST['submit'];
+if (isset($_GET['submit']) && $_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); die(); }
 $view_now = $_GET['view'] ?? '';
 $view_e = view_entry($view_now);
 // the roles (US-53): a page opens with its 'open' role, a change on it needs its 'change' role (viewer = no login,

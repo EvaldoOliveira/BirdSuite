@@ -37,7 +37,7 @@ from subprocess import CalledProcessError
 import inotify.adapters
 from inotify.constants import IN_CLOSE_WRITE
 from utils import core
-from utils.analysis import load_global_model, run_analysis
+from utils.analysis import UnreadableRecording, load_global_model, run_analysis
 from utils.classes import ParseFileName
 from utils.helpers import ANALYZING_NOW, MODEL_PATH, get_model_labels, get_settings, get_wav_files, set_label_file
 from utils.reporting import apprise, bird_weather, extract_detection, heartbeat, sound_repo, summary, update_json_file, write_to_db, write_to_file, discard_for_loss
@@ -156,6 +156,7 @@ def main():
         log.info('backlog done')
 
         empty_count = 0
+        quiet_said = False
         for event in i.event_gen():
             if shutdown:
                 break
@@ -163,8 +164,18 @@ def main():
             if event is None:
                 retry_no_space(report_queue)
                 if empty_count > (conf.getint('RECORDING_LENGTH') * 2 + 30):
-                    log.error('no more notifications: restarting...')
-                    break
+                    # recordings arrived without an event: the watch is dead (the RAM drive mounted again), a restart
+                    # brings it back; none arrived: the recorder is quiet (stopped, no sound card), keep waiting
+                    # (2026-11-06 deep review E2: the service restarted every minute, reloading the model, while the
+                    # recording was stopped on purpose)
+                    if get_wav_files():
+                        log.error('no more notifications: restarting...')
+                        break
+                    if not quiet_said:
+                        log.info('no recording for %d s: the recorder is quiet, waiting', empty_count)
+                        quiet_said = True
+                    empty_count = 0
+                    continue
                 empty_count += 1
                 continue
 
@@ -183,6 +194,7 @@ def main():
             retry_no_space(report_queue)
             process_file(file_path, report_queue)
             empty_count = 0
+            quiet_said = False
     finally:
         # we're all done - always post the shutdown sentinel so the reporting
         # thread exits even when main() dies on an uncaught exception
@@ -231,7 +243,10 @@ def process_file(file_name, report_queue):
         log.info('Analyzing %s', file_name)
         with open(ANALYZING_NOW, 'w') as analyzing:
             analyzing.write(file_name)
-        file = ParseFileName(file_name)
+        try:
+            file = ParseFileName(file_name)
+        except Exception as e:  # noqa: BLE001  a name that is not the recorder's: not a recording of the station
+            raise UnreadableRecording(f'not a recording of the station: {os.path.basename(file_name)} ({e})') from e
         detections = run_analysis(file)
         try:
             # SHADOW_MODEL_NAME set: a second model analyses the same file into its own database.
@@ -254,6 +269,11 @@ def process_file(file_name, report_queue):
             log.warning('reporting queue not yet empty')
         report_queue.join()
         report_queue.put((file, detections))
+    except UnreadableRecording as e:
+        # kept aside as a recording whose report failed (2026-11-06 deep review E1): it failed again at every start, from
+        # the backlog, and held its place on the RAM drive
+        log.error('%s: moved to the quarantine', e)
+        quarantine(file_name)
     except BaseException as e:
         if no_space(e) and os.path.exists(file_name):
             keep_for_retry(file_name)
