@@ -70,12 +70,15 @@ MAX_SECONDS = 300   # a picture never reads more than 5 minutes of audio (a long
 
 
 def magnitudes_db(path):
+    """dB rows (top row first), the seconds drawn and the top frequency of the picture (12 kHz, or the file's Nyquist
+    below it: a 22.05 / 16 / 8 kHz file has no sound above it and asked for rows the FFT does not have, Gitea #80)."""
     sr = soundfile.info(path).samplerate
     data, sr = soundfile.read(path, dtype='float32', always_2d=True, frames=int(sr * MAX_SECONDS))
     # a damaged file (NaN / inf samples) draws as silence instead of failing
     audio = np.nan_to_num(data[:, 0], nan=0.0, posinf=0.0, neginf=0.0)
-    n_fft = 1 << int(np.ceil(np.log2(2 * (HEIGHT - 1) * sr / (2 * MAX_HZ))))
-    rows = round(MAX_HZ / (sr / n_fft)) + 1
+    top_hz = min(MAX_HZ, sr / 2)
+    n_fft = 1 << int(np.ceil(np.log2(2 * (HEIGHT - 1) * sr / (2 * top_hz))))
+    rows = min(round(top_hz / (sr / n_fft)) + 1, n_fft // 2 + 1)
     window = np.hanning(n_fft).astype('float32')
     hop = max(1, (len(audio) - n_fft) // (WIDTH - 1)) if len(audio) > n_fft else 1
     starts = np.arange(WIDTH) * hop
@@ -86,7 +89,7 @@ def magnitudes_db(path):
     db = 20 * np.log10(np.maximum(spec / (window.sum() / 2), 1e-12))
     # one image row per output pixel (0 Hz at the bottom)
     idx = np.linspace(0, rows - 1, HEIGHT).round().astype(int)
-    return db[idx][::-1], len(audio) / sr
+    return db[idx][::-1], len(audio) / sr, top_hz
 
 
 def _save_png(img, out):
@@ -108,7 +111,7 @@ def render(path, out, title='', raw=False, comment='', opts=None):
     lut = palette_lut((conf.get('SPECTROGRAM_PALETTE') or 'turbo').strip(), gamma)
     top_margin = TOP if title else 10   # no title: no empty band above the picture
 
-    db, seconds = magnitudes_db(path)
+    db, seconds, top_hz = magnitudes_db(path)
     top = min(0, floor + rng)
     level = np.clip((db - floor) / (top - floor), 0, 1)
     picture = Image.fromarray(lut[(level * 255).astype(np.uint8)])
@@ -129,8 +132,8 @@ def render(path, out, title='', raw=False, comment='', opts=None):
     draw.rectangle([LEFT - 1, TOP_ - 1, LEFT + WIDTH, TOP_ + HEIGHT], outline=grey)
     if title:
         draw.text((LEFT + WIDTH / 2, 8), title, fill=(255, 255, 255), font=title_font, anchor='mt')
-    for khz in range(0, MAX_HZ // 1000 + 1):
-        y = TOP_ + HEIGHT - 1 - khz * 1000 * (HEIGHT - 1) / MAX_HZ
+    for khz in range(0, int(top_hz) // 1000 + 1):
+        y = TOP_ + HEIGHT - 1 - khz * 1000 * (HEIGHT - 1) / top_hz
         draw.line([LEFT - 5, y, LEFT - 1, y], fill=grey)
         draw.text((LEFT - 8, y), 'DC' if khz == 0 else str(khz), fill=grey, font=font, anchor='rm')
     draw.text((14, TOP_ + HEIGHT / 2), 'kHz', fill=grey, font=font, anchor='mm')

@@ -148,7 +148,10 @@ $contents = file_get_contents($look_in_directory . $newest_file);
 if ($contents !== false) {
   $json = json_decode($contents);
   if ($json != null) {
-    $datetime = DateTime::createFromFormat(DateTime::ISO8601, $json->{'timestamp'});
+    header('Content-Type: application/json; charset=utf-8');
+    // the analysis writes an ISO 8601 stamp with a colon in the offset (-03:00): DATE_ATOM, the form DateTime::ISO8601
+    // (deprecated since PHP 8.2) does not name
+    $datetime = DateTime::createFromFormat(DATE_ATOM, (string)($json->timestamp ?? ''));
     // total seconds since the recording started: DateInterval's '%s' is only the seconds part
     // (0-59), so an analysis running minutes behind put its labels at a wrong place
     $json->delay = $datetime ? (time() - $datetime->getTimestamp()) : 0;
@@ -201,6 +204,9 @@ let avgfps;
 // phone — while a detection arrives 20-30 s after its sound, so its label fell off the left edge.
 // The graph keeps at least MIN_WINDOW_S seconds visible (owner 2026-10-08).
 const MIN_WINDOW_S = 45;
+// the band drawn, 0 to 12 kHz as every spectrogram picture of the station (scripts/spectrogram_png.py MAX_HZ), whatever
+// the height of the canvas (Gitea #81: a bin had a fixed height, so a low canvas showed 5 kHz and a tall one 10 kHz)
+const MAX_HZ = 12000;
 let pxPerSec = 60;
 const spectrogramOpenedAt = Date.now();
 let requestTime;
@@ -229,14 +235,18 @@ window.onload = function(){
   // if user agent includes iPhone or Mac use legacy mode
   if(window.navigator.userAgent.includes("iPhone") || legacy == true) {
     document.getElementById("spectrogramimage").style.display="";
-    // the live parts go (each only when present: a missing one stopped the picture mode with an error)
-    [document.body.querySelector('canvas'), document.getElementById('player'), document.getElementById('loading-h1'),
-     document.getElementsByClassName('centered')[0]].forEach(function (e) { if (e) e.remove(); });
+    // the live parts go (each only when present: a missing one stopped the picture mode with an error); the bar above
+    // stays with its Height and RTSP choice, only Silent (the sound of the live graph) means nothing here (Gitea #82)
+    [document.getElementById('specwrap'), document.getElementById('player'), document.getElementById('loading-h1'),
+     document.getElementById('silent')].forEach(function (e) { if (e) e.remove(); });
 
     <?php $refresh = max(3, intval($config['RECORDING_LENGTH'] ?? 15)); ?>
-    // every $refresh seconds, this loop will run and refresh the spectrogram image
+    // every $refresh seconds the picture is asked again with a conditional request (static/ui-standard.js bsLivePng:
+    // 304 and nothing downloaded while it did not change, Gitea #82), not while the page is hidden
   window.setInterval(function(){
-    document.getElementById("spectrogramimage").src = "spectrogram.png?nocache="+Date.now();
+    if (document.hidden) return;
+    var im = document.getElementById("spectrogramimage");
+    if (window.bsLivePng) bsLivePng(im); else im.src = "spectrogram.png?nocache="+Date.now();
   }, <?php echo $refresh; ?>*1000);
   } else {
     document.getElementById("spectrogramimage").remove();
@@ -336,7 +346,7 @@ function loadDetectionIfNewExists() {
   xhttp.onloadend = function () { detPolling = false; };
   xhttp.onload = function() {
     // if there's a new detection that needs to be updated to the page
-    if(this.status === 200 && this.responseText.length > 0 && !this.responseText.includes("Database")) {
+    if(this.status === 200 && this.responseText.length > 0) {
       let resp; try { resp = JSON.parse(this.responseText); } catch (e) { return; }
       if (!resp || !Array.isArray(resp.detections)) return;
       newest_file = resp.file_name;
@@ -403,28 +413,38 @@ function applySensitivity() {
   ANALYSER.minDecibels = specFloor;
   ANALYSER.maxDecibels = Math.min(0, specFloor + specRange);
 }
-function paletteColor(rat) {
+// hue 0..360, saturation and lightness 0..1 -> [r, g, b] (the Classic ramp is HSL; the pixels need numbers)
+function hslToRgb(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2, r, g, b;
+  if (h < 60) { r = c; g = x; b = 0; } else if (h < 120) { r = x; g = c; b = 0; } else if (h < 180) { r = 0; g = c; b = x; }
+  else if (h < 240) { r = 0; g = x; b = c; } else if (h < 300) { r = x; g = 0; b = c; } else { r = c; g = 0; b = x; }
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+// the colour of a magnitude 0..1 as [r, g, b], bent by the contrast gamma
+function paletteRGB(rat) {
   rat = Math.pow(Math.min(Math.max(rat, 0), 1), specGamma);
   if (!(palette in PALETTE_STOPS)) {
-    let hue = Math.round((rat * 120) + 280 % 360);
-    return `hsl(${hue}, 100%, ${10 + (70 * rat)}%)`;
+    // Classic: hue 280 -> 400, lightness 10 % -> 80 % (the original HSL ramp, as scripts/spectrogram_png.py)
+    return hslToRgb(rat * 120 + 280, 1, (10 + 70 * rat) / 100);
   }
   const st = PALETTE_STOPS[palette];
   const pos = Math.min(Math.max(rat, 0), 1) * (st.length - 1);
   const i = Math.min(Math.floor(pos), st.length - 2);
   const f = pos - i;
-  const r = Math.round(st[i][0] + (st[i+1][0] - st[i][0]) * f);
-  const g = Math.round(st[i][1] + (st[i+1][1] - st[i][1]) * f);
-  const b = Math.round(st[i][2] + (st[i+1][2] - st[i][2]) * f);
-  return `rgb(${r}, ${g}, ${b})`;
+  return [Math.round(st[i][0] + (st[i+1][0] - st[i][0]) * f), Math.round(st[i][1] + (st[i+1][1] - st[i][1]) * f),
+    Math.round(st[i][2] + (st[i+1][2] - st[i][2]) * f)];
 }
+function paletteColor(rat) { var c = paletteRGB(rat); return 'rgb(' + c[0] + ', ' + c[1] + ', ' + c[2] + ')'; }
 
-// the 256 colours of the current palette and contrast, built once instead of a colour string per band per frame
+// the 256 colours of the current palette and contrast as bytes (r, g, b per entry), built once: the new column of the
+// picture is written pixel by pixel from it (Gitea #81: 1024 filled rectangles per frame stuttered on a phone)
 var _lut = null, _lutKey = '';
 function paletteLUT() {
   var k = palette + '|' + specGamma;
   if (_lut && _lutKey === k) return _lut;
-  _lut = []; for (var i = 0; i < 256; i++) _lut.push(paletteColor(i / 255));
+  _lut = new Uint8Array(256 * 3);
+  for (var i = 0; i < 256; i++) { var c = paletteRGB(i / 255); _lut[i * 3] = c[0]; _lut[i * 3 + 1] = c[1]; _lut[i * 3 + 2] = c[2]; }
   _lutKey = k; return _lut;
 }
 
@@ -493,22 +513,21 @@ function liveReconnect(done) {
 function drawFrequencyAxis() {
   // the scales (owner 2026-11-04, as the review player): the picture is the sound as recorded, its real frequency on the
   // left edge; with the hearing aid on, the strip right of the picture says where each row is heard (heard = real x
-  // ratio). They mirror the drawing in process(): FFT bin i is drawn at y = H - i*h with h = H/LEN + 0.9, bin i is
-  // i * (sampleRate/2) / LEN Hz
-  const CVS = document.body.querySelector('canvas');
-  const rect = CVS.getBoundingClientRect();
-  const LEN = ANALYSER.frequencyBinCount;
-  const h = (CVS.height / LEN + 0.9);
-  const nyquist = ACTX.sampleRate / 2;
-  const scaleY = rect.height / CVS.height;
-  const yOf = function (f) { return (CVS.height - (f / nyquist) * LEN * h) * scaleY; };
+  // ratio). They mirror the drawing in process(): the canvas is 0 Hz at the bottom to topHz (12 kHz, or Nyquist below
+  // it) at the top, linear. The strips sit inside the picture's frame (#specwrap), so they follow it wherever the page
+  // moves it (Gitea #83: placed on the body by coordinates, they stayed behind when a banner appeared or went)
+  const CVS = document.body.querySelector('canvas'), wrap = document.getElementById('specwrap');
+  if (!CVS || !wrap) return;
+  const ch = CVS.clientHeight;
+  const topHz = Math.min(MAX_HZ, ACTX.sampleRate / 2);
+  const yOf = function (f) { return ch - (f / topHz) * ch; };
   ['freqaxis', 'freqaxis2'].forEach(function (id) { var o = document.getElementById(id); if (o) o.remove(); });
   var hs = window.BS_HEARING || {}, on = !!hs.on && hs.r > 0 && hs.r < 1;
   var strip = function (id, left, width) {
     var a = document.createElement('div');
     a.id = id;
-    a.style.cssText = 'position:absolute;pointer-events:none;z-index:5;left:' + left + 'px;top:' + (rect.top + window.scrollY) + 'px;width:' + width + 'px;height:' + rect.height + 'px;font:10px sans-serif;color:#fff;';
-    document.body.appendChild(a);
+    a.style.cssText = 'position:absolute;pointer-events:none;z-index:5;left:' + left + 'px;top:0;width:' + width + 'px;height:' + ch + 'px;font:10px sans-serif;color:#fff;';
+    wrap.appendChild(a);
     return a;
   };
   var label = function (box, y, txt, bg, bold) {
@@ -518,13 +537,13 @@ function drawFrequencyAxis() {
     box.appendChild(s);
   };
   // real, on the picture's left edge
-  var real = strip('freqaxis', rect.left + window.scrollX, 60);
-  for (let f = 2000; f < nyquist; f += 2000) { const y = yOf(f); if (y >= 10 && y <= rect.height - 6) label(real, y, '- ' + (f / 1000) + ' kHz', 'rgba(0,0,0,.6)'); }
+  var real = strip('freqaxis', 0, 60);
+  for (let f = 2000; f < topHz; f += 2000) { const y = yOf(f); if (y >= 10 && y <= ch - 6) label(real, y, '- ' + (f / 1000) + ' kHz', 'rgba(0,0,0,.6)'); }
   if (!on) return;
   // You hear, in the strip right of the picture
-  var heard = strip('freqaxis2', rect.right + window.scrollX + 2, 54);
+  var heard = strip('freqaxis2', CVS.clientWidth + 2, 54);
   label(heard, 8, t('str_you_hear'), 'rgba(217,122,0,.9)', true);
-  for (let k = 1000; k / hs.r < nyquist; k += 1000) { const y = yOf(k / hs.r); if (y >= 18 && y <= rect.height - 6) label(heard, y, '- ' + (k / 1000) + ' kHz', 'rgba(217,122,0,.9)'); }
+  for (let k = 1000; k / hs.r < topHz; k += 1000) { const y = yOf(k / hs.r); if (y >= 18 && y <= ch - 6) label(heard, y, '- ' + (k / 1000) + ' kHz', 'rgba(217,122,0,.9)'); }
 }
 // the axes again when the lowering or its ratio changes (only once the sonogram runs)
 function hearAxes() { if (typeof ANALYSER !== 'undefined' && ANALYSER && typeof ACTX !== 'undefined' && ACTX) drawFrequencyAxis(); }
@@ -548,8 +567,10 @@ function initialize() {
   try{
     process();
   } catch(e) {
-    console.log(e)
-    window.location.reload();
+    // the browser cannot draw the live sound (no Web Audio, the stream refused as a source): the picture mode of this
+    // same address, never a reload (Gitea #81: a reload on every try never ended)
+    console.log(e);
+    var u = new URL(window.location.href); u.searchParams.set('legacy', 'true'); window.location.replace(u.toString());
   }
 
 
@@ -583,8 +604,16 @@ function initialize() {
 
     const DATA = new Uint8Array(ANALYSER.frequencyBinCount);
     const LEN = DATA.length;
-    let h = (H / LEN + 0.9);
-    const x = W - 1;
+    // the rows of the picture: pixel row y (0 = top) shows FFT bin rowBin[y], the band 0..MAX_HZ spread over the
+    // height; the new column is one ImageData written from the colour bytes (Gitea #81)
+    let rows, rowBin, column;
+    const band = function () {
+      rows = Math.max(1, Math.min(LEN, Math.round(MAX_HZ / (ACTX.sampleRate / 2) * LEN)));
+      rowBin = new Uint16Array(H);
+      for (let y = 0; y < H; y++) rowBin[y] = Math.min(rows - 1, Math.floor((H - 1 - y) * rows / H));
+      column = CTX.createImageData(1, H);
+    };
+    band();
     CTX.fillStyle = paletteColor(0);
     CTX.fillRect(0, 0, W, H);
 
@@ -602,7 +631,7 @@ function initialize() {
       // and keeps what was drawn, instead of stretching
       if (CVS.clientWidth > 0 && CVS.clientHeight > 0 && (CVS.clientWidth !== W || CVS.clientHeight !== H)) {
         var old = document.createElement('canvas'); old.width = W; old.height = H; old.getContext('2d').drawImage(CVS, 0, 0);
-        W = CVS.width = CVS.clientWidth; H = CVS.height = CVS.clientHeight; h = H / LEN + 0.9;
+        W = CVS.width = CVS.clientWidth; H = CVS.height = CVS.clientHeight; band();
         CTX.fillStyle = paletteColor(0); CTX.fillRect(0, 0, W, H);
         CTX.drawImage(old, 0, 0, old.width, old.height, Math.max(0, W - old.width), 0, Math.min(W, old.width), H);
         drawFrequencyAxis();
@@ -620,11 +649,12 @@ function initialize() {
       // the picture moves left by copying the canvas onto itself (the image read-back of every frame was slow)
       CTX.drawImage(CVS, n, 0, W - n, H, 0, 0, W - n, H);
       ANALYSER.getByteFrequencyData(DATA);
-      const lut = paletteLUT();
-      for (let i = 0; i < LEN; i++) {
-        CTX.fillStyle = lut[DATA[i]];
-        CTX.fillRect(W - n, H - (i * h + h), n, h);
+      const lut = paletteLUT(), px = column.data;
+      for (let y = 0; y < H; y++) {
+        const c = DATA[rowBin[y]] * 3, o = y * 4;
+        px[o] = lut[c]; px[o + 1] = lut[c + 1]; px[o + 2] = lut[c + 2]; px[o + 3] = 255;
       }
+      for (let k = 0; k < n; k++) CTX.putImageData(column, W - n + k, 0);
     }
   }
 }
@@ -662,9 +692,11 @@ h1 {
   /* longer texts (another language) wrap on a phone instead of widening the page (release run 5) */
   #specopts > span, #specopts > label { max-width: 100%; }
   #specopts select { max-width: 100%; }
+  /* the sliders take a 24 px high target (WCAG 2.2 target size), the track stays where it was */
+  #specopts input[type=range] { height: 24px; }
 </style>
 
-<img id="spectrogramimage" style="width:100%;display:none" src="spectrogram.png?nocache=<?php echo $time;?>">
+<img id="spectrogramimage" style="width:100%;display:none" src="spectrogram.png?nocache=<?php echo time(); ?>" alt="<?php echo htmlspecialchars(t('str_now_recording'), ENT_QUOTES); ?>">
 
 <!-- above the spectrogram: stream choice and Silent on the left, Height on the right (owner 2026-10-08) -->
 <div class="centered" style="display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:space-between;align-items:center;padding:2px 8px;font-size:12px;max-width:100%;box-sizing:border-box;">
@@ -703,7 +735,8 @@ h1 {
 
 <audio style="display:none" controls="" crossorigin="anonymous" id='player' preload="none"><source id="playersrc" src="stream"></audio>
 <h1 id="loading-h1"><?php echo t('str_loading'); ?></h1>
-<canvas></canvas>
+<!-- the picture's frame: the frequency scales are placed inside it (drawFrequencyAxis) -->
+<div id="specwrap" style="position:relative"><canvas role="img" aria-label="<?php echo htmlspecialchars(t('str_spectrogram'), ENT_QUOTES); ?>"></canvas></div>
 <!-- below the spectrogram, every control on one line (owner 2026-10-10): Palette, Contrast, Floor, Range, Compression,
      Freq shift -->
 <div id="specopts" style="text-align:left;padding:4px 8px;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;">
@@ -725,7 +758,8 @@ h1 {
   <span id="comp"><label><?php echo t('str_compression'); ?> </label>
     <input name="compression" type="checkbox" id="compression" disabled>
     <button type="button" class="setdefault" id="compression_default" style="display:none" onclick="specSetDefault('compression')" title="<?php echo t('str_open_the_compression_help'); ?>"><?php echo t('str_set_as_default'); ?></button></span>
-  <span id="specopts_status" style="color:#9f9;"></span>
+  <!-- in the page's text colour (Gitea #83: light green on the light theme's blue was unreadable) -->
+  <span id="specopts_status" style="font-weight:600;"></span>
   <button type="button" class="setdefault" id="spec_factory" style="margin-left:auto;order:98;" onclick="specFactory()" title="<?php echo t('str_back_to_the_factory_defaults_help'); ?>">&#8634; <?php echo t('str_defaults'); ?></button>
 
 </div>
@@ -836,8 +870,10 @@ function saveSpectrogramSetting(param, value) {
   xhr.onload = function () {
     if (this.status === 200) {
       if (param === 'spectrogram_height') {
+        // this same address again: alone in a frame (First Run, Microphone) the page must not open the whole site
+        // inside the frame (Gitea #83)
         status.textContent = t('str_saved_reloading');
-        window.location = "views.php?view=Sonogram";
+        window.location.reload();
       } else {
         status.textContent = t('str_saved_lc');
         setTimeout(function(){ status.textContent = ''; }, 2000);

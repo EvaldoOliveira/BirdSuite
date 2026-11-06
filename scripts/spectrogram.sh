@@ -46,8 +46,11 @@ while read; do
         raw_opt=""; [ "$RAW_SPECTROGRAM" == "1" ] && raw_opt="-r"
         # drawn with the live Spectrogram page's palette, floor, range and contrast; sox stays the fallback
         # each drawing has a time limit (owner 2026-11-06): a stuck drawing never freezes this loop
-        if ! timeout 30 "$BS_PYTHON" "$BS_SCRIPTS/spectrogram_png.py" "${analyzing_now}" "${spectrogram_png}" \
-            "${analyzing_now//$HOME\//}" ${raw_opt:+--raw} 2> /dev/null; then
+        # a failure of the drawing tool is said in the journal, its last line (Gitea #80: a crash on every file below
+        # 24 kHz went unseen for weeks behind the sox fallback, which draws other colours)
+        if ! err=$(timeout 30 "$BS_PYTHON" "$BS_SCRIPTS/spectrogram_png.py" "${analyzing_now}" "${spectrogram_png}" \
+            "${analyzing_now//$HOME\//}" ${raw_opt:+--raw} 2>&1 > /dev/null); then
+          echo "spectrogram_png.py failed on ${analyzing_now##*/}: ${err##*$'\n'}" >&2
           timeout 30 sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" $raw_opt \
             || echo "spectrogram not drawn: ${analyzing_now##*/}" >&2
         fi

@@ -341,7 +341,7 @@ function applyAnalyzing() {
 function toggleAnalyzing() {
   analyzingOn = !analyzingOn;
   applyAnalyzing();
-  if (analyzingOn) document.getElementById('spectrogramimage').src = 'spectrogram.png?nocache=' + Date.now();
+  if (analyzingOn) bsLivePng(document.getElementById('spectrogramimage'));
 }
 document.addEventListener('DOMContentLoaded', applyAnalyzing);
 // the station not answering (Gitea #77): after three missed status questions in a row the first line says so, in the
@@ -700,9 +700,10 @@ var i_fn1 = null, i_fn2 = null;
 function startAutoRefresh() {
     clearInterval(i_fn1); clearInterval(i_fn2);
     i_fn1 = window.setInterval(function(){
-                    // a hidden spectrogram is not downloaded again
+                    // a hidden spectrogram is not downloaded again; a shown one is asked with a conditional request
+                    // (304 while unchanged, static/ui-standard.js bsLivePng, Gitea #82)
                     if (document.hidden || document.getElementById("spectrogramimage").style.display === "none") return;
-                    document.getElementById("spectrogramimage").src = "spectrogram.png?nocache="+Date.now();
+                    bsLivePng(document.getElementById("spectrogramimage"));
                     }, <?php echo $refresh; ?>*1000);
     i_fn2 = window.setInterval(refreshDetection, <?php echo intval($dividedrefresh); ?>*1000);
 }

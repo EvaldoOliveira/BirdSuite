@@ -16,6 +16,20 @@ window.bsAskSubmit = function (btn, text, danger, okLabel) {
   window.bsAsk(text, danger, okLabel).then(function (ok) { if (ok) { btn.dataset.asked = '1'; btn.click(); } });
   return false;
 };
+// the live spectrogram picture (spectrogram.png, redrawn every few seconds) asked again with a conditional request:
+// 304 and nothing downloaded while it did not change (Caddy answers by its ETag), the new picture otherwise; a failed
+// answer keeps the picture shown. Sonogram (picture mode) and Latest › Now Recording (Gitea #82: with ?nocache= every
+// request downloaded the whole 270 KB)
+window.bsLivePng = function (img, url) {
+  if (!img || !window.fetch || !window.URL || !URL.createObjectURL) { if (img) img.src = (url || 'spectrogram.png') + '?nocache=' + Date.now(); return; }
+  fetch(url || 'spectrogram.png', {cache: 'no-cache', credentials: 'same-origin'}).then(function (r) {
+    if (!r.ok) throw new Error(r.status); return r.blob();
+  }).then(function (b) {
+    var u = URL.createObjectURL(b), old = img.dataset.bsUrl || '';
+    img.onload = function () { if (old) URL.revokeObjectURL(old); };
+    img.dataset.bsUrl = u; img.src = u;
+  }).catch(function () {});
+};
 // the Sort icon (common.php sort_toggle): opens / folds the sort buttons of its bar
 window.bsSortToggle = function (el) {
   var bar = el.closest('.sortbar');
