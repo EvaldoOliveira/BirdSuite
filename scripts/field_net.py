@@ -198,9 +198,13 @@ def status():
         fleet_ssid = sh('nmcli', '-g', '802-11-wireless.ssid', 'connection', 'show', FLEET, check=False).strip()
     known = [n for n, v in p.items() if v['type'] == '802-11-wireless' and n not in (FLEET, AP)]
     known_ssid = {n: sh('nmcli', '-g', '802-11-wireless.ssid', 'connection', 'show', n, check=False).strip() or n for n in known}
+    # the network name of each active WiFi connection (Gitea #94: the page said "Connected to wifi-Tangara (wlan0)", the
+    # profile's name, where the known list says "Tangara")
+    for a in active:
+        a['ssid'] = known_ssid.get(a['name']) or (fleet_ssid if a['name'] == FLEET else ap_ssid() if a['name'] == AP else '') if a['type'] == '802-11-wireless' else ''
     radio = sh('nmcli', 'radio', 'wifi', check=False).strip()
     # the station's real host name (a field image names it birdsuite-<mac>; a Mesh node keeps its own, e.g. appsrv)
-    return {'hostname': os.uname().nodename, 'mac': mac(), 'ap_ssid': ap_ssid(), 'ap_profile': AP in p, 'ap_on': ap_on,
+    return {'hostname': os.uname().nodename, 'mac': mac(), 'mdns': mdns_name(), 'ap_ssid': ap_ssid(), 'ap_profile': AP in p, 'ap_on': ap_on,
             'ap_clients': clients, 'ap_addr': ap_addr(),
             'fleet_profile': FLEET in p, 'fleet_ssid': fleet_ssid, 'fleet_extra_ip': fleet_extra_ip(), 'known_wifi': known, 'known_ssid': known_ssid,
             'active': active, 'ips': ips, 'wifi_device': dev, 'wifi_radio': radio,
@@ -278,7 +282,15 @@ def add_wifi(ssid):
     name = 'wifi-' + re.sub(r'[^A-Za-z0-9_.-]', '_', ssid)
     base = ['802-11-wireless.ssid', ssid, 'wifi-sec.key-mgmt', 'wpa-psk', 'wifi-sec.psk', psk,
             'connection.autoconnect', 'yes', 'connection.autoconnect-priority', '10']
-    if name in profiles():
+    p = profiles()
+    # the same network again = its profile updated; another network whose name only differs in the characters the
+    # profile name cannot carry ("Café 1" / "Cafe_1") gets a profile of its own (Gitea #96: it overwrote the other)
+    if name in p and sh('nmcli', '-g', '802-11-wireless.ssid', 'connection', 'show', name, check=False).strip() != ssid:
+        base_name, n = name, 1
+        while name in p:
+            n += 1
+            name = f'{base_name}-{n}'
+    if name in p:
         sh('nmcli', 'connection', 'modify', name, *base)
     else:
         sh('nmcli', 'connection', 'add', 'type', 'wifi', 'con-name', name, 'ifname', '*', *base)
@@ -409,6 +421,9 @@ def main():
             raise SystemExit(__doc__)
     except (RuntimeError, SystemExit) as e:
         print(json.dumps({'ok': False, 'error': str(e)}))
+        sys.exit(1)
+    except Exception as e:  # noqa: BLE001  a missing tool, a bad number: the reason as JSON, never a traceback (Gitea #95)
+        print(json.dumps({'ok': False, 'error': f'{type(e).__name__}: {e}'[:300]}))
         sys.exit(1)
     print(json.dumps(res, ensure_ascii=False))
 

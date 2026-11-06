@@ -15,9 +15,13 @@ function fn_run($args, $stdin = null) {
   if ($stdin !== null) fwrite($pipes[0], $stdin . "\n");
   fclose($pipes[0]);
   $out = stream_get_contents($pipes[1]);
+  // what the tool said on its error output names the cause when it gave no answer (Gitea #95: it was thrown away)
+  $err = trim((string)stream_get_contents($pipes[2]));
   fclose($pipes[1]); fclose($pipes[2]);
   proc_close($p);
-  return json_decode((string)$out, true) ?: array('ok' => false, 'error' => trim((string)$out) ?: t('str_no_answer_lc'));
+  $lines = explode("\n", $err);
+  $last = $err !== '' ? trim((string)end($lines)) : '';
+  return json_decode((string)$out, true) ?: array('ok' => false, 'error' => trim((string)$out) ?: ($last !== '' ? $last : t('str_no_answer_lc')));
 }
 
 // the answer file of new stations (owner 2026-11-03): birdnet-setup.conf with this station's settings, read by the
@@ -72,7 +76,7 @@ function seed_file($p) {
 }
 
 // the Brazilian state outlines shipped with the station (model/include_lists/BR-states.geojson): detail of the offline map
-if (isset($_GET['states'])) { header('Content-Type: application/json'); readfile(__DIR__ . '/../model/include_lists/BR-states.geojson'); die(); }
+if (isset($_GET['states'])) { header('Content-Type: application/json'); header('Cache-Control: max-age=86400'); readfile(__DIR__ . '/../model/include_lists/BR-states.geojson'); die(); }
 // the world's countries (Natural Earth 1:110m, public domain, model/maps): the offline map anywhere
 if (isset($_GET['world'])) { header('Content-Type: application/json'); header('Cache-Control: max-age=86400'); readfile(__DIR__ . '/../model/maps/world-countries.geojson'); die(); }
 if (isset($_GET['status'])) { header('Content-Type: application/json'); echo json_encode(fn_run(array('status'))); die(); }
@@ -348,7 +352,8 @@ function netLoad() {
   x.onload = function () {
     var s; try { s = JSON.parse(this.responseText); } catch (e) { netLost(); return; }
     if (s.ok === false) { document.getElementById('netstatus').textContent = s.error; document.getElementById('apsaved').textContent = s.error; return; }
-    var nets = (s.active || []).filter(function (a) { return a.name !== 'birdsuite-ap'; }).map(function (a) { return esc(a.name) + ' (' + esc(a.device) + ')'; }).join(', ') || '<span class="warn">' + t('str_no_network') + '</span>';
+    // the network's own name (Gitea #94): Cable for a cable, the WiFi name for a WiFi, not the profile's name
+    var nets = (s.active || []).filter(function (a) { return a.name !== 'birdsuite-ap'; }).map(function (a) { return esc(a.type === '802-3-ethernet' ? t('str_cable') : (a.ssid || a.name)) + ' (' + esc(a.device) + ')'; }).join(', ') || '<span class="warn">' + t('str_no_network') + '</span>';
     // one item per line, all in the normal (larger) size (owner 2026-10-20)
     document.getElementById('netstatus').innerHTML = '<b>' + t('str_connected_to') + '</b> ' + nets
       + '<br><b>' + t('str_addresses') + '</b> ' + (s.ips || []).map(function (i) { return netLink(NETSCHEME + '://' + i.ip, i.ip); }).join(', ')
@@ -370,7 +375,9 @@ function netLoad() {
       ? netSaved('birdsuite-fleet', s.fleet_ssid, wifiIcon(hotOn) + ' <b>' + esc(s.fleet_ssid) + '</b>' + (hotOn ? ' <span class="ok">' + t('str_connected_lc') + '</span>' : ''), 'wifi')
       : t('str_no_hotspot_saved_yet');
     // a link once the address is known (owner 2026-10-25: every URL a hyperlink)
-    document.querySelectorAll('.mdnsname').forEach(function (e) { if (s.mac) e.innerHTML = netLink(NETSCHEME + '://birdsuite-' + s.mac.replace(/:/g, '').toLowerCase() + '.local'); });
+    // the fixed name the station publishes (birdsuite-<last 4 of the MAC>.local, field_daemon.py; Gitea #94: the page
+    // built one from the whole MAC, which nothing answers since bug #65)
+    document.querySelectorAll('.mdnsname').forEach(function (e) { if (s.mdns) e.innerHTML = netLink(NETSCHEME + '://' + s.mdns); });
     document.querySelectorAll('.iphoneaddr').forEach(function (e) { e.innerHTML = s.fleet_extra_ip ? netLink(NETSCHEME + '://' + s.fleet_extra_ip) : NETSCHEME + '://172.20.10.x'; });
     // the known networks (owner 2026-10-24: they disappeared): every WiFi profile but the station's own, the phone
     // hotspot marked, and the cable when it is connected; green = in use, orange = known
