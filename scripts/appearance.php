@@ -82,7 +82,7 @@ $roles = array(array('str_background', 'str_background'), array('str_menu', 'str
 $loc_now = location_current();
 $in_use = ($loc_now && location_theme($loc_now) !== '') ? location_theme($loc_now) : $current;
 $card = function ($key, $name, $col) use ($in_use) {
-  return '<button type="button" class="thcard' . ($key === $in_use ? ' on' : '') . '" data-theme="' . $key . '" data-colors="' . implode(',', $col) . '" data-name="' . htmlspecialchars($name, ENT_QUOTES) . '">'
+  return '<button type="button" class="thcard' . ($key === $in_use ? ' on' : '') . '" aria-pressed="' . ($key === $in_use ? 'true' : 'false') . '" data-theme="' . $key . '" data-colors="' . implode(',', $col) . '" data-name="' . htmlspecialchars($name, ENT_QUOTES) . '">'
     . '<span class="mock" style="background:' . $col[0] . '"><span class="mm" style="background:' . $col[1] . '"></span>'
     . '<span class="mp" style="background:' . $col[2] . '"><i style="background:' . $col[3] . '"></i><i style="background:' . $col[4] . '"></i></span></span>'
     . '<b>' . str_replace(' (', '<br>(', htmlspecialchars($name)) . '</b></button>';
@@ -94,7 +94,9 @@ $hs = function ($x) { return htmlspecialchars((string)$x, ENT_QUOTES); };
 ?>
 <style>
 .app { max-width: 1000px; margin: 0; padding: 0 12px; text-align: left; }
-.app h2 { margin: 8px 0 4px; font-size: 1.3em; } .app p.note { font-size: 13px; color: #333; margin: 0 0 12px; }
+/* the page's text and boxes in the theme's own colours (Gitea #99: fixed greys and a translucent white box were unreadable
+   under a custom dark theme, which keeps the light stylesheet) */
+.app h2 { margin: 8px 0 4px; font-size: 1.3em; } .app p.note { font-size: 13px; color: var(--text, #000); opacity: .85; margin: 0 0 12px; }
 .app h3 { margin: 16px 0 6px; font-size: 1.05em; }
 .app .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .app .thcard { width: auto; display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 8px; border-radius: 12px; border: 2px solid rgba(0,0,0,.08); background: rgba(255,255,255,.6); cursor: pointer; color: #000; }
@@ -103,7 +105,8 @@ $hs = function ($x) { return htmlspecialchars((string)$x, ENT_QUOTES); };
 .app .mock { display: flex; height: 74px; border-radius: 8px; overflow: hidden; padding: 6px; gap: 6px; }
 .app .mm { width: 26%; border-radius: 4px; } .app .mp { flex: 1; border-radius: 4px; display: flex; align-items: flex-end; gap: 4px; padding: 6px; }
 .app .mp i { display: block; width: 28px; height: 12px; border-radius: 6px; }
-.app .custom { margin-top: 16px; border: 1px solid rgba(0,0,0,.08); background: rgba(255,255,255,.6); border-radius: 12px; padding: 10px 12px; }
+.app .custom { margin-top: 16px; border: 1px solid rgba(0,0,0,.08); background: var(--panel, #f4f6f8); color: var(--text, #000); border-radius: 12px; padding: 10px 12px; }
+.app #cwarn { font-size: 12px; margin-top: 8px; color: #c62828; font-weight: 600; }
 .app .custom label { display: inline-flex; flex-direction: column; font-size: 12px; margin: 6px 12px 0 0; }
 .app .custom label.clr { width: 64px; align-items: center; text-align: center; font-size: 11px; line-height: 1.2; gap: 2px; }
 .app .custom input[type=color] { width: 64px; height: 34px; padding: 0; border: 1px solid #888; border-radius: 6px; background: none; cursor: pointer; }
@@ -133,6 +136,8 @@ $hs = function ($x) { return htmlspecialchars((string)$x, ENT_QUOTES); };
     <label><?php echo t('str_name'); ?><input type="text" id="cname" maxlength="30" placeholder="<?php echo t('str_my_theme'); ?>"></label>
     <?php // shown in this order (owner 2026-10-24: Text after Background, Buttons last); data-i is the colour's place in the stored list
     foreach (array(0, 5, 1, 2, 4, 3) as $i) { $r = $roles[$i]; echo '<label class="clr" title="' . $hs(t($r[1])) . '"><input type="color" data-i="' . $i . '" value="' . htmlspecialchars($start[$i]) . '"><span>' . $hs(t($r[0])) . '</span></label>'; } ?>
+    <?php // the pairs that cannot be read (Gitea #100): a warning, the save still allowed ?>
+    <div id="cwarn" aria-live="polite"></div>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       <button type="button" id="btnnew" onclick="cuSave('new')"><?php echo t('str_save_as_a_new_custom_theme'); ?></button>
       <button type="button" id="btnupd" onclick="cuSave('update')"><?php echo t('str_update_this_custom_theme'); ?></button>
@@ -181,13 +186,30 @@ function thShow(colors, theme) {
     st.setProperty('--on-accent2', contrastText(colors[4]));
   });
 }
-// black or white on a colour, as common.php contrast_text() (the WCAG contrast rule)
-function contrastText(hex) {
-  var l = [0.2126, 0.7152, 0.0722].reduce(function (s, w, i) {
+// the relative luminance of a colour, the WCAG way (as common.php contrast_text())
+function lumOf(hex) {
+  return [0.2126, 0.7152, 0.0722].reduce(function (s, w, i) {
     var c = parseInt(hex.substr(1 + 2 * i, 2), 16) / 255;
     return s + w * (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
   }, 0);
+}
+// black or white on a colour, whichever contrasts more
+function contrastText(hex) {
+  var l = lumOf(hex);
   return 1.05 / (l + 0.05) >= (l + 0.05) / 0.05 ? '#fff' : '#000';
+}
+// the contrast ratio of two colours (1 to 21)
+function contrastRatio(a, b) {
+  var l1 = lumOf(a), l2 = lumOf(b);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+// the pairs of the editor's colours that cannot be read (under 4.5:1, WCAG AA; Gitea #100): Text on Background, Menu
+// and Table, Buttons on Table; the stored order is bg, menu, panel, accent, accent2, text
+function cuWarn(cols) {
+  var names = {0: t('str_background'), 1: t('str_menu'), 2: t('str_table'), 3: t('str_buttons'), 5: t('str_text')};
+  var bad = [[5, 0], [5, 1], [5, 2], [3, 2]].filter(function (p) { return contrastRatio(cols[p[0]], cols[p[1]]) < 4.5; })
+    .map(function (p) { return t('str_a_on_b', {a: names[p[0]], b: names[p[1]]}) + ' (' + fmtNum(contrastRatio(cols[p[0]], cols[p[1]]), 1) + ':1)'; });
+  document.getElementById('cwarn').textContent = bad.length ? t('str_low_contrast_pairs_help', {pairs: bad.join(', ')}) : '';
 }
 // the six colours in their stored order (bg, menu, panel, accent, accent2, text), whatever the order on the page
 function colorsNow() { var c = []; document.querySelectorAll('.custom input[type=color]').forEach(function (x) { c[+x.dataset.i] = x.value; }); return c; }
@@ -198,9 +220,10 @@ function setEditor(name, colors, index) {
   document.getElementById('edtitle').textContent = index >= 0 ? t('str_edit_name', {name: name}) : t('str_new_custom_theme');
   document.getElementById('btnupd').style.display = index >= 0 ? '' : 'none';
   document.getElementById('btndel').style.display = index >= 0 ? '' : 'none';
+  cuWarn(colors);
 }
 function thPick(card) {
-  document.querySelectorAll('.thcard').forEach(function (c) { c.classList.toggle('on', c === card); });
+  document.querySelectorAll('.thcard').forEach(function (c) { c.classList.toggle('on', c === card); c.setAttribute('aria-pressed', c === card ? 'true' : 'false'); });
   thTheme = card.dataset.theme;
   var cols = card.dataset.colors.split(',');
   thShow(cols, thTheme);
@@ -220,6 +243,7 @@ document.querySelectorAll('.custom input[type=color]').forEach(function (inp) {
   inp.oninput = function () {
     var cols = colorsNow();
     thShow(cols, "custom");
+    cuWarn(cols);
     if (edIndex >= 0) {
       var card = document.querySelector('.thcard[data-theme="' + thCustoms[edIndex].id + '"]');
       card.dataset.colors = cols.join(',');
