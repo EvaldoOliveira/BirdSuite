@@ -41,8 +41,8 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-left{flex:1 1 auto;min-width:0}#rpDialog .rp-title{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:12px;margin:0 30px 6px 4px;color:#fff}'
     + '#rpDialog .rp-when{font-size:16px;color:#ddd}#rpDialog .rp-tc{text-align:center}#rpDialog .rp-com{font-size:19px;font-weight:600}'
     + '#rpDialog .rp-tr{text-align:right}#rpDialog .rp-sci{font-style:italic;font-size:14px;color:#ddd}'
-    + '#rpDialog .rp-bottom{display:flex;justify-content:flex-end;align-items:flex-end;gap:10px;flex-wrap:nowrap}'
-    + '#rpDialog .rp-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto}'
+    + ''
+    + ''
     + '#rpDialog .rp-folder{color:#fff;background:#2a2a2a;border:1px solid #555;border-radius:6px;padding:4px 9px;font-size:12px;text-decoration:none;white-space:nowrap}'
     + '#rpDialog .rp-folder:hover{border-color:#d97a00}'
     // phone only (owner 2026-10-18): Spectrogram / Audio buttons fold their settings, a Previous · Delete · Next row
@@ -65,7 +65,7 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-leavemsg{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);background:#1b1b1b;color:#fff;border:1px solid #d97a00;border-radius:10px;padding:14px 18px;font-size:16px;z-index:1002;max-width:85%;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.5)}'
     + '#rpDialog .rp-leavebtns{display:flex;justify-content:center;gap:10px;margin-top:12px}'
     + '#rpDialog .rp-leavebtns button{width:auto;min-width:90px;padding:8px 16px;border-radius:16px;border:1px solid #fff;background:#2a2a2a;color:#fff;font-weight:600;font-size:15px;cursor:pointer}'
-    + '#rpDialog .rp-vol{display:flex;align-items:center;gap:6px;margin:0 4px 2px;flex:0 0 auto}'
+    + '#rpDialog .rp-vol{display:flex;align-items:center;gap:6px;margin:0 4px 2px;flex:0 0 auto}#rpDialog .rp-tl2 .rp-vol{order:3;margin:0}'
     + '#rpDialog .rp-vol button{width:auto;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:6px 9px;cursor:pointer;font-size:14px}'
     + '#rpDialog .rp-vol button:hover{border-color:#d97a00}#rpDialog .rp-vol button.on{background:#c62828;border-color:#c62828}'
     + '#rpDialog .rp-vollevel{color:#bbb;font-size:12px;min-width:3em}'
@@ -127,11 +127,11 @@ function reviewPlayerStyle() {
     // 24 px touch targets (WCAG 2.5.8, 2026-10-23 run 3): the skip box with its spacing, the spectrogram reset button
     + '#rpDialog .rp-skipbox{width:18px;height:18px;margin:3px}#rpDialog .rp-spec button.rp-specreset{min-height:26px;min-width:28px}'
     + '#rpDialog .rp-undo{width:auto;margin-left:6px;padding:1px 9px;border-radius:10px;border:1px solid var(--accent,#2b5e22);background:var(--accent,#2b5e22);color:#fff;cursor:pointer;font-size:12px}'
-    + '@media (max-width:800px){#rpDialog .rp-params,#rpDialog .rp-bottom{flex-wrap:wrap}#rpDialog .rp-box{flex-direction:column;width:100%;max-height:100%;border-radius:0;padding:8px 8px 96px}'
+    + '@media (max-width:800px){#rpDialog .rp-params{flex-wrap:wrap}#rpDialog .rp-box{flex-direction:column;width:100%;max-height:100%;border-radius:0;padding:8px 8px 96px}'
     + '#rpDialog .rp-side{flex:0 0 auto;margin-top:0}#rpDialog .rp-keys{display:none}#rpDialog .rp-toolsrow{flex-wrap:wrap}'
     // phone: only Conf., Manual Conf., Prob. and Min. Prob. (owner 2026-10-18)
     + '#rpDialog .rp-params .rp-pr{display:none}#rpDialog .rp-params span{flex:1 1 0}'
-    + '#rpDialog:not(.show-audio) .rp-bottom{display:none}'
+    + '#rpDialog:not(.show-audio) .rp-vol{display:none}'
     + '#rpDialog .rp-box{padding-bottom:150px}#rpDialog .rp-side .rp-nav:not(.rp-spnav),#rpDialog .rp-side>.rp-delete{display:none}'
     + '#rpDialog .rp-opts{flex-wrap:wrap}#rpDialog .rp-mbar{display:flex;flex:0 0 100%;gap:6px}#rpDialog .rp-mspnav{display:none;order:2}#rpDialog .rp-mspnav.on{display:flex}'
     // the species buttons only in the fixed bar; the progress on top of it
@@ -143,7 +143,7 @@ function reviewPlayerStyle() {
     // phone: the answers become a bar of big buttons fixed at the bottom of the screen
     + '#rpDialog .rp-opts{position:fixed;left:0;right:0;bottom:0;display:flex;gap:6px;padding:8px;background:#1b1b1b;z-index:1001}'
     + '#rpDialog .rp-opts .rp-opt{flex:1 1 0;flex-direction:column;justify-content:center;gap:4px;padding:8px 2px;text-align:center;font-size:12px}'
-    + '#rpDialog .rp-opts .rp-txt,#rpDialog .rp-opts .rp-key,#rpDialog .rp-opts .rp-bigconf{display:none}#rpDialog .rp-opts .rp-mbar{order:1}#rpDialog .rp-params .rp-lw{display:none}#rpDialog .rp-params .rp-lph{display:inline}#rpDialog .rp-params .rp-spcell{display:flex;flex:0 0 auto;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#2a2a2a;border-radius:6px;padding:4px 8px;color:#fff;text-decoration:none}#rpDialog .rp-spcell img{filter:invert(1);width:18px;height:18px}#rpDialog .rp-spcell small{font-size:10.5px;color:#ddd}#rpDialog .rp-opts .rp-ico{flex:0 0 38px;width:38px;height:38px;font-size:21px}'
+    + '#rpDialog .rp-opts .rp-txt,#rpDialog .rp-opts .rp-key,#rpDialog .rp-side>.rp-bigconf{display:none}#rpDialog .rp-opts .rp-mbar{order:1}#rpDialog .rp-params .rp-lw{display:none}#rpDialog .rp-params .rp-lph{display:inline}#rpDialog .rp-params .rp-spcell{display:flex;flex:0 0 auto;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:#2a2a2a;border-radius:6px;padding:4px 8px;color:#fff;text-decoration:none}#rpDialog .rp-spcell img{filter:invert(1);width:18px;height:18px}#rpDialog .rp-spcell small{font-size:10.5px;color:#ddd}#rpDialog .rp-opts .rp-ico{flex:0 0 38px;width:38px;height:38px;font-size:21px}'
     // the four main answers smaller (owner 2026-10-25: they took a third of the screen): a small icon over a short label
     + '#rpDialog .rp-opts > .rp-opt{gap:2px;padding:4px 2px;font-size:11px;line-height:1.15}#rpDialog .rp-opts > .rp-opt .rp-ico{flex:0 0 24px;width:24px;height:24px;font-size:14px}'
     // Previous / No / Ignore / Next / Skip larger (owner 2026-11-03), Close under them, the pull handle on top: pull the
@@ -167,6 +167,10 @@ function reviewPlayerStyle() {
     + '#rpDialog:not(.notmode) .rp-player img{flex:0 1 auto;min-height:0;height:auto;max-height:100%;object-fit:contain}}'
     // desktop the same (owner 2026-11-01): one dark piece without a scroll, the side panel on the dark of the player, the
     // spectrogram shrinking whole to fit the window
+    // desktop: the answers, Previous / Next and No / Ignore at the bottom of the panel (owner 2026-11-06)
+    + '@media (min-width:801px){#rpDialog .rp-main{margin-top:auto}#rpDialog .rp-tl2{position:relative}#rpDialog .rp-tl2 .rp-vol{position:absolute;top:0;left:50%;transform:translateX(-50%)}}'
+    // phone: the volume on a centred row of its own under the icons (they keep their place when Audio opens it)
+    + '@media (max-width:800px){#rpDialog .rp-tl2 .rp-vol{order:6;flex:1 1 100%;justify-content:center}}'
     + '@media (min-width:801px){#rpDialog .rp-side{background:#1b1b1b;color:#fff;border:1px solid #333}#rpDialog .rp-side .rp-prog small,#rpDialog .rp-side .rp-skip,#rpDialog .rp-side .rp-bigconf small,#rpDialog .rp-side .rp-bigconf b{color:#fff}'
     + '#rpDialog .rp-side .rp-sppage{background:#2a2a2a;color:#fff;border-color:#555}#rpDialog .rp-side .rp-sppage img{filter:invert(1)}'
     + '#rpDialog:not(.notmode) .rp-box{overflow:hidden}'
@@ -424,6 +428,9 @@ function openReviewPlayer(el, opts) {
     + '<div class="rp-player"></div>'
     + '<div class="rp-toolsrow"><div class="rp-tl2"><a class="rp-folder" target="_blank" title="" aria-label="' + t('str_file') + '">&#128194;</a>'
     + '<button type="button" class="rp-tg" data-tg="spec" title="' + t('str_palette') + '" aria-label="' + t('str_palette') + '">&#127912;</button><button type="button" class="rp-tg" data-tg="audio" title="' + t('str_audio') + '" aria-label="' + t('str_audio') + '">&#128266;</button>'
+    // the volume in the middle of the row (owner 2026-11-06: it had a row of its own under it)
+    + '<div class="rp-vol"><button type="button" data-vol="down" title="' + t('str_volume_down') + '">&#128265;&minus;</button><button type="button" data-vol="up" title="' + t('str_volume_up') + '">&#128266;+</button>'
+    + '<button type="button" data-vol="mute" title="' + t('str_mute') + '">&#128263;</button><span class="rp-vollevel"></span></div>'
     // the purge lock and Share beside Audio (owner 2026-11-01); the hearing aid is the header's switch (owner 2026-11-04)
     + '<span class="rp-tools"><img data-t="lock" src="images/unlock.svg" title="" alt="" role="button" tabindex="0" data-kbd="1"><img data-t="share" src="images/share.svg" title="' + t('str_share_whatsapp_telegram_e_mail') + '" alt="' + t('str_share') + '" role="button" tabindex="0" data-kbd="1"></span>'
     + '<span class="rp-spec" title="' + t('str_spectrogram_picture_remembered_help') + '"><select data-k="palette" aria-label="' + t('str_spectrogram_palette') + '">'
@@ -438,10 +445,6 @@ function openReviewPlayer(el, opts) {
     + '<button type="button" class="rp-specreset" title="' + t('str_back_to_the_stations_help') + '">&#8634;</button></span></div>'
     + '<div class="rp-speed"><button type="button" data-sp="loop" title="' + t('str_repeat_only_the_detected_3_seconds') + '">&#10227; ' + t('str_loop_3_s') + '</button>'
     + '<span class="rp-rates" title="' + t('str_playback_speed') + '">' + [0.5, 0.8, 1, 1.5, 2].map(function (r) { return '<button type="button" data-rate="' + r + '">' + (window.fmtNum ? window.fmtNum(r, r % 1 ? 1 : 0) : String(r)) + '&times;</button>'; }).join('') + '</span></div></div>'
-    + '<div class="rp-bottom">'
-    + '<div class="rp-right">'
-    + '<div class="rp-vol"><button type="button" data-vol="down" title="' + t('str_volume_down') + '">&#128265;&minus;</button><button type="button" data-vol="up" title="' + t('str_volume_up') + '">&#128266;+</button>'
-    + '<button type="button" data-vol="mute" title="' + t('str_mute') + '">&#128263;</button><span class="rp-vollevel"></span></div></div></div>'
     + '<div class="rp-keys">' + t('str_keys') + ' <kbd>Y</kbd> ' + t('str_yes_lc') + ' | <kbd>N</kbd> ' + t('str_change_species_lc') + ' | <kbd>R</kbd> ' + t('str_review_later_lc') + ' | <kbd>C</kbd> ' + t('str_clear') + ' | <kbd>X</kbd> ' + t('str_ignore') + ' | '
     + '<kbd>Z</kbd> ' + t('str_undo_lc') + ' | <kbd>\u2190</kbd> <kbd>\u2192</kbd> ' + t('str_previous_next') + ' | <kbd>Space</kbd> ' + t('str_play_pause_lc') + ' | <kbd>L</kbd> ' + t('str_loop') + ' | <kbd>Esc</kbd> ' + t('str_close_lc') + '</div></div>'
     // side panel (owner 2026-10-18): progress and the species row on top — visible on a phone without scrolling —, the
@@ -451,15 +454,16 @@ function openReviewPlayer(el, opts) {
     // Skip reviewed between Previous species and Next species (owner 2026-11-01); the row stays without them outside a
     // Curation review
     + '<div class="rp-nav rp-spnav"><button type="button" data-spnav="-1" title="' + t('str_previous_species') + '">&#9664; ' + t('str_prev_sp') + '</button><label class="rp-skip" title="' + t('str_next_previous_and_the_answers_help') + '"><input type="checkbox" class="rp-skipbox"> ' + t('str_skip_reviewed') + '</label><button type="button" data-spnav="1" title="' + t('str_next_species') + '">' + t('str_next_sp') + ' &#9654;</button></div>'
+    // the detection's confidence, large (owner 2026-10-22), beside it the species page (owner 2026-10-26); above the
+    // answers, which sit at the bottom of the panel on a desktop (owner 2026-11-06)
+    + '<div class="rp-bigconf"><small>' + t('str_conf') + '</small><b></b>'
+    + '<a class="rp-sppage" href="#" target="_blank" rel="noopener" title="' + t('str_open_the_species_page') + '"><img src="images/species.svg" alt=""><span>' + t('str_species_card') + '</span></a></div>'
     + '<div class="rp-main"><div class="rp-opts">'
     + '<div class="rp-mbar"><button type="button" data-nav="-1">&#9664; ' + t('str_previous') + '</button><button type="button" class="rp-mdel" title="' + t('str_not_a_bird_worth_keeping_the_help') + '">&#128683; ' + t('str_no_ignore') + '</button><button type="button" data-nav="1">' + t('str_next_skip') + ' &#9654;</button></div>'
     // Previous / Next species in the phone's fixed bar too (owner 2026-10-25: out of sight under it before)
     + '<div class="rp-mbar rp-mspnav"><button type="button" data-spnav="-1" title="' + t('str_previous_species') + '">&#9664; ' + t('str_prev_sp') + '</button><label class="rp-skip" title="' + t('str_next_previous_and_the_answers_help') + '"><input type="checkbox" class="rp-skipbox"> ' + t('str_skip_reviewed') + '</label><button type="button" data-spnav="1" title="' + t('str_next_species') + '">' + t('str_next_sp') + ' &#9654;</button></div>'
     // phone: Close at the bottom of the fixed bar, in reach of the thumb (owner 2026-11-03, option 3)
     + '<button type="button" class="rp-mclose">&#10005; ' + t('str_close') + '</button>'
-    + '<div class="rp-bigconf"><small>' + t('str_conf') + '</small><b></b>'  // the detection's confidence, large (owner 2026-10-22)
-    // beside it the species page (owner 2026-10-26)
-    + '<a class="rp-sppage" href="#" target="_blank" rel="noopener" title="' + t('str_open_the_species_page') + '"><img src="images/species.svg" alt=""><span>' + t('str_species_card') + '</span></a></div>'
     + REVIEW_OPTS.map(function (o) {
         return '<button type="button" class="rp-opt" data-v="' + o[0] + '"><span class="rp-ico" style="background:' + o[2] + '">' + o[1] + '</span>'
           + '<span><b>' + o[3] + '</b>' + (o[4] ? '<span class="rp-txt">' + o[4] + '</span>' : '') + '</span><span class="rp-key">' + o[5] + '</span></button>';
@@ -533,7 +537,7 @@ function openReviewPlayer(el, opts) {
       + cell('Conf.', 'str_conf', pe(params['Conf.']) + (cmin ? ' <small class="rp-min">(' + cmin + ')</small>' : ''), '', t('str_detection_conf'))
       + cell('Prob.', 'str_prob', pe(params['Prob.']) + (pmin ? ' <small class="rp-min">(' + pmin + ')</small>' : ''), '', t('str_prob_at_the_location'))
 
-      + [['Sigm. Sens.', 'str_sigm_sens'], ['Rec. Length', 'str_rec_length'], ['Overlap', 'str_overlap'], ['Microphone', 'str_microphone'], ['Port', 'str_port'], ['Gain', 'str_gain'], ['Model', 'str_model_lc_short'], ['Audio loss', 'str_audio_loss'], ['Time zone', 'str_time_zone']].map(function (p, i) { return cell(p[0], p[1], pe(params[p[0]]), 'rp-pr' + (i === 0 ? ' rp-pr1' : '')); }).join('');
+      + [['Sigm. Sens.', 'str_sigm_sens'], ['Rec. Length', 'str_rec_length'], ['Overlap', 'str_overlap'], ['Microphone', 'str_microphone'], ['Port', 'str_port'], ['Gain', 'str_gain'], ['Model', 'str_model_lc_short'], ['Audio loss', 'str_audio_loss']].map(function (p, i) { return cell(p[0], p[1], pe(params[p[0]]), 'rp-pr' + (i === 0 ? ' rp-pr1' : '')); }).join('');
     progress();
     d.querySelector('.rp-msg').textContent = msg || '';
     var v = verdictOf(item);
