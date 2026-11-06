@@ -51,7 +51,10 @@ EXTRACTED_DIR="$BS_EXTRACTED"
 AUDIO=(By_Date)
 
 log() {
+  # always 0: as the last command of backup() its status is the script's (Gitea #105: the silent stdout mode, the web
+  # download, ended with 1 and every settings backup was logged as interrupted)
   [ -z "$QUIET" ] && echo "$1"
+  return 0
 }
 
 # the parts of the archive: config/ always, the audio in full mode

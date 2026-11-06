@@ -54,6 +54,7 @@ import re
 import shutil
 import signal
 import sqlite3
+import subprocess
 import sys
 import time
 
@@ -968,6 +969,12 @@ def restore(folder, to_id=None, new=False, src=None, move=False):
     if src['reviews']:
         restore_reviews(con, src['reviews'], renamed)
     con.commit()
+    if target.created:
+        # the biome, ecoregion and land cover of each location made here, then on its detections, as a save of the
+        # locations page does (common.php locations_save; Gitea #106: an import left them empty)
+        job(status='running', done=len(rows))
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils', 'locations.py'), 'biomes'],
+                       check=False, timeout=900, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     where = ', '.join(sorted({x['name'] for x in target.targets.values()})) or shown_name
     job(status='done', done=len(rows), finished=time.strftime('%Y-%m-%d %H:%M:%S'),
         result=t('str_detections_restored_into_were_help', n=added, location=where, m=len(rows) - added))
