@@ -216,6 +216,14 @@ if(($_GET['submit'] ?? '') === 'settings') try {
   // nothing changed (every value equal to the settings file, the notification texts equal to their files, the
   // BirdWeather tokens of the locations equal): nothing written and no service restarted (Gitea #88: every Apply
   // restarted spectrogram, icecast, recording, analysis and log, a minute of analysis lost for nothing); the page says so
+  // a per-location BirdWeather token outside the rule refuses the save with the reason (Gitea #98: it was skipped without
+  // a word while the rest was saved)
+  if (isset($_GET['birdweather_id']) && isset($_GET['bw_loc']) && is_array($_GET['bw_loc'])) {
+    foreach ($_GET['bw_loc'] as $bw_t) {
+      $bw_t = trim((string)$bw_t);
+      if ($bw_t !== '' && !preg_match('/^[A-Za-z0-9_-]{4,64}$/', $bw_t)) throw new RuntimeException(t('str_birdweather_token') . ': ' . t('str_4_to_64_letters_digits_or'));
+    }
+  }
   $same = function ($a, $b) { return is_numeric($a) && is_numeric($b) ? floatval($a) == floatval($b) : (string)$a === (string)$b; };
   $dirty = false;
   foreach ($set as $k => $v) if (!$same($v, trim((string)($config[$k] ?? ''), "\"'"))) { $dirty = true; break; }
@@ -833,7 +841,8 @@ mailto://{user}:{password}@gmail.com
       <label style="font-weight:normal"><input type="radio" name="birdweather_mode" value="location" <?php echo $bw_pl ? 'checked' : ''; ?> onchange="bwMode()"> <?php echo t('str_a_token_for_each_location'); ?></label>
       <div id="bw_one" style="margin-top:8px<?php echo $bw_pl ? ';display:none' : ''; ?>">
       <label for="birdweather_id"><?php echo t('str_birdweather_token'); ?> </label>
-      <input name="birdweather_id" id="birdweather_id" type="text" value="<?php print($config['BIRDWEATHER_ID']);?>" <?php echo $bwe ? '' : 'readonly'; ?>/>
+      <?php // the same rule as the per-location tokens (Gitea #98): 4 to 64 letters, digits, _ or - ?>
+      <input name="birdweather_id" id="birdweather_id" type="text" value="<?php echo htmlspecialchars((string)$config['BIRDWEATHER_ID'], ENT_QUOTES); ?>" pattern="[A-Za-z0-9_\-]{4,64}" maxlength="64" title="<?php echo htmlspecialchars(t('str_4_to_64_letters_digits_or'), ENT_QUOTES); ?>" <?php echo $bwe ? '' : 'readonly'; ?>/>
       </div>
       <div id="bw_loc" style="margin-top:8px<?php echo $bw_pl ? '' : ';display:none'; ?>">
       <table class="stdtable" style="width:auto"><tr><th><?php echo t('str_location'); ?></th><th data-nosort><?php echo t('str_birdweather_token'); ?></th></tr>

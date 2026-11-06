@@ -624,10 +624,27 @@ def _sound_repo_write(conf, repo, detection):
     log.info('sound repo: stored %s', os.path.basename(clip))
 
 
+_bw_pause_until = 0.0   # after a network failure the uploads pause (Gitea #97); 0 = not paused
+BW_PAUSE_SEC = 300
+BW_CONNECT_SEC = 5
+
+
+def _bw_network_failed(what, e):
+    """A connection error or timeout: the uploads pause for BW_PAUSE_SEC (Gitea #97: the analysis hands the next
+    recording over only after this reporting ended, and a stuck network cost 30 s plus 20 s per detection on every
+    recording, so the analysis fell behind without end). Logged once per pause."""
+    global _bw_pause_until
+    _bw_pause_until = time.time() + BW_PAUSE_SEC
+    log.error('Cannot POST %s: %s - BirdWeather uploads paused for %d min', what, e, BW_PAUSE_SEC // 60)
+
+
 def bird_weather(file: ParseFileName, detections: [Detection]):
+    global _bw_pause_until
     # BIRDWEATHER_ENABLED=0 pauses the uploads and keeps the token (absent = off, as factory_defaults.conf); re-read when the
     # settings page changed the file, so the switch applies without restarting the analysis
     conf = _settings_if_changed()
+    if _bw_pause_until and time.time() < _bw_pause_until:
+        return
     # one token for every location, or the token of the location the recording was made at (BIRDWEATHER_PER_LOCATION,
     # owner 2026-10-22: a BirdWeather station has fixed coordinates); a location without a token does not upload
     token = conf['BIRDWEATHER_ID']
@@ -651,17 +668,21 @@ def bird_weather(file: ParseFileName, detections: [Detection]):
                           f'{token}/soundscapes?timestamp={file.iso8601}')
 
         try:
-            response = requests.post(url=soundscape_url, data=flac_data, timeout=30,
+            response = requests.post(url=soundscape_url, data=flac_data, timeout=(BW_CONNECT_SEC, 30),
                                      headers={'Content-Type': 'audio/flac'})
             log.info("Soundscape POST Response Status - %d", response.status_code)
             sdata = response.json()
-        except BaseException as e:  # noqa: BLE001  a network or service error of any kind: noted, the station goes on
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            _bw_network_failed('soundscape', e)
+            return
+        except BaseException as e:  # noqa: BLE001  a service error of any kind: noted, the station goes on
             log.error("Cannot POST soundscape: %s", e)
             return
         if not sdata.get('success'):
             log.error(sdata.get('message'))
             return
         soundscape_id = sdata['soundscape']['id']
+        _bw_pause_until = 0.0   # the service answered: a pause, if any, is over
 
         for detection in detections:
             # POST detection to server
@@ -676,9 +697,12 @@ def bird_weather(file: ParseFileName, detections: [Detection]):
 
             log.debug(data)
             try:
-                response = requests.post(detection_url, json=data, timeout=20)
+                response = requests.post(detection_url, json=data, timeout=(BW_CONNECT_SEC, 20))
                 log.info("Detection POST Response Status - %d", response.status_code)
-            except BaseException as e:  # noqa: BLE001  a network or service error of any kind: noted, the station goes on
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                _bw_network_failed('detection', e)
+                return   # the rest of this recording's detections wait with the pause
+            except BaseException as e:  # noqa: BLE001  a service error of any kind: noted, the station goes on
                 log.error("Cannot POST detection: %s", e)
 
 
