@@ -890,14 +890,20 @@ function web_users() {
   if ($u !== null) return $u;
   $u = array();
   $j = is_file(BS_USERS_FILE) ? json_decode((string)@file_get_contents(BS_USERS_FILE), true) : null;
+  $main = web_user();
   if (is_array($j) && !empty($j['users'])) {
     foreach ($j['users'] as $e) {
       if (!is_array($e) || !preg_match('/^[A-Za-z0-9]{1,32}$/', (string)($e['name'] ?? ''))) continue;
-      $u[$e['name']] = array('name' => $e['name'], 'role' => in_array($e['role'] ?? '', array('viewer', 'operator', 'admin'), true) ? $e['role'] : 'viewer',
-        'level' => isset(ui_levels()[$e['level'] ?? '']) ? $e['level'] : '', 'hash' => (string)($e['hash'] ?? ''), 'main' => !empty($e['main']));
+      // the main entry is the web login of Station › Access, whatever name the file kept for it (Gitea #101: the login
+      // renamed there was not found here, and every page refused the right password while Caddy accepted it)
+      $name = !empty($e['main']) ? $main : $e['name'];
+      if (isset($u[$name]) && empty($e['main'])) continue;   // a named user with the login's name never shadows it
+      $u[$name] = array('name' => $name, 'role' => !empty($e['main']) ? 'admin' : (in_array($e['role'] ?? '', array('viewer', 'operator', 'admin'), true) ? $e['role'] : 'viewer'),
+        'level' => isset(ui_levels()[$e['level'] ?? '']) ? $e['level'] : '', 'hash' => !empty($e['main']) ? '' : (string)($e['hash'] ?? ''), 'main' => !empty($e['main']));
     }
   }
-  if (!$u) $u[web_user()] = array('name' => web_user(), 'role' => 'admin', 'level' => '', 'hash' => (string)(get_config()['CADDY_PWD'] ?? ''), 'main' => true);
+  // the login always has its entry (a file without one, or none at all)
+  if (!isset($u[$main]) || empty($u[$main]['main'])) $u = array($main => array('name' => $main, 'role' => 'admin', 'level' => $u[$main]['level'] ?? '', 'hash' => '', 'main' => true)) + $u;
   return $u;
 }
 // the user this request logged in as (Basic login), or null

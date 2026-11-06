@@ -313,7 +313,7 @@ foreach (web_users() as $u) {
     . '<td><button type="button" class="netbtn" onclick="userSave(this, \'update\')">' . t('str_save') . '</button>'
     . ($main ? '' : ' <button type="button" class="netbtn" onclick="userSave(this, \'delete\')">' . t('str_remove') . '</button>') . '</td></tr>';
 }
-echo '<tr data-name=""><td><input type="text" data-u="name" maxlength="32" pattern="[A-Za-z0-9]+" style="width:8em" placeholder="' . htmlspecialchars(t('str_new_user')) . '"></td>'
+echo '<tr data-name=""><td><input type="text" data-u="name" maxlength="32" pattern="[A-Za-z0-9]+" style="width:8em" placeholder="' . htmlspecialchars(t('str_new_user')) . '" aria-label="' . htmlspecialchars(t('str_new_user'), ENT_QUOTES) . '"></td>'
   . '<td>' . $sel('role', $role_opts, 'viewer') . '</td><td>' . $sel('level', $level_opts, '') . '</td>'
   . '<td><input type="password" data-u="password" autocomplete="new-password" pattern="' . htmlspecialchars(web_password_pattern(), ENT_QUOTES) . '" style="width:9em"></td>'
   . '<td><button type="button" class="netbtn" onclick="userSave(this, \'add\')">' . t('str_add') . '</button></td></tr>';

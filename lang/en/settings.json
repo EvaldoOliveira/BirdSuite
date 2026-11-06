@@ -256,7 +256,7 @@
   "str_latitude_must_be_a_number_help": "Latitude must be a number between -90 and 90",
   "str_latvian": "Latvian",
   "str_leave_both_current_password_help": "Leave both empty to keep the current password.",
-  "str_leave_the_password_empty_to_help": "Leave the password empty to keep the current one; tick Remove the password to open the station without login.",
+  "str_leave_the_password_empty_to_help": "Leave the password empty to keep the current one; Web login Off opens the station without any login.",
   "str_legacy_6k_model": "legacy 6K model",
   "str_letters_digits_and_pct_and_plus": "Letters, digits and ! @ # % ^ & * ( ) - _ = + [ ] { } . , : ? ~ /",
   "str_letters_digits_and_pct_and_plus_help": "Letters, digits and ! @ # % ^ & * ( ) - _ = + [ ] { } . , : ? ~ / (no spaces, quotes, ` $ \\ ; < > |).",
