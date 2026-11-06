@@ -116,7 +116,7 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-player .cap-indicator{bottom:32px!important}'
     + '#rpDialog .rp-spec{display:flex;align-items:center;gap:6px;color:#bbb;font-size:12px;flex-wrap:wrap}'
     + '#rpDialog .rp-spec select,#rpDialog .rp-spec input{background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:3px 5px;font-size:12px;min-height:26px;box-sizing:border-box}'
-    + '#rpDialog .rp-spec label{font-weight:normal;font-size:12px;color:#bbb;display:flex;align-items:center;gap:4px;margin:0}#rpDialog .rp-spec input{width:4.4em}#rpDialog .rp-spec button{width:auto;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px}'
+    + '#rpDialog .rp-spec label{font-weight:normal;font-size:12px;color:#bbb;display:flex;align-items:center;gap:4px;margin:0}#rpDialog .rp-spec input[data-k]{width:4.4em}#rpDialog .rp-spec input[data-r],#rpDialog .rp-spec .rp-sv{display:none}#rpDialog .rp-spec button{width:auto;background:#2a2a2a;color:#fff;border:1px solid #555;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px}'
     + '#rpDialog .rp-tl2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
     + '#rpDialog .rp-keys{color:#999;font-size:11.5px;margin:6px 4px 0}#rpDialog .rp-keys kbd{background:#2a2a2a;border:1px solid #555;border-radius:4px;padding:0 4px;color:#ddd;font-family:inherit}'
     + '#rpDialog .rp-prog small{color:#444;font-size:12px}#rpDialog .rp-bar{display:flex;gap:1px;height:9px;margin-top:3px}'
@@ -129,6 +129,10 @@ function reviewPlayerStyle() {
     + '#rpDialog .rp-undo{width:auto;margin-left:6px;padding:1px 9px;border-radius:10px;border:1px solid var(--accent,#2b5e22);background:var(--accent,#2b5e22);color:#fff;cursor:pointer;font-size:12px}'
     + '@media (max-width:800px){#rpDialog .rp-params{flex-wrap:wrap}#rpDialog .rp-box{flex-direction:column;width:100%;max-height:100%;border-radius:0;padding:8px 8px 96px}'
     + '#rpDialog .rp-side{flex:0 0 auto;margin-top:0}#rpDialog .rp-keys{display:none}#rpDialog .rp-toolsrow{flex-wrap:wrap}'
+    // phone: no File (the folder opens the viewer's file manager, a desktop thing, owner 2026-11-06); the palette's numbers
+    // as sliders, one row each, the value beside it
+    + '#rpDialog .rp-folder{display:none}#rpDialog .rp-spec .rp-sf{flex:1 1 100%;gap:8px}#rpDialog .rp-spec input[data-k]{display:none}'
+    + '#rpDialog .rp-spec input[data-r]{display:block;flex:1 1 auto;min-height:28px;padding:0;border:0;background:none;accent-color:#d97a00}#rpDialog .rp-spec .rp-sv{display:inline-block;min-width:3.2em;text-align:right;color:#fff;font-weight:600}'
     // phone: only Conf., Manual Conf., Prob. and Min. Prob. (owner 2026-10-18)
     + '#rpDialog .rp-params .rp-pr{display:none}#rpDialog .rp-params span{flex:1 1 0}'
     + '#rpDialog:not(.show-audio) .rp-vol{display:none}'
@@ -365,6 +369,12 @@ function rpToast(msg) {
   setTimeout(function () { b.remove(); }, 4000);
 }
 // a text put into innerHTML (species names from the model or the labels file, 2026-11-06 review)
+// Floor / Range / Contrast of the palette: a number box on a desktop, a slider with its value on a phone (owner 2026-11-06:
+// typing numbers on a phone is clumsy and the sliders matter more there); both carry the same value
+function rpSpecField(k, text, min, max, step) {
+  var a = ' min="' + min + '" max="' + max + '" step="' + step + '"';
+  return '<label class="rp-sf">' + text + ' <input type="number" data-k="' + k + '"' + a + '><input type="range" data-r="' + k + '"' + a + ' aria-label="' + rpEsc(text) + '"><b class="rp-sv"></b></label>';
+}
 function rpEsc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -462,9 +472,7 @@ function openReviewPlayer(el, opts) {
       ['birdnet', t('str_classic_purple_red_orange')], ['viridis', t('str_viridis_dark_yellow')],
       ['ocean', t('str_ocean_black_cyan')], ['grayscale', t('str_grayscale_black_white')]]
       .map(function (p) { return '<option value="' + p[0] + '">' + p[1] + '</option>'; }).join('')
-    + '</select><label>' + t('str_floor') + ' <input type="number" data-k="floor" min="-120" max="-40" step="5"></label>'
-    + '<label>' + t('str_range') + ' <input type="number" data-k="range" min="30" max="120" step="5"></label>'
-    + '<label>' + t('str_contrast') + ' <input type="number" data-k="contrast" min="0.2" max="3" step="0.1"></label>'
+    + '</select>' + rpSpecField('floor', t('str_floor'), -120, -40, 5) + rpSpecField('range', t('str_range'), 30, 120, 5) + rpSpecField('contrast', t('str_contrast'), 0.2, 3, 0.1)
     + '<button type="button" class="rp-specreset" title="' + t('str_back_to_the_stations_help') + '">&#8634;</button></span></div>'
     + '<div class="rp-speed"><button type="button" data-sp="loop" title="' + t('str_repeat_only_the_detected_3_seconds') + '">&#10227; ' + t('str_loop_3_s') + '</button>'
     + '<span class="rp-rates" title="' + t('str_playback_speed') + '">' + [0.5, 0.8, 1, 1.5, 2].map(function (r) { return '<button type="button" data-rate="' + r + '">' + (window.fmtNum ? window.fmtNum(r, r % 1 ? 1 : 0) : String(r)) + '&times;</button>'; }).join('') + '</span></div></div>'
@@ -983,10 +991,18 @@ function openReviewPlayer(el, opts) {
     return 'play.php?spectro=' + encodeURIComponent(item.dataset.clip.replace(/^\/(By_Date|Purge)\//, '')) + '&palette=' + encodeURIComponent(o.palette)
       + '&floor=' + encodeURIComponent(o.floor) + '&range=' + encodeURIComponent(o.range) + '&contrast=' + encodeURIComponent(o.contrast);
   }
+  function specSliders() {
+    d.querySelectorAll('.rp-spec [data-r]').forEach(function (r) {
+      var f = d.querySelector('.rp-spec [data-k="' + r.dataset.r + '"]');
+      r.value = f.value;
+      r.nextElementSibling.textContent = (window.fmtNum && r.dataset.r === 'contrast') ? window.fmtNum(parseFloat(f.value), 1) : f.value;
+    });
+  }
   function specFill() {
     var o = specOverride() || specDefaults;
     if (!o) return;
     d.querySelectorAll('.rp-spec [data-k]').forEach(function (f) { f.value = o[f.dataset.k]; });
+    specSliders();
   }
   function specInit() {
     var x = new XMLHttpRequest();
@@ -996,6 +1012,17 @@ function openReviewPlayer(el, opts) {
     specFill();
     d.querySelectorAll('.rp-spec [data-k]').forEach(function (f) {
       f.addEventListener(f.tagName === 'SELECT' ? 'change' : 'input', function () {
+        specSliders();
+        clearTimeout(specTimer);
+        specTimer = setTimeout(specApply, 500);
+      });
+    });
+    // a slider moves its box and redraws like it (phone)
+    d.querySelectorAll('.rp-spec [data-r]').forEach(function (r) {
+      r.addEventListener('input', function () {
+        var f = d.querySelector('.rp-spec [data-k="' + r.dataset.r + '"]');
+        f.value = r.value;
+        specSliders();
         clearTimeout(specTimer);
         specTimer = setTimeout(specApply, 500);
       });
