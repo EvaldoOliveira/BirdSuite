@@ -81,7 +81,10 @@ if(isset($_GET['threshold'])) {
 }
 
 # the settings form (Settings › Model, Settings › Repositories, Notifications › Content)
-if(($_GET['submit'] ?? '') === 'settings'){
+# a refused value shows the page again with the reason in a notice, nothing written (Gitea #88: it died after the menu
+# with a bare sentence and a Back link)
+$cfg_error = '';
+if(($_GET['submit'] ?? '') === 'settings') try {
   if (isset($_GET["birdweather_id"])) $birdweather_id = $_GET["birdweather_id"];
   // BirdWeather upload switch (the token is kept when it is off); only the Settings form carries it
   $birdweather_enabled = isset($_GET['birdweather_enabled']) ? 1 : 0;
@@ -210,10 +213,27 @@ if(($_GET['submit'] ?? '') === 'settings'){
     // BirdDB-Br switch (default off), only when the form shows its section (a form without it keeps the setting)
     if (isset($_GET['birddb_shown'])) $set['BIRDDB_ENABLED'] = isset($_GET['birddb_enabled']) ? 1 : 0;
   }
-  if (!conf_set_many($set, $err)) {
-    echo '<div class="settings"><p>' . htmlspecialchars($err) . '</p><p><a href="views.php?view=' . htmlspecialchars(rawurlencode((string)($_GET['view'] ?? 'Sharing'))) . '">' . t('str_back') . '</a></p></div>';
+  // nothing changed (every value equal to the settings file, the notification texts equal to their files, the
+  // BirdWeather tokens of the locations equal): nothing written and no service restarted (Gitea #88: every Apply
+  // restarted spectrogram, icecast, recording, analysis and log, a minute of analysis lost for nothing); the page says so
+  $same = function ($a, $b) { return is_numeric($a) && is_numeric($b) ? floatval($a) == floatval($b) : (string)$a === (string)$b; };
+  $dirty = false;
+  foreach ($set as $k => $v) if (!$same($v, trim((string)($config[$k] ?? ''), "\"'"))) { $dirty = true; break; }
+  if (!$dirty && isset($apprise_input) && $apprise_input !== $apprise_config) $dirty = true;
+  if (!$dirty && isset($apprise_input_rare) && $apprise_input_rare !== $apprise_config_rare) $dirty = true;
+  if (!$dirty && isset($apprise_notification_body) && $apprise_notification_body !== (string)@file_get_contents(BS_NOTIFY . "/body.txt")) $dirty = true;
+  if (!$dirty && isset($apprise_notification_body_rare) && $apprise_notification_body_rare !== (string)@file_get_contents(BS_NOTIFY . "/body-rare.txt")) $dirty = true;
+  if (!$dirty && isset($_GET['birdweather_id']) && isset($_GET['bw_loc']) && is_array($_GET['bw_loc'])) {
+    foreach (locations_load() as $bw_l) {
+      if (array_key_exists((string)$bw_l['id'], $_GET['bw_loc']) && trim((string)$_GET['bw_loc'][(string)$bw_l['id']]) !== (string)($bw_l['birdweather_id'] ?? '')) { $dirty = true; break; }
+    }
+  }
+  if (!$dirty) {
+    $back = json_encode('views.php?view=' . (in_array($_GET['view'] ?? '', array('Model', 'What and when'), true) ? $_GET['view'] : 'Sharing') . '&status=nochange');
+    echo "<script>location.replace($back);</script>";
     die();
   }
+  if (!conf_set_many($set, $err)) throw new RuntimeException((string)$err);
   if (isset($_GET['birdweather_id']) && isset($_GET['bw_loc']) && is_array($_GET['bw_loc'])) {
     $bw_list = locations_load();
     foreach ($bw_list as &$bw_l) {
@@ -260,6 +280,8 @@ if(($_GET['submit'] ?? '') === 'settings'){
   $back = json_encode('views.php?view=' . (in_array($_GET['view'] ?? '', array('Model', 'What and when'), true) ? $_GET['view'] : 'Sharing') . '&status=success');
   echo "<script>location.replace($back);</script>";
   die();
+} catch (RuntimeException $e) {
+  $cfg_error = $e->getMessage();
 }
 
 if(isset($_GET['sendtest']) && $_GET['sendtest'] == "true") {
@@ -288,10 +310,10 @@ if(isset($_GET['sendtest']) && $_GET['sendtest'] == "true") {
 
 // have to get the config again after we change the variables, so the UI reflects the changes too
 $config = get_config($force_reload=true);
+// the model names as the page shows them (the picklists and the defaults table): the file name without its suffixes
+// (Gitea #89: the full names made the picklists 40 characters wide and pushed the number columns off a phone's screen)
+$model_short = function ($n) { return str_replace('_', ' ', preg_replace('/_Model_FP16|_Global_10K|-preview3\.1/', '', (string)$n)); };
 ?>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  </style>
 <?php if (in_array($config_section ?? 'all', array('model', 'notifications', 'basic'), true)) { ?>
 <style>
   /* only the sections of this menu entry, hidden before the first paint (2026-10-23 run 3: the script at the end of the
@@ -349,7 +371,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       <?php // since one index only (owner 2026-11-05) the language changes only the names shown, nothing is renamed ?>
       <p><?php echo t('str_changing_it_only_changes_the_names_help'); ?></p>
       <label for="language"><?php echo t('str_common_name_language_colon'); ?> </label>
-      <select name="language" class="testbtn">
+      <select name="language" id="language" class="testbtn">
       <?php
         $langs = common_name_languages();
 
@@ -403,14 +425,14 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       <?php
       foreach($models as $modelName){
           $isSelected = ($config['MODEL'] == $modelName) ? 'selected="selected"' : '';
-          echo "<option value='{$modelName}' $isSelected>$modelName</option>";
+          echo "<option value='{$modelName}' $isSelected>" . htmlspecialchars($model_short($modelName)) . "</option>";
         }
       ?>
           </select></td>
           <td><input name="confidence" type="number" style="width:5em;" min="0.01" max="0.99" step="0.01" value="<?php print($config['CONFIDENCE']);?>"/></td>
           <td><input name="sensitivity" type="number" style="width:5em;" min="0.5" max="1.5" step="0.01" value="<?php print($config['SENSITIVITY']);?>"/></td>
           <td><input name="sf_thresh" type="number" style="width:5em;" max="0.99" min="0.0005" step="any" value="<?php print($config['SF_THRESH']);?>"/></td>
-          <td><input name="overlap" type="number" style="width:5em;" min="0.0" max="2.9" step="0.1" value="<?php print($config['OVERLAP']);?>" title="<?php echo t('str_shared_the_recording_is_cut_help'); ?>"/> s</td>
+          <td><input name="overlap" type="number" style="width:5em;" min="0.0" max="2.9" step="0.1" value="<?php print($config['OVERLAP']);?>" aria-label="<?php echo htmlspecialchars(t('str_overlap'), ENT_QUOTES); ?>" title="<?php echo t('str_shared_the_recording_is_cut_help'); ?>"/> s</td>
         </tr>
         <tr>
           <td></td>
@@ -424,7 +446,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       <?php
       foreach($models as $modelName){
           $isSelected = (($config['SHADOW_MODEL_NAME'] ?? '') == $modelName) ? 'selected="selected"' : '';
-          echo "<option value='{$modelName}' $isSelected>$modelName</option>";
+          echo "<option value='{$modelName}' $isSelected>" . htmlspecialchars($model_short($modelName)) . "</option>";
         }
       ?>
           </select></td>
@@ -437,7 +459,7 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
       <br>
       <?php // the species range model and its threshold belong to the V2 models only ?>
       <span <?php if($config['MODEL'] !== "BirdNET_GLOBAL_6K_V2.4_Model_FP16") { ?>style="display: none"<?php } ?> id="soft">
-      <input type="checkbox" name="data_model_version" <?php if($config['DATA_MODEL_VERSION'] == 2) { echo "checked"; };?> >
+      <input type="checkbox" name="data_model_version" id="data_model_version" <?php if($config['DATA_MODEL_VERSION'] == 2) { echo "checked"; };?> >
       <label for="data_model_version"><?php echo t('str_species_range_model'); ?> V2.4 - V2</label>  [ <a target="_blank" href="https://github.com/kahst/BirdNET-Analyzer/discussions/234"><?php echo t('str_info_here'); ?></a> ]<br>
       &nbsp;&nbsp;&nbsp;&nbsp;<label><?php echo t('str_minimum_probability_at_the_location_the_help'); ?></label> <span onclick="document.getElementById('sfhelp').style.display='unset'" style="text-decoration:underline;cursor:pointer">[<?php echo t('str_more_info'); ?>]</span>
       <p id="sfhelp" style='display:none'><?php echo t('str_this_value_is_used_by_the_model_help'); ?>
@@ -468,10 +490,10 @@ function sendTestNotification(e, which, msgspan, titlefield, bodyfield) {
   <div>
     <label for="threshold"><?php echo t('str_min_probability'); ?></label>
     <input type="number" id="threshold" step="0.01" min="0" max="1" value="">
-    <button type="button" id="runProcess"><?php echo t('str_preview_species_list'); ?></button>
+    <button type="button" id="runProcess" class="stdbtn"><?php echo t('str_preview_species_list'); ?></button>
   </div>
   <pre id="output"></pre>
-  <button type="button" id="closeModal"><?php echo t('str_close'); ?></button>
+  <button type="button" id="closeModal" class="stdbtn"><?php echo t('str_close'); ?></button>
 </dialog>
 
 <style>
@@ -541,14 +563,14 @@ function runProcess() {
   const threshold = thresholdInput.value;
 
  // Set the output to "Loading..."
-  output.innerHTML = t('str_loading');
+  output.textContent = t('str_loading');
 
   // Make the AJAX request
   const xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function() {
     if (xhr.readyState === XMLHttpRequest.DONE) {
-      // Handle the response
-      output.innerHTML = xhr.responseText;
+      // the script's text as it is (Gitea #89: it went in as HTML, an error of the script included)
+      output.textContent = xhr.responseText;
     }
   };
   xhr.open('GET', `scripts/config.php?threshold=${threshold}`);
@@ -574,7 +596,7 @@ function runProcess() {
           <?php // Use: these values into the official model's fields (saved with the form), only for the model selected above
           // a thicker line between the model generations (V3, V2.4, 6K), owner 2026-10-22
           $prevm = null;
-          foreach ($defrows as $r) { $gen = $prevm !== null && $prevm !== $r[0] ? ' class="gensep"' : ''; $prevm = $r[0]; echo '<tr' . $gen . '><td>' . htmlspecialchars(str_replace('_', ' ', preg_replace('/_Model_FP16|_Global_10K|-preview3\.1/', '', $r[0]))) . '</td><td>' . htmlspecialchars($r[1]) . '</td><td class="num">' . htmlspecialchars(fmt_setting($r[2])) . '</td><td class="num">' . htmlspecialchars(fmt_setting($r[3])) . '</td><td class="num">' . htmlspecialchars(fmt_setting($r[4])) . '</td><td class="num">' . htmlspecialchars($r[5] === '-' ? '-' : fmt_setting($r[5]) . ' s') . '</td>'
+          foreach ($defrows as $r) { $gen = $prevm !== null && $prevm !== $r[0] ? ' class="gensep"' : ''; $prevm = $r[0]; echo '<tr' . $gen . '><td>' . htmlspecialchars($model_short($r[0])) . '</td><td>' . htmlspecialchars($r[1]) . '</td><td class="num">' . htmlspecialchars(fmt_setting($r[2])) . '</td><td class="num">' . htmlspecialchars(fmt_setting($r[3])) . '</td><td class="num">' . htmlspecialchars(fmt_setting($r[4])) . '</td><td class="num">' . htmlspecialchars($r[5] === '-' ? '-' : fmt_setting($r[5]) . ' s') . '</td>'
             . '<td><button type="button" class="stdbtn defuse" data-model="' . htmlspecialchars($r[0]) . '" data-v="' . htmlspecialchars(json_encode(array_slice($r, 2, 4))) . '" onclick="defUse(this)">' . t('str_use') . '</button></td></tr>'; } ?>
         </table>
         <div class="small" id="defusemsg" style="font-weight:600;margin-top:4px"></div>
@@ -890,15 +912,16 @@ mailto://{user}:{password}@gmail.com
 <?php // Station › Model has a button per section (owner 2026-11-05), so no Update Settings at the end ?>
 <?php if (($config_section ?? 'all') !== 'model') { ?>
 <div class="float">
-      <button type="submit" id="basicformsubmit" onclick="if(document.getElementById('basicform').checkValidity()){this.innerHTML = t('str_updating_please_wait');this.classList.add('disabled')}" name="view" value="<?php echo in_array($_GET['view'] ?? '', array('Model', 'What and when'), true) ? $_GET['view'] : 'Sharing'; ?>">
-<?php
-if(isset($_GET['status'])){
-  echo '<script>bsNotice(' . json_encode(t('str_settings_successfully_updated'), JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ');</script>';
-}
-echo t('str_update_settings');
-?>
-      </button></div>
+      <button type="submit" id="basicformsubmit" onclick="if(document.getElementById('basicform').checkValidity()){this.innerHTML = t('str_updating_please_wait');this.classList.add('disabled')}" name="view" value="<?php echo in_array($_GET['view'] ?? '', array('Model', 'What and when'), true) ? $_GET['view'] : 'Sharing'; ?>"><?php echo t('str_update_settings'); ?></button></div>
 <?php } ?>
+<?php // the outcome of a save on every page of this form, Station › Model included (Gitea #88: its Apply gave no word); a
+// refused value with its reason
+if ($cfg_error !== '') {
+  echo '<script>bsNotice(' . json_encode($cfg_error, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ');</script>';
+} elseif (isset($_GET['status'])) {
+  echo '<script>bsNotice(' . json_encode(t($_GET['status'] === 'nochange' ? 'str_nothing_to_save' : 'str_settings_successfully_updated'), JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ');</script>';
+}
+?>
       </form>
 </div>
 <script>
