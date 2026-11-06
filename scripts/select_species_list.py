@@ -1,3 +1,21 @@
+################################################################################
+# scripts/select_species_list.py - SPECIES LISTS OF THE STATION
+#
+# PURPOSE:
+#   Species lists of the station: config/species_lists/custom/<name>.txt of the program folder, one of them
+#   active.
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#   - scripts/utils/core.py
+#   - scripts/utils/analysis.py
+#
+# USAGE:
+#   python3 scripts/select_species_list.py <arguments> (see main)
+#   Referenced by scripts/birdnet_analysis.py, scripts/install_language_label.sh, scripts/lib/locations.php,
+#   scripts/lib/species.php, scripts/locations.php, scripts/setup_wizard.php, scripts/species_lists.php …
+################################################################################
+
 """Species lists of the station: config/species_lists/custom/<name>.txt of the program folder, one of them active.
 
 The active list is include_species_list.txt (what the analysis applies and Tools > Included edits); it is

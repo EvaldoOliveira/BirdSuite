@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
-# Empties the sound-repo spool (SOUND_REPO_PATH) while the upload is off.
-# The spool only holds clips waiting for the upload script (its timer), which
-# deletes each clip once it reaches SOUND_REPO_REMOTE; with no remote or an
-# interval of 0 (paused) nothing will ever send them, so nothing is kept.
-# Called by disk_species_clean.sh; the root folder itself stays.
+################################################################################
+# scripts/sound_repo_clean.sh - EMPTIES THE SOUND-REPO SPOOL
+#
+# PURPOSE:
+#   Empties the sound-repo spool (SOUND_REPO_PATH) while the upload is off. The spool only holds clips waiting
+#   for the upload script (its timer), which deletes each clip once it reaches SOUND_REPO_REMOTE; with no
+#   remote or an interval of 0 (paused) nothing will ever send them, so nothing is kept. Called by
+#   disk_species_clean.sh; the root folder itself stays.
+#
+# DEPENDENCIES:
+#   - scripts/disk_species_clean.sh
+#   - scripts/paths.sh
+#
+# USAGE:
+#   bash scripts/sound_repo_clean.sh
+#   Referenced by scripts/disk_species_clean.sh
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 spool="${SOUND_REPO_PATH:-$BS_SOUND_REPO}"  # empty = the station's own spool (core.env)
 remote="${SOUND_REPO_REMOTE:-}"
@@ -11,15 +24,15 @@ minutes="${SOUND_REPO_UPLOAD_MINUTES:-0}"
 
 [ -n "$spool" ] && [ -d "$spool" ] || exit 0
 if [ "${BIRDDB_ENABLED:-0}" = "1" ] && [ -n "$remote" ] && [[ "$minutes" =~ ^[0-9]+$ ]] && [ "$minutes" -gt 0 ]; then
-  exit 0
+	exit 0
 fi
 # Only ever the spool's own files (clip + sidecar), never a folder the station needs: a path set to
 # the home, the recordings or the system root would otherwise be wiped every night.
 spool=$(realpath -m "$spool")
 recs=$(realpath -m "${RECS_DIR:-$BS_RECS}")
 case "$spool" in
-  /|"$(dirname "$BS_HOME")"|"$BS_HOME"|"$recs"|"$recs/Extracted"*|"$recs/StreamData"*|"$recs/Processed"*|"$(realpath -m "$BS_PROG")"*)
-    echo "sound repo: refusing to clean '$spool' (not a spool folder)"; exit 0 ;;
+	/|"$(dirname "$BS_HOME")"|"$BS_HOME"|"$recs"|"$recs/Extracted"*|"$recs/StreamData"*|"$recs/Processed"*|"$(realpath -m "$BS_PROG")"*)
+		echo "sound repo: refusing to clean '$spool' (not a spool folder)"; exit 0 ;;
 esac
 # the writer's layout: <spool>/<station>/<date>/<species>/<clip>.flac + .json
 count=$(find "$spool" -mindepth 4 -type f \( -name '*.flac' -o -name '*.json' \) | wc -l)

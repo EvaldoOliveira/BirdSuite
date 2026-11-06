@@ -1,3 +1,25 @@
+################################################################################
+# scripts/utils/notifications.py - NOTIFICATIONS OF A DETECTION
+#
+# PURPOSE:
+#   Notifications of a detection through Apprise: the channels and their tokens, the tiers (normal, rare,
+#   silenced), quiet hours, the templates, what counts as a new or a rare species, the queue.
+#
+# DEPENDENCIES:
+#   - scripts/utils/db.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/i18n.py
+#   - scripts/utils/rarity.py
+#   - scripts/utils/notify_queue.py
+#   - scripts/send_test_notification.py
+#   - scripts/utils/notify_channels.py
+#   - scripts/field_net.py
+#
+# USAGE:
+#   python3 scripts/utils/notifications.py <arguments> (see main)
+#   Referenced by scripts/email_setup.py, scripts/lib/station.php
+################################################################################
+
 import contextlib
 import datetime
 import html

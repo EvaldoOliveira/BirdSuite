@@ -1,3 +1,18 @@
+################################################################################
+# scripts/utils/models.py - THE MODELS
+#
+# PURPOSE:
+#   The models of the analysis: BirdNET V2.4 (tflite), BirdNET+ V3 (ONNX), Perch, the BirdNET-Go classifier
+#   and the geo (meta) models; the assets fetched by scripts/fetch_asset.sh, the loading and the inference.
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#   - scripts/fetch_asset.sh
+#
+# USAGE:
+#   Called as scripts/utils/models.py
+################################################################################
+
 import csv
 import json
 import logging

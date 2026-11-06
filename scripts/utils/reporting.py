@@ -1,3 +1,26 @@
+################################################################################
+# scripts/utils/reporting.py - REPORTING OF A DETECTION: CLIPS, SPECTROGRAMS, UPLOADS
+#
+# PURPOSE:
+#   Reporting of a detection: the clip extracted with sox, the spectrogram picture, the microphone values, the
+#   station time, the upload to BirdWeather and the sound repository (paused when the network fails), the
+#   audio loss.
+#
+# DEPENDENCIES:
+#   - scripts/utils/classes.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/notifications.py
+#   - scripts/spectrogram_png.py
+#   - scripts/spectrogram.sh
+#   - scripts/spectro_archive.py
+#   - scripts/mic_state.sh
+#   - scripts/birdnet_recording.sh
+#
+# USAGE:
+#   Referenced by scripts/birdnet_recording.sh, scripts/mic_state.sh, scripts/sharing_page.php,
+#   scripts/sound_repo_upload.sh, scripts/spectro_archive.py, scripts/spectrogram.php
+################################################################################
+
 import glob
 import hashlib
 import io

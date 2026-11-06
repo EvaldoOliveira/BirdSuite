@@ -1,3 +1,26 @@
+################################################################################
+# scripts/birdnet_analysis.py - THE ANALYSIS SERVICE
+#
+# PURPOSE:
+#   The analysis service: takes each recording from the queue, runs the model(s) (utils/analysis.py), writes
+#   the detections, extracts the clips and the spectrograms (utils/reporting.py) and sends the notifications
+#   (utils/notifications.py); a full disk makes it wait and retry.
+#
+# DEPENDENCIES:
+#   - scripts/utils/analysis.py
+#   - scripts/utils/classes.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/reporting.py
+#   - scripts/utils/shadow.py
+#   - scripts/utils/core.py
+#   - scripts/utils/analysis as an.py
+#   - scripts/select_species_list.py
+#
+# USAGE:
+#   python3 scripts/birdnet_analysis.py <arguments> (see main)
+#   Referenced by templates/units/SVC_ANALYSIS.service
+################################################################################
+
 import errno
 import logging
 import os

@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/locate_state.py - BRAZILIAN STATE
+#
+# PURPOSE:
+#   Brazilian state (UF) of a latitude/longitude, for the states include list (US-51c).
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   python3 scripts/locate_state.py <arguments> (see main)
+#   Referenced by scripts/install_firstrun.sh, scripts/lib/locations.php, scripts/locate_biome.py,
+#   scripts/setup_wizard.php
+################################################################################
+
 """Brazilian state (UF) of a latitude/longitude, for the states include list (US-51c).
 
 Online first: OpenStreetMap Nominatim reverse geocoding (one request, 5 s timeout, per its

@@ -1,9 +1,36 @@
 <?php
-/* Species page (owner 2026-10-08): everything about one bird in one place — names and links, totals, the last
- * year as a calendar, months and hours of activity, the location model's expected season (V3 geo model,
- * region_profile.json), the best clips, the latest detections, the review verdicts with a suggested species
- * threshold, and the Species Settings (editable threshold, notification tier, lists).
- * Opened as views.php?view=Species&sci=<scientific name>. */
+################################################################################
+# scripts/species_page.php - SPECIES PAGE
+#
+# PURPOSE:
+#   Species page (owner 2026-10-08): everything about one bird in one place — names and links, totals, the
+#   last year as a calendar, months and hours of activity, the location model's expected season (V3 geo model,
+#   region_profile.json), the best clips, the latest detections, the review verdicts with a suggested species
+#   threshold, and the Species Settings (editable threshold, notification tier, lists). Opened as
+#   views.php?view=Species&sci=<scientific name>.
+#
+# DEPENDENCIES:
+#   - scripts/common.php
+#   - scripts/species_tools.php
+#   - homepage/static/custom-audio-player.js
+#   - homepage/static/detection-actions.js
+#   - homepage/static/species-modal.js
+#   - homepage/static/spectro-dialog.js
+#   - homepage/static/review-player.js
+#   - homepage/static/std-table.js
+#   - homepage/static/name-mode.js
+#   - homepage/static/wipe-deleted.js
+#   - homepage/static/precision.js
+#   - homepage/static/species-page.js
+#   - scripts/utils/rarity.py
+#   - scripts/species.py
+#
+# USAGE:
+#   views.php?view=Species&sci=<scientific name>
+#   Referenced by homepage/static/review-player.js, homepage/static/species-page.js, homepage/views.php,
+#   scripts/lib/images.php, scripts/update_caddyfile.sh
+################################################################################
+
 require_once __DIR__ . '/common.php';
 $home = get_home();
 $config = get_config();
@@ -12,36 +39,36 @@ $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
 // the best xeno-canto spectrogram, asked by the page after it is drawn (it may take a few seconds the first time)
 // the kept copy of a xeno-canto spectrogram (state/xc/<nr>.png, written by xc_best())
 if (isset($_GET['xcimg'])) {
-  $f = BS_STATE . '/xc/' . preg_replace('/\D/', '', (string)$_GET['xcimg']) . '.png';
-  if (!is_file($f)) { http_response_code(404); exit; }
-  header('Content-Type: image/png');
-  header('Cache-Control: max-age=2592000');
-  readfile($f);
-  exit;
+	$f = BS_STATE . '/xc/' . preg_replace('/\D/', '', (string)$_GET['xcimg']) . '.png';
+	if (!is_file($f)) { http_response_code(404); exit; }
+	header('Content-Type: image/png');
+	header('Cache-Control: max-age=2592000');
+	readfile($f);
+	exit;
 }
 if (isset($_GET['xcbest'])) {
-  if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
-  header('Content-Type: application/json');
-  echo json_encode($sci !== '' ? xc_best($sci) : null);
-  exit;
+	if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+	header('Content-Type: application/json');
+	echo json_encode($sci !== '' ? xc_best($sci) : null);
+	exit;
 }
 $db = get_db();
 
 if ($sci === '') {
-  // the species list is scripts/species_tools.php (Species Pages = the old Species Management, owner 2026-10-09)
-  include __DIR__ . '/species_tools.php';
-  return;
+	// the species list is scripts/species_tools.php (Species Pages = the old Species Management, owner 2026-10-09)
+	include __DIR__ . '/species_tools.php';
+	return;
 }
 $nr = not_rejected_sql();
 $q = function ($sql, $one = false) use ($db, $sci) {
-  $st = $db->prepare($sql);
-  ensure_db_ok($st);
-  $st->bindValue(':sci', $sci);
-  $res = $st->execute();
-  if ($one) { $r = $res->fetchArray(SQLITE3_ASSOC); return $r ? $r + array('Com_Name' => common_name($sci)) : $r; }
-  $rows = array();
-  while ($r = $res->fetchArray(SQLITE3_ASSOC)) $rows[] = $r + array('Com_Name' => common_name($sci));
-  return $rows;
+	$st = $db->prepare($sql);
+	ensure_db_ok($st);
+	$st->bindValue(':sci', $sci);
+	$res = $st->execute();
+	if ($one) { $r = $res->fetchArray(SQLITE3_ASSOC); return $r ? $r + array('Com_Name' => common_name($sci)) : $r; }
+	$rows = array();
+	while ($r = $res->fetchArray(SQLITE3_ASSOC)) $rows[] = $r + array('Com_Name' => common_name($sci));
+	return $rows;
 };
 // one pass over the species' detections for the summary, the days, the 48 BirdNET weeks and the hours (owner
 // 2026-10-23: four queries over the same rows took over a second on a species with 26 000 detections)
@@ -56,52 +83,52 @@ $csum = 0.0;
 // cached_past_months), the rejected ones taken off afresh; the extremes by index seeks (2026-10-23 run 3: 300 000 rows
 // of a species at ten times the station's data were read one by one into PHP, 3.6 s)
 $hour_rows = function ($where, $p) use ($db, $sci) {
-  $st = $db->prepare("SELECT Date, CAST(substr(Time, 1, 2) AS INT), COUNT(*), TOTAL(Confidence) FROM detections WHERE Sci_Name = :sci AND $where GROUP BY Date, 2");
-  $st->bindValue(':sci', $sci);
-  foreach ($p as $k => $v) $st->bindValue($k, $v);
-  $out = array();
-  $res = $st->execute();
-  while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $out[] = $r;
-  return $out;
+	$st = $db->prepare("SELECT Date, CAST(substr(Time, 1, 2) AS INT), COUNT(*), TOTAL(Confidence) FROM detections WHERE Sci_Name = :sci AND $where GROUP BY Date, 2");
+	$st->bindValue(':sci', $sci);
+	foreach ($p as $k => $v) $st->bindValue($k, $v);
+	$out = array();
+	$res = $st->execute();
+	while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $out[] = $r;
+	return $out;
 };
 $today = date('Y-m-d');
 $chunks = cached_past_months('species_hours|' . $sci, '', '', past_month_changes(), function ($lo, $hi) use ($hour_rows) { return $hour_rows('Date BETWEEN :lo AND :hi', array(':lo' => $lo, ':hi' => $hi)); });
 $chunks[] = $hour_rows('Date >= :today', array(':today' => $today));
 $cells = array();
 foreach ($chunks as $chunk) foreach ($chunk as $r) {
-  $k = $r[0] . '|' . intval($r[1]);
-  if (!isset($cells[$k])) $cells[$k] = array($r[0], intval($r[1]), 0, 0.0);
-  $cells[$k][2] += intval($r[2]); $cells[$k][3] += floatval($r[3]);
+	$k = $r[0] . '|' . intval($r[1]);
+	if (!isset($cells[$k])) $cells[$k] = array($r[0], intval($r[1]), 0, 0.0);
+	$cells[$k][2] += intval($r[2]); $cells[$k][3] += floatval($r[3]);
 }
 if ($nr !== '') foreach ($hour_rows("+Date >= '0' AND File_Name IN (SELECT File_Name FROM detection_reviews WHERE Verdict = 'no')", array()) as $r) {
-  $k = $r[0] . '|' . intval($r[1]);
-  if (!isset($cells[$k])) continue;
-  $cells[$k][2] -= intval($r[2]); $cells[$k][3] -= floatval($r[3]);
-  if ($cells[$k][2] <= 0) unset($cells[$k]);
+	$k = $r[0] . '|' . intval($r[1]);
+	if (!isset($cells[$k])) continue;
+	$cells[$k][2] -= intval($r[2]); $cells[$k][3] -= floatval($r[3]);
+	if ($cells[$k][2] <= 0) unset($cells[$k]);
 }
 foreach ($cells as $r) {
-  list($d, $hh, $n) = $r;
-  $sum['n'] += $n;
-  $csum += $r[3];
-  if ($sum['first'] === null || $d < $sum['first']) $sum['first'] = $d;
-  if ($sum['last'] === null || $d > $sum['last']) $sum['last'] = $d;
-  $all_days[$d] = 1;
-  if ($d >= $day_from) $per_day[$d] = ($per_day[$d] ?? 0) + $n;
-  $m = intval(substr($d, 5, 2)); $dd = intval(substr($d, 8, 2));
-  if ($m >= 1) $weeks[min(48, ($m - 1) * 4 + min(4, intdiv(max(1, $dd) - 1, 7) + 1))] += $n;
-  if ($hh >= 0 && $hh < 24) $hours[$hh] += $n;
+	list($d, $hh, $n) = $r;
+	$sum['n'] += $n;
+	$csum += $r[3];
+	if ($sum['first'] === null || $d < $sum['first']) $sum['first'] = $d;
+	if ($sum['last'] === null || $d > $sum['last']) $sum['last'] = $d;
+	$all_days[$d] = 1;
+	if ($d >= $day_from) $per_day[$d] = ($per_day[$d] ?? 0) + $n;
+	$m = intval(substr($d, 5, 2)); $dd = intval(substr($d, 8, 2));
+	if ($m >= 1) $weeks[min(48, ($m - 1) * 4 + min(4, intdiv(max(1, $dd) - 1, 7) + 1))] += $n;
+	if ($hh >= 0 && $hh < 24) $hours[$hh] += $n;
 }
 if ($sum['n'] > 0) {
-  $ext = function ($dir) use ($db, $sci, $nr) {
-    $st = $db->prepare("SELECT Confidence FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence $dir LIMIT 1");
-    $st->bindValue(':sci', $sci);
-    $r = $st->execute();
-    $row = $r ? $r->fetchArray(SQLITE3_NUM) : false;
-    return $row ? floatval($row[0]) : null;
-  };
-  $sum['maxc'] = $ext('DESC');
-  $sum['minc'] = $ext('ASC');
-  $sum['com'] = species_com_names(array($sci))[$sci];
+	$ext = function ($dir) use ($db, $sci, $nr) {
+		$st = $db->prepare("SELECT Confidence FROM detections WHERE Sci_Name = :sci $nr ORDER BY Confidence $dir LIMIT 1");
+		$st->bindValue(':sci', $sci);
+		$r = $st->execute();
+		$row = $r ? $r->fetchArray(SQLITE3_NUM) : false;
+		return $row ? floatval($row[0]) : null;
+	};
+	$sum['maxc'] = $ext('DESC');
+	$sum['minc'] = $ext('ASC');
+	$sum['com'] = species_com_names(array($sci))[$sci];
 }
 $sum['days'] = count($all_days);
 $sum['avgc'] = $sum['n'] ? $csum / $sum['n'] : null;
@@ -122,19 +149,19 @@ $recent = $q("SELECT Date, Time, Sci_Name, Confidence, Cutoff, Sens, Overlap, Lo
 // without an answer yet, and the review player opens on the first one; at the end it goes on to the next species
 $review_mode = !empty($_GET['review']) && $nr !== '';
 if ($review_mode) {
-  // a species not confirmed yet starts with its most confident detection — the likeliest Yes, which confirms it and
-  // moves the review on to the next species (quick triage of new occurrences, owner 2026-10-18); a confirmed species
-  // is reviewed newest first
-  $is_conf = in_array($sci, @file(BS_LISTS . '/confirmed_species_list.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array(), true);
-  // exactly the rows Validation counted (owner 2026-11-02): its period, its location and the moment it was drawn, handed
-  // over in the link (common.php validation_source)
-  $rvp = validation_source_sql(validation_source());
-  // 500 at a time: the player reloads this page for the rest when the last one has its answer (data-rv-more)
-  $ord = $is_conf ? "Date DESC, Time DESC" : "Confidence DESC, Date DESC, Time DESC";
-  $recent = $q("SELECT Date, Time, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, Mic, Mic_Port, Mic_Gain, Model, Audio_Loss_N, Audio_Loss_Ms, Tz, Utc_Offset, File_Name, " . location_columns_sql() . " FROM detections WHERE File_Name IN (SELECT File_Name FROM detections
+	// a species not confirmed yet starts with its most confident detection — the likeliest Yes, which confirms it and
+	// moves the review on to the next species (quick triage of new occurrences, owner 2026-10-18); a confirmed species
+	// is reviewed newest first
+	$is_conf = in_array($sci, @file(BS_LISTS . '/confirmed_species_list.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array(), true);
+	// exactly the rows Validation counted (owner 2026-11-02): its period, its location and the moment it was drawn, handed
+	// over in the link (common.php validation_source)
+	$rvp = validation_source_sql(validation_source());
+	// 500 at a time: the player reloads this page for the rest when the last one has its answer (data-rv-more)
+	$ord = $is_conf ? "Date DESC, Time DESC" : "Confidence DESC, Date DESC, Time DESC";
+	$recent = $q("SELECT Date, Time, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, Mic, Mic_Port, Mic_Gain, Model, Audio_Loss_N, Audio_Loss_Ms, Tz, Utc_Offset, File_Name, " . location_columns_sql() . " FROM detections WHERE File_Name IN (SELECT File_Name FROM detections
                 WHERE Sci_Name = :sci AND File_Name NOT IN (SELECT File_Name FROM detection_reviews)" . $rvp . " ORDER BY $ord LIMIT 501) ORDER BY $ord");
-  $rv_more = count($recent) > 500;
-  $recent = array_slice($recent, 0, 500);
+	$rv_more = count($recent) > 500;
+	$recent = array_slice($recent, 0, 500);
 }
 
 // Reviews and Precision (owner 2026-10-22): the answers of this species, as the Review button names them, and every
@@ -148,94 +175,94 @@ $n_prob = array();
 $bands_rev = array();
 $critical = null;
 if ($nr !== '') {
-  foreach ($q("SELECT Date, Confidence, Verdict, COALESCE(Reason, '') AS Reason FROM detection_reviews WHERE Sci_Name = :sci") as $r) {
-    $ok = null;
-    if ($r['Verdict'] === 'yes' && $r['Reason'] === 'changed') $reviews['chg']++;
-    elseif ($r['Verdict'] === 'yes') { $reviews['yes']++; $ok = 1; }
-    elseif ($r['Verdict'] === 'no' && in_array($r['Reason'], PURGE_CAUSES, true)) { $reviews['ign']++; $ok = 0; }
-    else $reviews['later']++;
-    if ($ok !== null) $prec[] = array(floatval($r['Confidence']), location_probability($sci, $r['Date']), $ok);
-  }
-  foreach ($q("SELECT Date, Confidence FROM detection_reviews WHERE Orig_Sci = :sci") as $r) {
-    $reviews['away']++;
-    $prec[] = array(floatval($r['Confidence']), location_probability($sci, $r['Date']), 0);
-  }
-  // every detection of the species by 5 % confidence band and by its week's probability (owner 2026-10-27): the
-  // precision of a threshold weighs the reviews of each band by how many detections the band really has
-  if ($prec) {
-    $n_conf = array_fill(0, 21, 0);
-    foreach ($q("SELECT MIN(20, CAST(Confidence * 20 AS INTEGER)) AS b, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci GROUP BY b") as $r) $n_conf[max(0, intval($r['b']))] += intval($r['n']);
-    foreach ($q("SELECT Date, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci GROUP BY Date") as $r) {
-      $p = location_probability($sci, $r['Date']);
-      if ($p !== null) $n_prob[] = array($p, intval($r['n']));
-    }
-  }
-  // review by band (owner 2026-10-22): 10 % confidence bands with their right / false answers, the detections still
-  // without an answer and up to 10 of them at random to review; the critical band is the one whose precision is the
-  // most uncertain (widest Wilson interval) among those with detections waiting, the nearest to the threshold in force
-  // on a tie
-  $wil = function ($k, $n, $up) { if (!$n) return $up ? 1 : 0; $z = 1.96; $p = $k / $n; $d = 1 + $z * $z / $n;
-    $m = $p + $z * $z / (2 * $n); $e = $z * sqrt($p * (1 - $p) / $n + $z * $z / (4 * $n * $n)); return max(0, min(1, ($up ? $m + $e : $m - $e) / $d)); };
-  // only the detections whose clip is still on disk (owner 2026-10-22: the nightly clean-up keeps N files per species,
-  // the lines stay, and a sample without its audio showed an empty player)
-  // (one listing of the species' folders instead of a file test per detection: big species took seconds; shifted
-  // clips count too)
-  $on_disk = array(); $disk_days = array();
-  $globbed = array();
-  foreach ($folders as $folder) $globbed = array_merge($globbed, glob(BS_BY_DATE . '/*/' . $folder . '/*') ?: array(), glob(BS_BY_DATE . '/shifted/*/' . $folder . '/*') ?: array());
-  foreach ($globbed as $f) {
-    if (!preg_match('/\.(png|jpg)$/', $f)) { $on_disk[basename($f)] = 1; $disk_days[basename(dirname(dirname($f)))] = 1; }
-  }
-  $waiting = array(); $pool = array();
-  // only the days that still have clips of the species on disk (2026-10-23 run 3: every unanswered detection of a big
-  // species was read, 1.4 s at ten times the station's data)
-  $disk_in = implode(',', array_map(function ($d) { return "'" . SQLite3::escapeString($d) . "'"; }, array_keys(array_filter($disk_days, function ($d) { return preg_match('/^\d{4}-\d{2}-\d{2}$/', $d); }, ARRAY_FILTER_USE_KEY))));
-  foreach ($disk_in === '' ? array() : $q("SELECT File_Name, Confidence FROM detections WHERE Sci_Name = :sci AND Date IN ($disk_in) AND File_Name NOT IN (SELECT File_Name FROM detection_reviews)") as $r) {
-    if (!isset($on_disk[$r['File_Name']])) continue;
-    $bi = min(9, intval(floatval($r['Confidence']) * 10));
-    $waiting[$bi] = ($waiting[$bi] ?? 0) + 1;
-    $pool[$bi][] = $r['File_Name'];
-  }
-  $in_force = floatval($config['CONFIDENCE'] ?? 0.7);  // the species' own threshold when it has one (species_confidence.txt)
-  foreach (@file(BS_LISTS . '/species_confidence.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array() as $l) {
-    $kv = explode('=', trim($l), 2);
-    if ($kv[0] === $sci && isset($kv[1])) $in_force = floatval($kv[1]);
-  }
-  for ($i = 0; $i < 10; $i++) {
-    $y = 0; $f = 0;
-    foreach ($prec as $r) if (min(9, intval($r[0] * 10)) === $i) { if ($r[2]) $y++; else $f++; }
-    $w = $waiting[$i] ?? 0;
-    if (!$y && !$f && !$w) continue;
-    $smp = $pool[$i] ?? array();
-    shuffle($smp);
-    $smp = array_slice($smp, 0, 10);
-    // the full rows only for the samples drawn
-    $smp = $smp ? $q("SELECT Date, Time, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, Mic, Mic_Port, Mic_Gain, Model, Audio_Loss_N, Audio_Loss_Ms, Tz, Utc_Offset, File_Name, " . location_columns_sql()
-      . " FROM detections WHERE Sci_Name = :sci AND File_Name IN ('" . implode("','", array_map(array('SQLite3', 'escapeString'), $smp)) . "') ORDER BY Confidence") : array();
-    $bands_rev[$i] = array('y' => $y, 'f' => $f, 'w' => $w, 'width' => $wil($y, $y + $f, true) - $wil($y, $y + $f, false), 'samples' => $smp);
-  }
-  $critical = null;
-  foreach ($bands_rev ?? array() as $i => $b) {
-    if (!$b['w']) continue;
-    if ($critical === null || $b['width'] > $bands_rev[$critical]['width'] + 1e-9
-        || (abs($b['width'] - $bands_rev[$critical]['width']) < 1e-9 && abs(($i + 0.5) / 10 - $in_force) < abs(($critical + 0.5) / 10 - $in_force))) $critical = $i;
-  }
+	foreach ($q("SELECT Date, Confidence, Verdict, COALESCE(Reason, '') AS Reason FROM detection_reviews WHERE Sci_Name = :sci") as $r) {
+		$ok = null;
+		if ($r['Verdict'] === 'yes' && $r['Reason'] === 'changed') $reviews['chg']++;
+		elseif ($r['Verdict'] === 'yes') { $reviews['yes']++; $ok = 1; }
+		elseif ($r['Verdict'] === 'no' && in_array($r['Reason'], PURGE_CAUSES, true)) { $reviews['ign']++; $ok = 0; }
+		else $reviews['later']++;
+		if ($ok !== null) $prec[] = array(floatval($r['Confidence']), location_probability($sci, $r['Date']), $ok);
+	}
+	foreach ($q("SELECT Date, Confidence FROM detection_reviews WHERE Orig_Sci = :sci") as $r) {
+		$reviews['away']++;
+		$prec[] = array(floatval($r['Confidence']), location_probability($sci, $r['Date']), 0);
+	}
+	// every detection of the species by 5 % confidence band and by its week's probability (owner 2026-10-27): the
+	// precision of a threshold weighs the reviews of each band by how many detections the band really has
+	if ($prec) {
+		$n_conf = array_fill(0, 21, 0);
+		foreach ($q("SELECT MIN(20, CAST(Confidence * 20 AS INTEGER)) AS b, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci GROUP BY b") as $r) $n_conf[max(0, intval($r['b']))] += intval($r['n']);
+		foreach ($q("SELECT Date, COUNT(*) AS n FROM detections WHERE Sci_Name = :sci GROUP BY Date") as $r) {
+			$p = location_probability($sci, $r['Date']);
+			if ($p !== null) $n_prob[] = array($p, intval($r['n']));
+		}
+	}
+	// review by band (owner 2026-10-22): 10 % confidence bands with their right / false answers, the detections still
+	// without an answer and up to 10 of them at random to review; the critical band is the one whose precision is the
+	// most uncertain (widest Wilson interval) among those with detections waiting, the nearest to the threshold in force
+	// on a tie
+	$wil = function ($k, $n, $up) { if (!$n) return $up ? 1 : 0; $z = 1.96; $p = $k / $n; $d = 1 + $z * $z / $n;
+		$m = $p + $z * $z / (2 * $n); $e = $z * sqrt($p * (1 - $p) / $n + $z * $z / (4 * $n * $n)); return max(0, min(1, ($up ? $m + $e : $m - $e) / $d)); };
+	// only the detections whose clip is still on disk (owner 2026-10-22: the nightly clean-up keeps N files per species,
+	// the lines stay, and a sample without its audio showed an empty player)
+	// (one listing of the species' folders instead of a file test per detection: big species took seconds; shifted
+	// clips count too)
+	$on_disk = array(); $disk_days = array();
+	$globbed = array();
+	foreach ($folders as $folder) $globbed = array_merge($globbed, glob(BS_BY_DATE . '/*/' . $folder . '/*') ?: array(), glob(BS_BY_DATE . '/shifted/*/' . $folder . '/*') ?: array());
+	foreach ($globbed as $f) {
+		if (!preg_match('/\.(png|jpg)$/', $f)) { $on_disk[basename($f)] = 1; $disk_days[basename(dirname(dirname($f)))] = 1; }
+	}
+	$waiting = array(); $pool = array();
+	// only the days that still have clips of the species on disk (2026-10-23 run 3: every unanswered detection of a big
+	// species was read, 1.4 s at ten times the station's data)
+	$disk_in = implode(',', array_map(function ($d) { return "'" . SQLite3::escapeString($d) . "'"; }, array_keys(array_filter($disk_days, function ($d) { return preg_match('/^\d{4}-\d{2}-\d{2}$/', $d); }, ARRAY_FILTER_USE_KEY))));
+	foreach ($disk_in === '' ? array() : $q("SELECT File_Name, Confidence FROM detections WHERE Sci_Name = :sci AND Date IN ($disk_in) AND File_Name NOT IN (SELECT File_Name FROM detection_reviews)") as $r) {
+		if (!isset($on_disk[$r['File_Name']])) continue;
+		$bi = min(9, intval(floatval($r['Confidence']) * 10));
+		$waiting[$bi] = ($waiting[$bi] ?? 0) + 1;
+		$pool[$bi][] = $r['File_Name'];
+	}
+	$in_force = floatval($config['CONFIDENCE'] ?? 0.7);  // the species' own threshold when it has one (species_confidence.txt)
+	foreach (@file(BS_LISTS . '/species_confidence.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: array() as $l) {
+		$kv = explode('=', trim($l), 2);
+		if ($kv[0] === $sci && isset($kv[1])) $in_force = floatval($kv[1]);
+	}
+	for ($i = 0; $i < 10; $i++) {
+		$y = 0; $f = 0;
+		foreach ($prec as $r) if (min(9, intval($r[0] * 10)) === $i) { if ($r[2]) $y++; else $f++; }
+		$w = $waiting[$i] ?? 0;
+		if (!$y && !$f && !$w) continue;
+		$smp = $pool[$i] ?? array();
+		shuffle($smp);
+		$smp = array_slice($smp, 0, 10);
+		// the full rows only for the samples drawn
+		$smp = $smp ? $q("SELECT Date, Time, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, Mic, Mic_Port, Mic_Gain, Model, Audio_Loss_N, Audio_Loss_Ms, Tz, Utc_Offset, File_Name, " . location_columns_sql()
+			. " FROM detections WHERE Sci_Name = :sci AND File_Name IN ('" . implode("','", array_map(array('SQLite3', 'escapeString'), $smp)) . "') ORDER BY Confidence") : array();
+		$bands_rev[$i] = array('y' => $y, 'f' => $f, 'w' => $w, 'width' => $wil($y, $y + $f, true) - $wil($y, $y + $f, false), 'samples' => $smp);
+	}
+	$critical = null;
+	foreach ($bands_rev ?? array() as $i => $b) {
+		if (!$b['w']) continue;
+		if ($critical === null || $b['width'] > $bands_rev[$critical]['width'] + 1e-9
+				|| (abs($b['width'] - $bands_rev[$critical]['width']) < 1e-9 && abs(($i + 0.5) / 10 - $in_force) < abs(($critical + 0.5) / 10 - $in_force))) $critical = $i;
+	}
 }
 
 // station settings for the species
 $read_kv = function ($file) {
-  $out = array();
-  foreach (is_file($file) ? file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array() as $l) {
-    $p = explode('=', trim($l), 2);
-    if (count($p) === 2) $out[$p[0]] = $p[1];
-  }
-  return $out;
+	$out = array();
+	foreach (is_file($file) ? file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array() as $l) {
+		$p = explode('=', trim($l), 2);
+		if (count($p) === 2) $out[$p[0]] = $p[1];
+	}
+	return $out;
 };
 $in_list = function ($file) use ($sci) {
-  foreach (is_file($file) ? file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array() as $l) {
-    if (explode('_', trim($l), 2)[0] === $sci) return true;
-  }
-  return false;
+	foreach (is_file($file) ? file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array() as $l) {
+		if (explode('_', trim($l), 2)[0] === $sci) return true;
+	}
+	return false;
 };
 $threshold = $read_kv(BS_LISTS . '/species_confidence.txt')[$sci] ?? null;
 $min_prob = $read_kv(BS_LISTS . '/species_min_prob.txt')[$sci] ?? null;  // Min. Prob. of the species (owner 2026-10-22)
@@ -245,26 +272,26 @@ if (!in_array($default_tier, array('normal', 'muted', 'rare'), true)) $default_t
 $tier = strtolower($read_kv(BS_LISTS . '/notification_tiers.txt')[$sci] ?? $default_tier);
 $lists = array();
 foreach (array('Confirmed' => 'confirmed_species_list.txt', 'Custom list' => 'include_species_list.txt',
-               'Whitelist' => 'whitelist_species_list.txt', 'Excluded' => 'exclude_species_list.txt') as $label => $f) {
-  if ($in_list(BS_LISTS . '/' . $f)) $lists[] = $label;
+							 'Whitelist' => 'whitelist_species_list.txt', 'Excluded' => 'exclude_species_list.txt') as $label => $f) {
+	if ($in_list(BS_LISTS . '/' . $f)) $lists[] = $label;
 }
 
 // expected season at this location (rarity.py profile, 48 BirdNET weeks)
 $profile = null;
 $pf = __DIR__ . '/region_profile.json';
 if (is_file($pf)) {
-  $p = json_decode(file_get_contents($pf), true);
-  if (isset($p['data'][$sci])) $profile = $p['data'][$sci];
+	$p = json_decode(file_get_contents($pf), true);
+	if (isset($p['data'][$sci])) $profile = $p['data'][$sci];
 }
 $week48 = min(48, (intval(date('n')) - 1) * 4 + min(4, intdiv(intval(date('j')) - 1, 7) + 1));
 // the location model's probability for this week (same value as the Probability column of the Species Pages list)
 $model_prob = $profile ? floatval($profile[$week48 - 1]) : null;
 if ($model_prob === null) {
-  $out = (string)shell_exec(station_prefix() . '' . escapeshellarg(BS_PYTHON) . ' '
-    . escapeshellarg(BS_SCRIPTS . '/species.py') . ' --threshold 0 2>/dev/null');
-  foreach (explode("\n", $out) as $l) {
-    if (preg_match('/^(.*)\s-\s([0-9.]+)\s*$/', trim($l), $m) && explode('_', trim($m[1]), 2)[0] === $sci) { $model_prob = floatval($m[2]); break; }
-  }
+	$out = (string)shell_exec(station_prefix() . '' . escapeshellarg(BS_PYTHON) . ' '
+		. escapeshellarg(BS_SCRIPTS . '/species.py') . ' --threshold 0 2>/dev/null');
+	foreach (explode("\n", $out) as $l) {
+		if (preg_match('/^(.*)\s-\s([0-9.]+)\s*$/', trim($l), $m) && explode('_', trim($m[1]), 2)[0] === $sci) { $model_prob = floatval($m[2]); break; }
+	}
 }
 $sf_thresh = floatval($config['SF_THRESH'] ?? 0);
 // list membership for the switches above the best detections
@@ -274,13 +301,13 @@ $in_whitelist = $in_list(BS_LISTS . '/whitelist_species_list.txt');
 $in_exclude = $in_list(BS_LISTS . '/exclude_species_list.txt');
 
 $bar = function ($values, $labels, $title, $now = null) use ($h) {
-  $max = max(1, max($values));
-  $html = '<div class="sp-bars" title="' . $h($title) . '">';
-  foreach ($values as $k => $v) {
-    $pct = $v > 0 ? max(3, round(100 * $v / $max)) : 0;
-    $html .= '<div class="sp-bar' . ($k === $now ? ' now' : '') . '" title="' . $h($labels[$k] . ': ' . $v) . '"><span style="height:' . $pct . '%"></span></div>';
-  }
-  return $html . '</div>';
+	$max = max(1, max($values));
+	$html = '<div class="sp-bars" title="' . $h($title) . '">';
+	foreach ($values as $k => $v) {
+		$pct = $v > 0 ? max(3, round(100 * $v / $max)) : 0;
+		$html .= '<div class="sp-bar' . ($k === $now ? ' now' : '') . '" title="' . $h($labels[$k] . ': ' . $v) . '"><span style="height:' . $pct . '%"></span></div>';
+	}
+	return $html . '</div>';
 };
 ?>
 <style>
@@ -329,233 +356,233 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
 .sp img.clipspec:hover { filter: brightness(1.15); outline: 2px solid #d97a00; }
 </style>
 <div class="sp">
-  <?php $photo = species_photo($sci);
-  // a recording already kept is drawn with the page; only one not looked up yet is asked after the page is drawn
-  $xck = xc_best_kept($sci);
-  if (is_array($xck)) {
-    $spxc_html = '<div class="spxc" id="spxc"><a id="spxclink" href="' . $h($xck['page']) . '" target="_blank" rel="noopener"><img id="spxcimg" width="486" height="241" src="' . $h($xck['local']) . '" alt="' . $h(t('str_spectrogram') . ' XC' . $xck['nr']) . '"></a><small id="spxccap">'
-      . $h(t('str_best_recording_on_xeno_canto_xc', array('where' => !empty($xck['country']) ? ' (' . $xck['country'] . ')' : '', 'nr' => $xck['nr'], 'by' => $xck['by'])))
-      . (!empty($xck['lic']) ? ', <a href="' . $h($xck['lic']) . '" target="_blank" rel="noopener">' . $h(t('str_licence')) . '</a>' : '') . '</small></div>';
-  } else {
-    $spxc_html = '<div class="spxc" id="spxc" hidden><a id="spxclink" target="_blank" rel="noopener"><img id="spxcimg" width="486" height="241" alt=""></a><small id="spxccap"></small></div>';
-  }
-  if ($photo && !empty($photo['image_url'])) { ?>
-  <div class="spphoto"><img src="<?php echo $h($photo['image_url']); ?>" alt="<?php echo $h($com); ?>">
-    <small><?php echo $h($photo['title'] ?? ''); ?><?php if (!empty($photo['author_url'])) { ?>, <a href="<?php echo $h($photo['author_url']); ?>" target="_blank"><?php echo t('str_author'); ?></a><?php } ?>
-    <?php if (!empty($photo['license_url'])) { ?>, <a href="<?php echo $h($photo['license_url']); ?>" target="_blank"><?php echo t('str_licence'); ?></a><?php } ?></small>
-    <?php echo $spxc_html; ?></div>
-  <?php } ?>
-  <?php // the best recording of the species on xeno-canto, as its spectrogram under the picture and as wide as it (owner
-  // 2026-11-01), filled after the page is drawn; nothing shows when xeno-canto has none or does not answer. Without a
-  // picture it stands alone in the same place.
-  if (!($photo && !empty($photo['image_url']))) echo $spxc_html; ?>
-  <?php if ($xck === false) { ?><script>
-  (function () {
-    var x = new XMLHttpRequest();
-    x.onload = function () {
-      var r; try { r = JSON.parse(this.responseText); } catch (e) { return; }
-      if (!r || !r.img) return;
-      document.getElementById('spxclink').href = r.page;
-      var img = document.getElementById('spxcimg');
-      img.src = r.local || r.img; img.alt = window.t('str_spectrogram') + ' XC' + r.nr;
-      var cap = document.getElementById('spxccap');
-      cap.textContent = window.t('str_best_recording_on_xeno_canto_xc', {where: r.country ? ' (' + r.country + ')' : '', nr: r.nr, by: r.by}) + (r.lic ? ', ' : '');
-      if (r.lic) { var a = document.createElement('a'); a.href = r.lic; a.target = '_blank'; a.rel = 'noopener'; a.textContent = window.t('str_licence'); cap.appendChild(a); }
-      document.getElementById('spxc').hidden = false;
-    };
-    x.open('GET', 'scripts/species_page.php?xcbest=1&sci=' + encodeURIComponent(<?php echo json_encode($sci); ?>), true);
-    x.send();
-  })();
-  </script><?php } ?>
-  <div style="font-size:1.3em;margin-top:10px"><?php echo species_title($sci, '<b>' . $h($com) . '</b>', '', true); ?></div>
-  <?php // the summary one fact per line (owner 2026-10-21) ?>
-  <?php if ($none) { ?>
-  <p><?php echo t('str_no_detections_of_at_this_station', array('name' => $h($com))); ?></p>
-  <?php } else { ?>
-  <p><?php $dv = array('n' => fmt_num(intval($sum['n'])), 'days' => intval($sum['days'])); echo intval($sum['days']) == 1 ? t('str_detections_on_day', $dv) : t('str_detections_on_days', $dv); ?><br>
-    <?php echo t('str_first_colon'); ?> <?php echo $h($sum['first']); ?><br>
-    <?php echo t('str_last_colon'); ?> <?php echo $h($sum['last']); ?><br>
-    <?php echo t('str_best_colon'); ?> <?php echo round(floatval($sum['maxc']) * 100); ?>%, <?php echo t('str_mean'); ?> <?php echo round(floatval($sum['avgc']) * 100); ?>%, <?php echo t('str_worst'); ?> <?php echo round(floatval($sum['minc']) * 100); ?>%</p>
-  <?php } ?>
-  <div class="charts">
-    <?php if ($profile) { ?>
-    <div class="card"><h3><?php echo t('str_expected_here_location_model_by_week'); ?></h3>
-      <?php echo $bar(array_combine(range(1, 48), array_map(function ($v) { return round($v * 100); }, $profile)),
-        array_combine(range(1, 48), array_map(function ($w) { return t('str_week_pct', array('n' => $w)); }, range(1, 48))), t('str_occurrence_probability'), $week48); ?>
-      <div class="sp-axis"><span><?php echo t('str_jan'); ?></span><span><?php echo t('str_apr'); ?></span><span><?php echo t('str_jul'); ?></span><span><?php echo t('str_oct'); ?></span><span><?php echo t('str_dec'); ?></span></div>
-      <small><?php echo t('str_peak_pct_this_week_pct_orange', array('peak' => round(max($profile) * 100), 'now' => round($profile[$week48 - 1] * 100))); ?></small>
-    </div>
-    <?php } else { ?>
-    <div class="card"><h3><?php echo t('str_expected_here_location_model_by_week'); ?></h3><small><?php echo t('str_the_location_profile_is_not_help'); ?></small></div>
-    <?php } ?>
-    <?php if (!$none) { ?>
-    <div class="card"><h3><?php echo t('str_last_12_months'); ?></h3>
-      <div class="sp-cal"><?php
-        $start = strtotime('-364 days', strtotime(date('Y-m-d')));
-        $start = strtotime('-' . intval(date('w', $start)) . ' days', $start);  // the grid starts on a Sunday
-        for ($t = $start; $t <= time(); $t = strtotime('+1 day', $t)) {
-          $d = date('Y-m-d', $t);
-          $n = $per_day[$d] ?? 0;
-          $lvl = $n === 0 ? '' : ($n < 3 ? 'l1' : ($n < 10 ? 'l2' : ($n < 30 ? 'l3' : 'l4')));
-          echo '<i class="' . $lvl . '" title="' . $d . ': ' . $n . '"></i>';
-        }
-      ?></div>
-    </div>
-    <!-- by week, on the same 48 weeks as "Expected here" (owner 2026-10-10: it used to be by month) -->
-    <div class="card"><h3><?php echo t('str_weeks_all_years'); ?></h3>
-      <?php echo $bar($weeks, array_combine(range(1, 48), array_map(function ($w) { return t('str_week_n_2', array('n' => $w)); }, range(1, 48))), t('str_detections_per_week'), $week48); ?>
-      <div class="sp-axis"><span><?php echo t('str_jan'); ?></span><span><?php echo t('str_apr'); ?></span><span><?php echo t('str_jul'); ?></span><span><?php echo t('str_oct'); ?></span><span><?php echo t('str_dec'); ?></span></div>
-    </div>
-    <div class="card"><h3><?php echo t('str_time_of_day'); ?></h3>
-      <?php echo $bar($hours, array_combine(range(0, 23), array_map(function ($x) { return sprintf('%02d h', $x); }, range(0, 23))), t('str_detections_per_hour'), intval(date('G'))); ?>
-      <div class="sp-axis"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div>
-    </div>
-    <?php } ?>
-  </div>
-  <div class="grid">
-    <!-- Species Settings (owner 2026-10-10): threshold (editable), notifications and the lists, one per line -->
-    <div class="card spset"><h3><?php echo t('str_species_settings'); ?></h3>
-      <label title="<?php echo $h(t('str_minimum_confidence_empty_help', array('pct' => round(floatval($config['CONFIDENCE'] ?? 0.7) * 100))) . ' ' . t('str_saved_at_once_species_confidence_txt')); ?>"><?php echo t('str_minimum_confidence_of_the_species'); ?>
-        <input type="number" id="sp_threshold" min="0.01" max="0.99" step="0.01" placeholder="<?php echo $h(fmt_num(floatval($config['CONFIDENCE'] ?? 0.7), 2)); ?>"
-          value="<?php echo $threshold !== null ? $h(sprintf('%.2f', floatval($threshold))) : ''; ?>" onchange="spThreshold(this, <?php echo $h(json_encode($sci)); ?>)">
-        <small><?php echo t('str_empty_the_global_minimum_help', array('pct' => round(floatval($config['CONFIDENCE'] ?? 0.7) * 100))); ?></small></label>
-      <?php // the location model lines under the species threshold (owner 2026-10-21) ?>
-      <div class="splm"><?php echo t('str_probability_of_this_week_help'); ?> <b class="<?php echo ($model_prob !== null && $model_prob >= $sf_thresh) ? 'pgood' : 'pbad'; ?>"><?php echo $model_prob !== null ? fmt_num($model_prob * 100, 1) . '%' : '-'; ?></b>
-      <?php if ($sf_thresh > 0) { ?><br><?php echo t('str_station_minimum_probability_of_help', array('pct' => round($sf_thresh * 100))); ?><?php } ?></div>
-      <label title="<?php echo $h(t('str_minimum_probability_for_help') . "\n" . t('str_saved_at_once_species_min_prob_help')); ?>"><?php echo t('str_minimum_probability_of_help'); ?>
-        <input type="number" id="sp_minprob" min="0.001" max="0.99" step="0.001" placeholder="<?php echo $h(fmt_num($sf_thresh, 3)); ?>"
-          value="<?php echo $min_prob !== null ? $h(sprintf('%.3f', floatval($min_prob))) : ''; ?>" onchange="spMinProb(this, <?php echo $h(json_encode($sci)); ?>)">
-        <small><?php echo t('str_empty_the_station_minimum_pct', array('pct' => fmt_num($sf_thresh * 100, 1))); ?></small></label>
-      <label title="<?php echo $h(t('str_audio_files_kept_for_this_days_help', array('days' => intval($config['PURGE_RECENT_DAYS'] ?? 3)))); ?>"><?php echo t('str_files_to_keep'); ?>
-        <input type="number" id="sp_files" min="0" max="100000" step="1" placeholder="<?php echo intval($config['MAX_FILES_SPECIES'] ?? 0); ?>"
-          value="<?php echo $max_files !== null ? intval($max_files) : ''; ?>" onchange="spFiles(this, <?php echo $h(json_encode($sci)); ?>)">
-        <small><?php echo t('str_empty_global_n', array('n' => intval($config['MAX_FILES_SPECIES'] ?? 0))); ?></small></label>
-      <label><?php echo t('str_notifications_colon'); ?> <select onchange="spTier(this, <?php echo $h(json_encode($sci)); ?>)" data-was="<?php echo $h($tier); ?>">
-        <?php foreach (array('normal' => t('str_normal_tier'), 'muted' => t('str_muted_tier'), 'rare' => t('str_rare_tier')) as $tv => $tl) {
-          echo '<option value="' . $tv . '"' . ($tier === $tv ? ' selected' : '') . '>' . $tl . ($tv === $default_tier ? ' ' . t('str_default_lc_paren') : '') . '</option>';
-        } ?>
-      </select></label>
-      <label title="<?php echo t('str_a_validation_marker_you_have_help'); ?>"><input type="checkbox" <?php echo $in_confirmed ? 'checked' : ''; ?> onchange="spList(this, 'confirmed', <?php echo $h(json_encode($sci)); ?>)"> <?php echo t('str_confirmed'); ?></label>
-      <label title="<?php echo t('str_accepted_even_when_its_help'); ?>"><input type="checkbox" <?php echo $in_whitelist ? 'checked' : ''; ?> onchange="spList(this, 'whitelist', <?php echo $h(json_encode($identifier)); ?>)"> <?php echo t('str_whitelist'); ?></label>
-      <label title="<?php echo t('str_never_detected_again'); ?>"><input type="checkbox" <?php echo $in_exclude ? 'checked' : ''; ?> onchange="spList(this, 'exclude', <?php echo $h(json_encode($identifier)); ?>)"> <?php echo t('str_excluded_sp'); ?></label>
-      <?php $ndel = deleted_count($sci); if ($ndel) { ?>
-        <div class="spdel"><?php echo t('str_deleted_detections'); ?> <b><?php echo $ndel; ?></b>
-          <button type="button" class="restorebtn" onclick="restoreRemoved(<?php echo $h(json_encode($sci)); ?>, this)"><?php echo t('str_restore'); ?></button>
-          <button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)"><?php echo t('str_purge'); ?></button></div>
-      <?php } ?>
-    </div>
-    <div class="card" id="spreviews"><h3><?php echo t('str_reviews'); ?></h3>
-      <?php // the answers as the Review button names them (owner 2026-10-22); the thresholds live in Precision below ?>
-      <?php echo t('str_yes_state'); ?> = <b><?php echo $reviews['yes']; ?></b><br>
-      <?php echo t('str_changed'); ?> = <b><?php echo $reviews['chg']; ?></b> <small><?php echo t('str_changed_to_this_species'); ?></small><br>
-      <?php echo t('str_changed_to_another_species'); ?> = <b><?php echo $reviews['away']; ?></b><br>
-      <?php echo t('str_review_later'); ?> = <b><?php echo $reviews['later']; ?></b><br>
-      <?php echo t('str_ignored'); ?> = <b><?php echo $reviews['ign']; ?></b>
-      <?php if (!array_sum($reviews)) { ?><br><small><?php echo t('str_use_the_review_button_on_a_help'); ?></small><?php } ?>
-    </div>
-  </div>
-  <?php if (!$none) { ?>
-  <?php // Precision (owner 2026-10-22): from which confidence and which probability of occurrence the detections of this
-  // species are real, from every review kept in the database; drawn by spPrecision() below ?>
-  <h3 class="section" id="precision"><?php echo t('str_precision'); ?></h3>
-  <div class="card spprec" id="spprec" data-sci="<?php echo $h($sci); ?>" data-conf="<?php echo $h(json_encode($prec)); ?>"
-    data-cur-conf="<?php echo $h((string)($threshold ?? '')); ?>" data-global-conf="<?php echo floatval($config['CONFIDENCE'] ?? 0.7); ?>"
-    data-cur-prob="<?php echo $h((string)($min_prob ?? '')); ?>" data-global-prob="<?php echo $sf_thresh; ?>"
-    data-nconf="<?php echo $h(json_encode($n_conf)); ?>" data-nprob="<?php echo $h(json_encode($n_prob)); ?>">
-    <p><?php echo t('str_this_section_shows_from_which_help'); ?><br>
-      <?php echo t('str_right_answered_yes'); ?><br>
-      <?php echo t('str_false_human_noise_ignore_or_help'); ?><br>
-      <?php echo t('str_review_later_does_not_count'); ?></p>
-    <?php if ($bands_rev) { ?>
-    <h4><?php echo t('str_where_to_review'); ?></h4>
-    <p><?php echo t('str_each_line_is_a_confidence_band'); ?><br>
-      <?php echo t('str_review_the_highlighted_band_help'); ?></p>
-    <table class="stdtable spbands">
-      <tr><th><?php echo t('str_confidence'); ?></th><th class="num"><?php echo t('str_right'); ?></th><th class="num"><?php echo t('str_false'); ?></th><th class="num"><?php echo t('str_precision'); ?></th><th class="num"><?php echo t('str_without_an_answer'); ?></th><th data-nosort></th></tr>
-      <?php foreach ($bands_rev as $i => $b) {
-        $n = $b['y'] + $b['f'];
-        echo '<tr' . ($i === $critical ? ' class="spprec-best" title="' . $h(t('str_the_most_critical_band_review_help')) . '"' : '') . '><td>' . ($i * 10) . ' - ' . ($i * 10 + 10) . '%' . ($i === $critical ? ' &#9733;' : '') . '</td>'
-          . '<td class="num">' . $b['y'] . '</td><td class="num">' . $b['f'] . '</td><td class="num">' . ($n ? round(100 * $b['y'] / $n) . '%' : '-') . '</td><td class="num">' . fmt_num($b['w']) . '</td><td style="text-align:right !important">';
-        if ($b['samples']) {
-          echo '<button type="button" class="openbtn" onclick="reviewDetection(document.querySelector(\'#band' . $i . ' [data-ri]\'))">' . t('str_review_n', array('n' => count($b['samples']))) . '</button>'
-            . '<div id="band' . $i . '" data-review-list="1" style="display:none">';
-          foreach ($b['samples'] as $r) {
-            $f = $r['Date'] . '/' . species_folder($sci) . '/' . $r['File_Name'];
-            echo '<div' . review_item_attrs($f, $r['Com_Name'] . ', ' . $r['Date'] . ' ' . $r['Time'] . ', ' . round($r['Confidence'] * 100) . '%', $sci, $r) . '>' . validate_button($f, '') . '</div>';
-          }
-          echo '</div>';
-        }
-        echo '</td></tr>';
-      } ?>
-    </table>
-    <?php } ?>
-    <h4><?php echo t('str_threshold'); ?></h4>
-    <p><?php echo t('str_each_line_keeps_only_the_help'); ?><br>
-      <?php echo t('str_precision_right_divided_by_help'); ?><br>
-      <?php echo t('str_guaranteed_the_worst_likely_help'); ?><br>
-      <?php echo t('str_real_lost_estimate_of_the_real_help'); ?><br>
-      <?php echo t('str_a_threshold_applies_to_new_help'); ?></p>
-    <?php // how and why (owner 2026-10-27): the method, the change of that day and the papers, folded under the threshold notes ?>
-    <details class="small" style="margin-top:8px"><summary><?php echo t('str_how_the_threshold_is_computed_help'); ?></summary>
-      <p><?php echo t('str_the_birdnet_confidence_is_not_a_help'); ?><br>
-        <?php echo t('str_that_is_why_each_species_gets_help'); ?><br>
-        <?php echo t('str_where_to_review_highlights_the_help'); ?></p>
-      <p><b><?php echo t('str_precision'); ?></b><br>
-        <?php echo t('str_each_confidence_band_counts_help'); ?><br>
-        <?php echo t('str_covered_the_share_of_the_help'); ?><br>
-        <?php echo t('str_guaranteed_the_lower_end_of_the_help'); ?></p>
-      <p><b><?php echo t('str_logistic'); ?></b><br>
-        <?php echo t('str_a_curve_of_the_chance_of_being_help'); ?><br>
-        <?php echo t('str_it_needs_fewer_reviews_and_does_help'); ?><br>
-        <?php echo t('str_its_value_is_the_confidence_at_help'); ?></p>
-      <p><b><?php echo t('str_change_of_2026_10_27'); ?></b><br>
-        <?php echo t('str_the_precision_used_to_add_up_help'); ?><br>
-        <?php echo t('str_since_the_reviews_follow_the_help'); ?><br>
-        <?php echo t('str_now_each_band_is_weighted_by_help'); ?></p>
-      <p><b><?php echo t('str_references'); ?></b><br>
-        Wood, C.M. &amp; Kahl, S. (2024). <a href="https://doi.org/10.1007/s10336-024-02144-5" target="_blank" rel="noopener">Guidelines for appropriate use of BirdNET scores and other detector outputs</a>. Journal of Ornithology 165: 777–782.<br>
-        Kahl, S., Wood, C.M., Eibl, M. &amp; Klinck, H. (2021). <a href="https://doi.org/10.1016/j.ecoinf.2021.101236" target="_blank" rel="noopener">BirdNET: A deep learning solution for avian diversity monitoring</a>. Ecological Informatics 61: 101236.<br>
-        Knight, E.C. et al. (2017). <a href="https://doi.org/10.5751/ACE-01114-120214" target="_blank" rel="noopener">Recommendations for acoustic recognizer performance assessment with application to five common automated signal recognition programs</a>. Avian Conservation and Ecology 12(2): 14.<br>
-        Cochran, W.G. (1977). Sampling Techniques, 3rd ed., Wiley (stratified estimation).<br>
-        Wilson, E.B. (1927). <a href="https://doi.org/10.1080/01621459.1927.10502953" target="_blank" rel="noopener">Probable inference, the law of succession, and statistical inference</a>. Journal of the American Statistical Association 22: 209–212.<br>
-        Brown, L.D., Cai, T.T. &amp; DasGupta, A. (2001). <a href="https://doi.org/10.1214/ss/1009213286" target="_blank" rel="noopener">Interval estimation for a binomial proportion</a>. Statistical Science 16: 101–133.</p>
-    </details>
-    <label><?php echo t('str_target'); ?> <select class="spprec-target"><option value="0.8">80%</option><option value="0.9" selected>90%</option><option value="0.95">95%</option></select>
-      <small><?php echo t('str_precision_with_at_least_reviews_help', array('n' => 20)); ?></small></label>
-    <div class="spprec-out"></div>
-  </div>
-  <h3 class="section"><?php echo t('str_best_detections'); ?></h3>
-  <div class="clips" data-review-list="1">
-  <?php foreach ($best as $b) {
-    $file = $b['Date'] . '/' . species_folder($sci) . '/' . $b['File_Name'];
-    // the spectrogram picture; a click opens it playing, like "open" in Latest detections
-    $label = $com . ', ' . $b['Date'] . ' ' . $b['Time'] . ', ' . round($b['Confidence'] * 100) . '%';
-    // the Review button on the line of the date and confidence (owner 2026-10-21)
-    echo '<div class="clip"' . review_item_attrs($file, $label, $sci, $b + array('Com_Name' => $com)) . '><div class="cliphead"><span><b>' . $h($b['Date'] . ' ' . $b['Time']) . '</b>, ' . round($b['Confidence'] * 100) . '%</span>' . detection_actions($file, false) . '</div>'
-      . '<img class="clipspec" loading="lazy" src="' . $h(clip_spectrogram_thumb('/By_Date/' . $file)) . '" alt="' . $h(t('str_spectrogram')) . '" title="' . $h(t('str_listen_and_review')) . '" onclick="reviewDetection(this)"></div>';
-  } ?>
-  </div>
-  <h3 class="section" id="latest"<?php echo !empty($rv_more) ? ' data-rv-more="1"' : ''; ?>><?php echo $review_mode ? t('str_to_review_without_an_answer', array('n' => count($recent) . (!empty($rv_more) ? '+' : ''))) : t('str_latest_detections'); ?></h3>
-  <?php // the standard detection list: a click on a row opens the review player, which goes on down the list
-  echo $recent ? str_replace('<table class="list stdtable">', '<table class="list stdtable" data-pager="' . htmlspecialchars(t('str_last_detections'), ENT_QUOTES) . '">', detection_review_table($recent, false)) : '<p>' . t('str_every_detection_of_this_species_help') . '</p>'; ?>
-  <?php } ?>
+	<?php $photo = species_photo($sci);
+	// a recording already kept is drawn with the page; only one not looked up yet is asked after the page is drawn
+	$xck = xc_best_kept($sci);
+	if (is_array($xck)) {
+		$spxc_html = '<div class="spxc" id="spxc"><a id="spxclink" href="' . $h($xck['page']) . '" target="_blank" rel="noopener"><img id="spxcimg" width="486" height="241" src="' . $h($xck['local']) . '" alt="' . $h(t('str_spectrogram') . ' XC' . $xck['nr']) . '"></a><small id="spxccap">'
+			. $h(t('str_best_recording_on_xeno_canto_xc', array('where' => !empty($xck['country']) ? ' (' . $xck['country'] . ')' : '', 'nr' => $xck['nr'], 'by' => $xck['by'])))
+			. (!empty($xck['lic']) ? ', <a href="' . $h($xck['lic']) . '" target="_blank" rel="noopener">' . $h(t('str_licence')) . '</a>' : '') . '</small></div>';
+	} else {
+		$spxc_html = '<div class="spxc" id="spxc" hidden><a id="spxclink" target="_blank" rel="noopener"><img id="spxcimg" width="486" height="241" alt=""></a><small id="spxccap"></small></div>';
+	}
+	if ($photo && !empty($photo['image_url'])) { ?>
+	<div class="spphoto"><img src="<?php echo $h($photo['image_url']); ?>" alt="<?php echo $h($com); ?>">
+		<small><?php echo $h($photo['title'] ?? ''); ?><?php if (!empty($photo['author_url'])) { ?>, <a href="<?php echo $h($photo['author_url']); ?>" target="_blank"><?php echo t('str_author'); ?></a><?php } ?>
+		<?php if (!empty($photo['license_url'])) { ?>, <a href="<?php echo $h($photo['license_url']); ?>" target="_blank"><?php echo t('str_licence'); ?></a><?php } ?></small>
+		<?php echo $spxc_html; ?></div>
+	<?php } ?>
+	<?php // the best recording of the species on xeno-canto, as its spectrogram under the picture and as wide as it (owner
+	// 2026-11-01), filled after the page is drawn; nothing shows when xeno-canto has none or does not answer. Without a
+	// picture it stands alone in the same place.
+	if (!($photo && !empty($photo['image_url']))) echo $spxc_html; ?>
+	<?php if ($xck === false) { ?><script>
+	(function () {
+		var x = new XMLHttpRequest();
+		x.onload = function () {
+			var r; try { r = JSON.parse(this.responseText); } catch (e) { return; }
+			if (!r || !r.img) return;
+			document.getElementById('spxclink').href = r.page;
+			var img = document.getElementById('spxcimg');
+			img.src = r.local || r.img; img.alt = window.t('str_spectrogram') + ' XC' + r.nr;
+			var cap = document.getElementById('spxccap');
+			cap.textContent = window.t('str_best_recording_on_xeno_canto_xc', {where: r.country ? ' (' + r.country + ')' : '', nr: r.nr, by: r.by}) + (r.lic ? ', ' : '');
+			if (r.lic) { var a = document.createElement('a'); a.href = r.lic; a.target = '_blank'; a.rel = 'noopener'; a.textContent = window.t('str_licence'); cap.appendChild(a); }
+			document.getElementById('spxc').hidden = false;
+		};
+		x.open('GET', 'scripts/species_page.php?xcbest=1&sci=' + encodeURIComponent(<?php echo json_encode($sci); ?>), true);
+		x.send();
+	})();
+	</script><?php } ?>
+	<div style="font-size:1.3em;margin-top:10px"><?php echo species_title($sci, '<b>' . $h($com) . '</b>', '', true); ?></div>
+	<?php // the summary one fact per line (owner 2026-10-21) ?>
+	<?php if ($none) { ?>
+	<p><?php echo t('str_no_detections_of_at_this_station', array('name' => $h($com))); ?></p>
+	<?php } else { ?>
+	<p><?php $dv = array('n' => fmt_num(intval($sum['n'])), 'days' => intval($sum['days'])); echo intval($sum['days']) == 1 ? t('str_detections_on_day', $dv) : t('str_detections_on_days', $dv); ?><br>
+		<?php echo t('str_first_colon'); ?> <?php echo $h($sum['first']); ?><br>
+		<?php echo t('str_last_colon'); ?> <?php echo $h($sum['last']); ?><br>
+		<?php echo t('str_best_colon'); ?> <?php echo round(floatval($sum['maxc']) * 100); ?>%, <?php echo t('str_mean'); ?> <?php echo round(floatval($sum['avgc']) * 100); ?>%, <?php echo t('str_worst'); ?> <?php echo round(floatval($sum['minc']) * 100); ?>%</p>
+	<?php } ?>
+	<div class="charts">
+		<?php if ($profile) { ?>
+		<div class="card"><h3><?php echo t('str_expected_here_location_model_by_week'); ?></h3>
+			<?php echo $bar(array_combine(range(1, 48), array_map(function ($v) { return round($v * 100); }, $profile)),
+				array_combine(range(1, 48), array_map(function ($w) { return t('str_week_pct', array('n' => $w)); }, range(1, 48))), t('str_occurrence_probability'), $week48); ?>
+			<div class="sp-axis"><span><?php echo t('str_jan'); ?></span><span><?php echo t('str_apr'); ?></span><span><?php echo t('str_jul'); ?></span><span><?php echo t('str_oct'); ?></span><span><?php echo t('str_dec'); ?></span></div>
+			<small><?php echo t('str_peak_pct_this_week_pct_orange', array('peak' => round(max($profile) * 100), 'now' => round($profile[$week48 - 1] * 100))); ?></small>
+		</div>
+		<?php } else { ?>
+		<div class="card"><h3><?php echo t('str_expected_here_location_model_by_week'); ?></h3><small><?php echo t('str_the_location_profile_is_not_help'); ?></small></div>
+		<?php } ?>
+		<?php if (!$none) { ?>
+		<div class="card"><h3><?php echo t('str_last_12_months'); ?></h3>
+			<div class="sp-cal"><?php
+				$start = strtotime('-364 days', strtotime(date('Y-m-d')));
+				$start = strtotime('-' . intval(date('w', $start)) . ' days', $start);  // the grid starts on a Sunday
+				for ($t = $start; $t <= time(); $t = strtotime('+1 day', $t)) {
+					$d = date('Y-m-d', $t);
+					$n = $per_day[$d] ?? 0;
+					$lvl = $n === 0 ? '' : ($n < 3 ? 'l1' : ($n < 10 ? 'l2' : ($n < 30 ? 'l3' : 'l4')));
+					echo '<i class="' . $lvl . '" title="' . $d . ': ' . $n . '"></i>';
+				}
+			?></div>
+		</div>
+		<!-- by week, on the same 48 weeks as "Expected here" (owner 2026-10-10: it used to be by month) -->
+		<div class="card"><h3><?php echo t('str_weeks_all_years'); ?></h3>
+			<?php echo $bar($weeks, array_combine(range(1, 48), array_map(function ($w) { return t('str_week_n_2', array('n' => $w)); }, range(1, 48))), t('str_detections_per_week'), $week48); ?>
+			<div class="sp-axis"><span><?php echo t('str_jan'); ?></span><span><?php echo t('str_apr'); ?></span><span><?php echo t('str_jul'); ?></span><span><?php echo t('str_oct'); ?></span><span><?php echo t('str_dec'); ?></span></div>
+		</div>
+		<div class="card"><h3><?php echo t('str_time_of_day'); ?></h3>
+			<?php echo $bar($hours, array_combine(range(0, 23), array_map(function ($x) { return sprintf('%02d h', $x); }, range(0, 23))), t('str_detections_per_hour'), intval(date('G'))); ?>
+			<div class="sp-axis"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div>
+		</div>
+		<?php } ?>
+	</div>
+	<div class="grid">
+		<!-- Species Settings (owner 2026-10-10): threshold (editable), notifications and the lists, one per line -->
+		<div class="card spset"><h3><?php echo t('str_species_settings'); ?></h3>
+			<label title="<?php echo $h(t('str_minimum_confidence_empty_help', array('pct' => round(floatval($config['CONFIDENCE'] ?? 0.7) * 100))) . ' ' . t('str_saved_at_once_species_confidence_txt')); ?>"><?php echo t('str_minimum_confidence_of_the_species'); ?>
+				<input type="number" id="sp_threshold" min="0.01" max="0.99" step="0.01" placeholder="<?php echo $h(fmt_num(floatval($config['CONFIDENCE'] ?? 0.7), 2)); ?>"
+					value="<?php echo $threshold !== null ? $h(sprintf('%.2f', floatval($threshold))) : ''; ?>" onchange="spThreshold(this, <?php echo $h(json_encode($sci)); ?>)">
+				<small><?php echo t('str_empty_the_global_minimum_help', array('pct' => round(floatval($config['CONFIDENCE'] ?? 0.7) * 100))); ?></small></label>
+			<?php // the location model lines under the species threshold (owner 2026-10-21) ?>
+			<div class="splm"><?php echo t('str_probability_of_this_week_help'); ?> <b class="<?php echo ($model_prob !== null && $model_prob >= $sf_thresh) ? 'pgood' : 'pbad'; ?>"><?php echo $model_prob !== null ? fmt_num($model_prob * 100, 1) . '%' : '-'; ?></b>
+			<?php if ($sf_thresh > 0) { ?><br><?php echo t('str_station_minimum_probability_of_help', array('pct' => round($sf_thresh * 100))); ?><?php } ?></div>
+			<label title="<?php echo $h(t('str_minimum_probability_for_help') . "\n" . t('str_saved_at_once_species_min_prob_help')); ?>"><?php echo t('str_minimum_probability_of_help'); ?>
+				<input type="number" id="sp_minprob" min="0.001" max="0.99" step="0.001" placeholder="<?php echo $h(fmt_num($sf_thresh, 3)); ?>"
+					value="<?php echo $min_prob !== null ? $h(sprintf('%.3f', floatval($min_prob))) : ''; ?>" onchange="spMinProb(this, <?php echo $h(json_encode($sci)); ?>)">
+				<small><?php echo t('str_empty_the_station_minimum_pct', array('pct' => fmt_num($sf_thresh * 100, 1))); ?></small></label>
+			<label title="<?php echo $h(t('str_audio_files_kept_for_this_days_help', array('days' => intval($config['PURGE_RECENT_DAYS'] ?? 3)))); ?>"><?php echo t('str_files_to_keep'); ?>
+				<input type="number" id="sp_files" min="0" max="100000" step="1" placeholder="<?php echo intval($config['MAX_FILES_SPECIES'] ?? 0); ?>"
+					value="<?php echo $max_files !== null ? intval($max_files) : ''; ?>" onchange="spFiles(this, <?php echo $h(json_encode($sci)); ?>)">
+				<small><?php echo t('str_empty_global_n', array('n' => intval($config['MAX_FILES_SPECIES'] ?? 0))); ?></small></label>
+			<label><?php echo t('str_notifications_colon'); ?> <select onchange="spTier(this, <?php echo $h(json_encode($sci)); ?>)" data-was="<?php echo $h($tier); ?>">
+				<?php foreach (array('normal' => t('str_normal_tier'), 'muted' => t('str_muted_tier'), 'rare' => t('str_rare_tier')) as $tv => $tl) {
+					echo '<option value="' . $tv . '"' . ($tier === $tv ? ' selected' : '') . '>' . $tl . ($tv === $default_tier ? ' ' . t('str_default_lc_paren') : '') . '</option>';
+				} ?>
+			</select></label>
+			<label title="<?php echo t('str_a_validation_marker_you_have_help'); ?>"><input type="checkbox" <?php echo $in_confirmed ? 'checked' : ''; ?> onchange="spList(this, 'confirmed', <?php echo $h(json_encode($sci)); ?>)"> <?php echo t('str_confirmed'); ?></label>
+			<label title="<?php echo t('str_accepted_even_when_its_help'); ?>"><input type="checkbox" <?php echo $in_whitelist ? 'checked' : ''; ?> onchange="spList(this, 'whitelist', <?php echo $h(json_encode($identifier)); ?>)"> <?php echo t('str_whitelist'); ?></label>
+			<label title="<?php echo t('str_never_detected_again'); ?>"><input type="checkbox" <?php echo $in_exclude ? 'checked' : ''; ?> onchange="spList(this, 'exclude', <?php echo $h(json_encode($identifier)); ?>)"> <?php echo t('str_excluded_sp'); ?></label>
+			<?php $ndel = deleted_count($sci); if ($ndel) { ?>
+				<div class="spdel"><?php echo t('str_deleted_detections'); ?> <b><?php echo $ndel; ?></b>
+					<button type="button" class="restorebtn" onclick="restoreRemoved(<?php echo $h(json_encode($sci)); ?>, this)"><?php echo t('str_restore'); ?></button>
+					<button type="button" class="wipebtn" onclick="wipeDeleted(<?php echo $h(json_encode($sci)); ?>, this)"><?php echo t('str_purge'); ?></button></div>
+			<?php } ?>
+		</div>
+		<div class="card" id="spreviews"><h3><?php echo t('str_reviews'); ?></h3>
+			<?php // the answers as the Review button names them (owner 2026-10-22); the thresholds live in Precision below ?>
+			<?php echo t('str_yes_state'); ?> = <b><?php echo $reviews['yes']; ?></b><br>
+			<?php echo t('str_changed'); ?> = <b><?php echo $reviews['chg']; ?></b> <small><?php echo t('str_changed_to_this_species'); ?></small><br>
+			<?php echo t('str_changed_to_another_species'); ?> = <b><?php echo $reviews['away']; ?></b><br>
+			<?php echo t('str_review_later'); ?> = <b><?php echo $reviews['later']; ?></b><br>
+			<?php echo t('str_ignored'); ?> = <b><?php echo $reviews['ign']; ?></b>
+			<?php if (!array_sum($reviews)) { ?><br><small><?php echo t('str_use_the_review_button_on_a_help'); ?></small><?php } ?>
+		</div>
+	</div>
+	<?php if (!$none) { ?>
+	<?php // Precision (owner 2026-10-22): from which confidence and which probability of occurrence the detections of this
+	// species are real, from every review kept in the database; drawn by spPrecision() below ?>
+	<h3 class="section" id="precision"><?php echo t('str_precision'); ?></h3>
+	<div class="card spprec" id="spprec" data-sci="<?php echo $h($sci); ?>" data-conf="<?php echo $h(json_encode($prec)); ?>"
+		data-cur-conf="<?php echo $h((string)($threshold ?? '')); ?>" data-global-conf="<?php echo floatval($config['CONFIDENCE'] ?? 0.7); ?>"
+		data-cur-prob="<?php echo $h((string)($min_prob ?? '')); ?>" data-global-prob="<?php echo $sf_thresh; ?>"
+		data-nconf="<?php echo $h(json_encode($n_conf)); ?>" data-nprob="<?php echo $h(json_encode($n_prob)); ?>">
+		<p><?php echo t('str_this_section_shows_from_which_help'); ?><br>
+			<?php echo t('str_right_answered_yes'); ?><br>
+			<?php echo t('str_false_human_noise_ignore_or_help'); ?><br>
+			<?php echo t('str_review_later_does_not_count'); ?></p>
+		<?php if ($bands_rev) { ?>
+		<h4><?php echo t('str_where_to_review'); ?></h4>
+		<p><?php echo t('str_each_line_is_a_confidence_band'); ?><br>
+			<?php echo t('str_review_the_highlighted_band_help'); ?></p>
+		<table class="stdtable spbands">
+			<tr><th><?php echo t('str_confidence'); ?></th><th class="num"><?php echo t('str_right'); ?></th><th class="num"><?php echo t('str_false'); ?></th><th class="num"><?php echo t('str_precision'); ?></th><th class="num"><?php echo t('str_without_an_answer'); ?></th><th data-nosort></th></tr>
+			<?php foreach ($bands_rev as $i => $b) {
+				$n = $b['y'] + $b['f'];
+				echo '<tr' . ($i === $critical ? ' class="spprec-best" title="' . $h(t('str_the_most_critical_band_review_help')) . '"' : '') . '><td>' . ($i * 10) . ' - ' . ($i * 10 + 10) . '%' . ($i === $critical ? ' &#9733;' : '') . '</td>'
+					. '<td class="num">' . $b['y'] . '</td><td class="num">' . $b['f'] . '</td><td class="num">' . ($n ? round(100 * $b['y'] / $n) . '%' : '-') . '</td><td class="num">' . fmt_num($b['w']) . '</td><td style="text-align:right !important">';
+				if ($b['samples']) {
+					echo '<button type="button" class="openbtn" onclick="reviewDetection(document.querySelector(\'#band' . $i . ' [data-ri]\'))">' . t('str_review_n', array('n' => count($b['samples']))) . '</button>'
+						. '<div id="band' . $i . '" data-review-list="1" style="display:none">';
+					foreach ($b['samples'] as $r) {
+						$f = $r['Date'] . '/' . species_folder($sci) . '/' . $r['File_Name'];
+						echo '<div' . review_item_attrs($f, $r['Com_Name'] . ', ' . $r['Date'] . ' ' . $r['Time'] . ', ' . round($r['Confidence'] * 100) . '%', $sci, $r) . '>' . validate_button($f, '') . '</div>';
+					}
+					echo '</div>';
+				}
+				echo '</td></tr>';
+			} ?>
+		</table>
+		<?php } ?>
+		<h4><?php echo t('str_threshold'); ?></h4>
+		<p><?php echo t('str_each_line_keeps_only_the_help'); ?><br>
+			<?php echo t('str_precision_right_divided_by_help'); ?><br>
+			<?php echo t('str_guaranteed_the_worst_likely_help'); ?><br>
+			<?php echo t('str_real_lost_estimate_of_the_real_help'); ?><br>
+			<?php echo t('str_a_threshold_applies_to_new_help'); ?></p>
+		<?php // how and why (owner 2026-10-27): the method, the change of that day and the papers, folded under the threshold notes ?>
+		<details class="small" style="margin-top:8px"><summary><?php echo t('str_how_the_threshold_is_computed_help'); ?></summary>
+			<p><?php echo t('str_the_birdnet_confidence_is_not_a_help'); ?><br>
+				<?php echo t('str_that_is_why_each_species_gets_help'); ?><br>
+				<?php echo t('str_where_to_review_highlights_the_help'); ?></p>
+			<p><b><?php echo t('str_precision'); ?></b><br>
+				<?php echo t('str_each_confidence_band_counts_help'); ?><br>
+				<?php echo t('str_covered_the_share_of_the_help'); ?><br>
+				<?php echo t('str_guaranteed_the_lower_end_of_the_help'); ?></p>
+			<p><b><?php echo t('str_logistic'); ?></b><br>
+				<?php echo t('str_a_curve_of_the_chance_of_being_help'); ?><br>
+				<?php echo t('str_it_needs_fewer_reviews_and_does_help'); ?><br>
+				<?php echo t('str_its_value_is_the_confidence_at_help'); ?></p>
+			<p><b><?php echo t('str_change_of_2026_10_27'); ?></b><br>
+				<?php echo t('str_the_precision_used_to_add_up_help'); ?><br>
+				<?php echo t('str_since_the_reviews_follow_the_help'); ?><br>
+				<?php echo t('str_now_each_band_is_weighted_by_help'); ?></p>
+			<p><b><?php echo t('str_references'); ?></b><br>
+				Wood, C.M. &amp; Kahl, S. (2024). <a href="https://doi.org/10.1007/s10336-024-02144-5" target="_blank" rel="noopener">Guidelines for appropriate use of BirdNET scores and other detector outputs</a>. Journal of Ornithology 165: 777–782.<br>
+				Kahl, S., Wood, C.M., Eibl, M. &amp; Klinck, H. (2021). <a href="https://doi.org/10.1016/j.ecoinf.2021.101236" target="_blank" rel="noopener">BirdNET: A deep learning solution for avian diversity monitoring</a>. Ecological Informatics 61: 101236.<br>
+				Knight, E.C. et al. (2017). <a href="https://doi.org/10.5751/ACE-01114-120214" target="_blank" rel="noopener">Recommendations for acoustic recognizer performance assessment with application to five common automated signal recognition programs</a>. Avian Conservation and Ecology 12(2): 14.<br>
+				Cochran, W.G. (1977). Sampling Techniques, 3rd ed., Wiley (stratified estimation).<br>
+				Wilson, E.B. (1927). <a href="https://doi.org/10.1080/01621459.1927.10502953" target="_blank" rel="noopener">Probable inference, the law of succession, and statistical inference</a>. Journal of the American Statistical Association 22: 209–212.<br>
+				Brown, L.D., Cai, T.T. &amp; DasGupta, A. (2001). <a href="https://doi.org/10.1214/ss/1009213286" target="_blank" rel="noopener">Interval estimation for a binomial proportion</a>. Statistical Science 16: 101–133.</p>
+		</details>
+		<label><?php echo t('str_target'); ?> <select class="spprec-target"><option value="0.8">80%</option><option value="0.9" selected>90%</option><option value="0.95">95%</option></select>
+			<small><?php echo t('str_precision_with_at_least_reviews_help', array('n' => 20)); ?></small></label>
+		<div class="spprec-out"></div>
+	</div>
+	<h3 class="section"><?php echo t('str_best_detections'); ?></h3>
+	<div class="clips" data-review-list="1">
+	<?php foreach ($best as $b) {
+		$file = $b['Date'] . '/' . species_folder($sci) . '/' . $b['File_Name'];
+		// the spectrogram picture; a click opens it playing, like "open" in Latest detections
+		$label = $com . ', ' . $b['Date'] . ' ' . $b['Time'] . ', ' . round($b['Confidence'] * 100) . '%';
+		// the Review button on the line of the date and confidence (owner 2026-10-21)
+		echo '<div class="clip"' . review_item_attrs($file, $label, $sci, $b + array('Com_Name' => $com)) . '><div class="cliphead"><span><b>' . $h($b['Date'] . ' ' . $b['Time']) . '</b>, ' . round($b['Confidence'] * 100) . '%</span>' . detection_actions($file, false) . '</div>'
+			. '<img class="clipspec" loading="lazy" src="' . $h(clip_spectrogram_thumb('/By_Date/' . $file)) . '" alt="' . $h(t('str_spectrogram')) . '" title="' . $h(t('str_listen_and_review')) . '" onclick="reviewDetection(this)"></div>';
+	} ?>
+	</div>
+	<h3 class="section" id="latest"<?php echo !empty($rv_more) ? ' data-rv-more="1"' : ''; ?>><?php echo $review_mode ? t('str_to_review_without_an_answer', array('n' => count($recent) . (!empty($rv_more) ? '+' : ''))) : t('str_latest_detections'); ?></h3>
+	<?php // the standard detection list: a click on a row opens the review player, which goes on down the list
+	echo $recent ? str_replace('<table class="list stdtable">', '<table class="list stdtable" data-pager="' . htmlspecialchars(t('str_last_detections'), ENT_QUOTES) . '">', detection_review_table($recent, false)) : '<p>' . t('str_every_detection_of_this_species_help') . '</p>'; ?>
+	<?php } ?>
 </div>
 <?php if ($review_mode) { ?>
 <script>
 // review mode: the player starts on the first unreviewed detection; none left = straight to the next species of Curation
 // DOMContentLoaded, not load: the player must not wait for every spectrogram picture of the page
 document.addEventListener('DOMContentLoaded', function () {
-  var first = document.querySelector('#latest + .reviewlist [data-ri]');
-  if (first) openReviewPlayer(first);
-  else if (window.reviewQueueNext) {
-    reviewQueueDone(<?php echo json_encode($sci); ?>);
-    // no species left in the queue: back to Validation, never left on this page (owner 2026-10-30)
-    if (!reviewQueueNext(<?php echo json_encode($sci); ?>, 0, null, /[?&]dir=-1/.test(location.search) ? -1 : 1)) {
-      try { sessionStorage.setItem('cur_return', <?php echo json_encode($sci); ?>); sessionStorage.setItem('cur_done', '1'); } catch (e) {}
-      // the review's return point (set by the call that started it), else Validation
-      if (!(window.rpReturnGo && rpReturnGo())) location.href = 'views.php?view=Review';
-    }
-  }
+	var first = document.querySelector('#latest + .reviewlist [data-ri]');
+	if (first) openReviewPlayer(first);
+	else if (window.reviewQueueNext) {
+		reviewQueueDone(<?php echo json_encode($sci); ?>);
+		// no species left in the queue: back to Validation, never left on this page (owner 2026-10-30)
+		if (!reviewQueueNext(<?php echo json_encode($sci); ?>, 0, null, /[?&]dir=-1/.test(location.search) ? -1 : 1)) {
+			try { sessionStorage.setItem('cur_return', <?php echo json_encode($sci); ?>); sessionStorage.setItem('cur_done', '1'); } catch (e) {}
+			// the review's return point (set by the call that started it), else Validation
+			if (!(window.rpReturnGo && rpReturnGo())) location.href = 'views.php?view=Review';
+		}
+	}
 });
 </script>
 <?php } ?>
@@ -569,157 +596,5 @@ document.addEventListener('DOMContentLoaded', function () {
 <script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script src="static/wipe-deleted.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/wipe-deleted.js"); ?>"></script>
 <script src="static/precision.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/precision.js"); ?>"></script>
-<script>
-// list switches: the same modal and texts as the Species Pages list (static/species-modal.js); whitelist and exclude
-// default to No
-function spList(box, list, species) {
-  var action = box.checked ? 'add' : 'del';
-  box.checked = !box.checked;   // only changes once confirmed and saved
-  var t = SPECIES_TOGGLE_TEXT[list][action];
-  askModal(t[0].replace('NAME', <?php echo json_encode($com . ' (' . $sci . ')'); ?>), t[1], window.t('str_yes'), list === 'whitelist' || list === 'exclude').then(function (ok) {
-    if (!ok) return;
-    var x = new XMLHttpRequest();
-    x.onload = function () {
-      if (this.status === 200 && this.responseText.trim() === 'OK') box.checked = (action === 'add');
-      else bsNotice(window.t('str_not_changed_reason', {reason: this.status === 401 ? window.t('str_log_in_first_lc') : this.responseText}));
-    };
-    x.onerror = function () { bsNotice(window.t('str_not_changed_network_error')); };
-    x.open('POST', 'scripts/species_tools.php?toggle=' + list + '&species=' + encodeURIComponent(species) + '&action=' + action, true);
-    x.send();
-  });
-}
-// species threshold typed in Species Settings: saved at once (empty = back to the global Min. Conf.)
-function spThreshold(inp, sci) {
-  var v = inp.value.trim();
-  if (v !== '') { v = Math.min(0.99, Math.max(0.01, parseFloat(v.replace(',', '.')))); if (isNaN(v)) { inp.value = ''; return; } v = v.toFixed(2); inp.value = v; }
-  var x = new XMLHttpRequest();
-  x.onload = function () {
-    var ok = this.status === 200 && this.responseText.trim() === 'OK';
-    inp.style.outline = ok ? '2px solid #2e7d32' : '2px solid #c62828';
-    setTimeout(function () { inp.style.outline = ''; }, 1500);
-    if (!ok) bsNotice(window.t('str_not_saved_reason', {reason: this.status === 401 ? window.t('str_log_in_first_lc') : this.responseText}));
-  };
-  x.open('POST', 'scripts/species_tools.php?setconf=1&species=' + encodeURIComponent(sci) + '&value=' + encodeURIComponent(v), true);
-  x.send();
-}
-// files to keep for this species (owner 2026-10-21): saved at once, empty = the global number
-function spFiles(inp, sci) {
-  var v = inp.value.trim();
-  if (v !== '') { v = Math.max(0, Math.min(100000, parseInt(v, 10))); if (isNaN(v)) { inp.value = ''; return; } inp.value = v; }
-  var x = new XMLHttpRequest();
-  x.onload = function () {
-    var ok = this.status === 200 && this.responseText.trim() === 'OK';
-    inp.style.outline = ok ? '2px solid #2e7d32' : '2px solid #c62828';
-    setTimeout(function () { inp.style.outline = ''; }, 1500);
-    if (!ok) bsNotice(window.t('str_not_saved_reason', {reason: this.status === 401 ? window.t('str_log_in_first_lc') : this.responseText}));
-  };
-  x.open('POST', 'scripts/species_tools.php?setfiles=1&species=' + encodeURIComponent(sci) + '&value=' + encodeURIComponent(v), true);
-  x.send();
-}
-// calibrated threshold: saved as the species threshold (same endpoint as the Species Pages list)
-// Precision (owner 2026-10-22): for each threshold, the right and false reviewed detections at or above it, the
-// precision, the guaranteed precision (Wilson lower bound, 95 %) and the right ones that would be lost below it; the
-// suggestion is the lowest threshold whose precision reaches the target with at least 20 reviews above it (owner
-// 2026-10-22: the guaranteed precision asked too much of a few dozen reviews; it is shown as a warning only)
-function spPrecision() {
-  var box = document.getElementById('spprec');
-  if (!box) return;
-  var rows = JSON.parse(box.dataset.conf || '[]'), out = box.querySelector('.spprec-out'), target = parseFloat(box.querySelector('.spprec-target').value);
-  var P = window.bsPrecision, MIN_N = P.MIN_N, pct = function (v, d) { var r = +(v * 100).toFixed(d || 0); return window.fmtNum(r, (String(r).split('.')[1] || '').length) + '%'; };  // station locale, at most d decimals
-  if (!rows.length) { out.innerHTML = '<p>' + window.t('str_no_reviewed_detection_with_yes_help') + '</p>'; return; }
-  // detections of the species per 5 % confidence band and per week probability: the weights of the bands
-  var nConf = JSON.parse(box.dataset.nconf || '[]'), nProb = JSON.parse(box.dataset.nprob || '[]');
-  var countConf = P.countConf(nConf);
-  var countProb = function (lo, hi) { var s = 0; nProb.forEach(function (e) { if (e[0] >= lo && e[0] < hi) s += e[1]; }); return s; };
-  // the stratified precision above each threshold (static/precision.js, shared with Validation › Calibrate thresholds)
-  function curve(idx, steps, digits, count) {
-    var c = P.curve(rows, idx, steps, count, target), html = '';
-    c.lines.forEach(function (l) {
-      html += '<tr' + (c.best === l.th ? ' class="spprec-best"' : '') + '><td>' + pct(l.th, digits) + '</td><td class="num">' + l.y + '</td><td class="num">' + l.f + '</td><td class="num">' + (l.prec !== null ? pct(l.prec) : '-')
-        + '</td><td class="num">' + (l.lb !== null ? pct(l.lb) : '-') + '</td><td class="num">' + (l.all ? pct(l.share) : '-') + '</td><td class="num">' + window.fmtNum(Math.round(l.lost)) + '</td></tr>';
-    });
-    return {best: c.best, lb: c.lb, html: html, none: c.none};
-  }
-  // Wood & Kahl (2024): the confidence where one detection is right with the target probability
-  function logisticLine() {
-    var r = P.logisticThreshold(rows, target), t = r.t;
-    if (r.why === 'few') return '<p>' + window.t('str_logistic_needs_at_least_reviews_help', {n: MIN_N}) + '</p>';
-    if (r.why === 'flat') return '<p>' + window.t('str_logistic_for_this_species_the_help') + '</p>';
-    if (r.why === 'none') return '<p>' + window.t('str_logistic_no_confidence_reaches_help') + '</p>';
-    return '<p>' + window.t('str_logistic_wood_and_kahl_at_a_help', {v: '<b>' + pct(t) + '</b>', p: pct(target)})
-      + ' <button type="button" class="openbtn" onclick="applyThreshold(' + JSON.stringify(box.dataset.sci).replace(/"/g, '&quot;') + ', ' + t + ', this)">' + window.t('str_apply') + '</button></p>';
-  }
-  function block(title, c, cur, glob, kind, digits, extra) {
-    var head = '<tr><th>' + title + ' &ge;</th><th class="num">' + window.t('str_right') + '</th><th class="num">' + window.t('str_false') + '</th><th class="num">' + window.t('str_precision') + '</th><th class="num">' + window.t('str_guaranteed') + '</th><th class="num">' + window.t('str_covered') + '</th><th class="num">' + window.t('str_real_lost') + '</th></tr>';
-    // the Prob. in force is the higher of the species' own and the station's (the analysis drops below either)
-    var now = cur !== '' ? (kind === 'prob' ? Math.max(parseFloat(cur), glob) : parseFloat(cur)) : glob, sug;
-    if (c.none) sug = window.t('str_no_probability_of_occurrence_help');
-    else if (c.best === null) sug = window.t('str_no_threshold_reaches_the_target_help');
-    else if (c.best <= now) sug = window.t('str_the_threshold_in_force_already_help', {now: pct(now, digits)});
-    else sug = window.t('str_suggested_v', {v: '<b>' + pct(c.best, digits) + '</b>'}) + (c.lb < target ? ' <small>(' + window.t('str_guaranteed_review_more_to_confirm', {g: pct(c.lb)}) + ')</small>' : '') + ' <button type="button" class="openbtn" onclick="' + (kind === 'conf' ? 'applyThreshold' : 'applyMinProb') + '(' + JSON.stringify(box.dataset.sci).replace(/"/g, '&quot;') + ', ' + c.best + ', this)">' + window.t('str_apply') + '</button>';
-    return '<div class="spprec-blk"><h4>' + title + ' <small>(' + window.t('str_in_force_v', {v: pct(now, digits) + (cur === '' || (kind === 'prob' && parseFloat(cur) < glob) ? ' ' + window.t('str_station_lc_paren') : '')}) + ')</small></h4><table class="stdtable">' + head + c.html + '</table><p>' + sug + '</p>' + (extra || '') + '</div>';
-  }
-  var cs = P.confSteps(), ps = [0, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7];
-  out.innerHTML = block(window.t('str_confidence'), curve(0, cs, 0, countConf), box.dataset.curConf, parseFloat(box.dataset.globalConf), 'conf', 0, logisticLine())
-    + block(window.t('str_probability_of_occurrence_at_help'), curve(1, ps, 1, countProb), box.dataset.curProb, parseFloat(box.dataset.globalProb), 'prob', 1);
-}
-function spPrecisionBind() {
-  var sel = document.querySelector('#spprec .spprec-target');
-  if (sel) { sel.onchange = spPrecision; spPrecision(); }
-}
-document.addEventListener('DOMContentLoaded', spPrecisionBind);
-// back from the review player with answers (owner 2026-10-22): Precision and the Reviews card are drawn again from a
-// fresh copy of the page, the target chosen is kept
-document.addEventListener('rp:closed', function (e) {
-  if (!e.detail || !e.detail.answered || !document.getElementById('spprec')) return;
-  var target = document.querySelector('#spprec .spprec-target').value;
-  fetch(location.href, {credentials: 'same-origin'}).then(function (r) { return r.text(); }).then(function (html) {
-    var doc = new DOMParser().parseFromString(html, 'text/html');
-    var fresh = doc.getElementById('spprec'), old = document.getElementById('spprec');
-    if (fresh && old) { old.replaceWith(fresh); fresh.querySelector('.spprec-target').value = target; spPrecisionBind(); }
-    var fr = doc.getElementById('spreviews'), or = document.getElementById('spreviews');
-    if (fr && or) or.replaceWith(fr);
-  }).catch(function () {});
-});
-// the species Min. Prob. (species_min_prob.txt), from the Precision suggestion
-function applyMinProb(sci, value, btn) {
-  var x = new XMLHttpRequest();
-  x.onload = function () {
-    if (this.status === 200 && this.responseText.trim() === 'OK') { btn.textContent = window.t('str_applied'); btn.disabled = true; var i = document.getElementById('sp_minprob'); if (i) i.value = value; }
-    else bsNotice(window.t('str_not_saved_reason', {reason: this.status === 401 ? window.t('str_log_in_first_lc') : this.responseText}));
-  };
-  x.open('POST', 'scripts/species_tools.php?setprob=1&species=' + encodeURIComponent(sci) + '&value=' + value, true);
-  x.send();
-}
-function spMinProb(inp, sci) {
-  var x = new XMLHttpRequest();
-  x.onload = function () {
-    if (this.status === 200 && this.responseText.trim() === 'OK') { inp.style.outline = '2px solid #2e7d32'; setTimeout(function () { inp.style.outline = ''; }, 1500); }
-    else bsNotice(window.t('str_not_saved_reason', {reason: this.status === 401 ? window.t('str_log_in_first_lc') : this.responseText}));
-  };
-  x.open('POST', 'scripts/species_tools.php?setprob=1&species=' + encodeURIComponent(sci) + '&value=' + encodeURIComponent(inp.value), true);
-  x.send();
-}
-function applyThreshold(sci, value, btn) {
-  var x = new XMLHttpRequest();
-  x.onload = function () {
-    if (this.status === 200 && this.responseText.trim() === 'OK') { btn.textContent = window.t('str_applied'); btn.disabled = true; var i = document.getElementById('sp_threshold'); if (i) i.value = Number(value).toFixed(2); }
-    else bsNotice(window.t('str_not_saved_reason', {reason: this.status === 401 ? window.t('str_log_in_first_lc') : this.responseText}));
-  };
-  x.open('POST', 'scripts/species_tools.php?setconf=1&species=' + encodeURIComponent(sci) + '&value=' + value, true);
-  x.send();
-}
-// notification tier of the species (same file and endpoint as the Species Pages list), saved at once
-function spTier(sel, sci) {
-  var was = sel.dataset.was;
-  var x = new XMLHttpRequest();
-  x.onload = function () {
-    if (this.status === 200 && this.responseText.trim() === 'OK') { sel.dataset.was = sel.value; sel.style.outline = '2px solid #2e7d32'; setTimeout(function () { sel.style.outline = ''; }, 1200); }
-    else { sel.value = was; bsNotice(window.t('str_not_changed_reason', {reason: this.status === 401 ? window.t('str_log_in_first_lc') : this.responseText})); }
-  };
-  x.onerror = function () { sel.value = was; bsNotice(window.t('str_not_changed_network_error')); };
-  x.open('POST', 'scripts/species_tools.php?settier=1&species=' + encodeURIComponent(sci) + '&tier=' + encodeURIComponent(sel.value), true);
-  x.send();
-}
-document.addEventListener('play', function (e) { document.querySelectorAll('.sp audio').forEach(function (a) { if (a !== e.target) a.pause(); }); }, true);
-</script>
+<script>window.BS_SPECIES = {title: <?php echo json_encode($com . ' (' . $sci . ')'); ?>};</script>
+<script src="static/species-page.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/species-page.js"); ?>"></script>

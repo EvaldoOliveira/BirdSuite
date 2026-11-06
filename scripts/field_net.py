@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/field_net.py - FIELD NETWORK HELPER
+#
+# PURPOSE:
+#   Field network helper (US-120, owner 2026-10-20) — run as root (the web pages through sudo, the field and
+#   Bluetooth services directly). NetworkManager profiles managed here:
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#   - scripts/utils/core.py
+#   - birdsuite-root (sudo helper)
+#
+# USAGE:
+#   python3 scripts/field_net.py <arguments> (see main)
+#   Referenced by homepage/index.php, homepage/static/station-switch.js, scripts/field_ble.py,
+#   scripts/field_daemon.py, scripts/install_config.sh, scripts/install_firstrun.sh, scripts/lib/station.php …
+################################################################################
+
 """Field network helper (US-120, owner 2026-10-20) — run as root (the web pages through sudo, the field and Bluetooth
 services directly). NetworkManager profiles managed here:
 

@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+################################################################################
+# tests/cross_page_test.py - CROSS-PAGE CONSISTENCY TEST
+#
+# PURPOSE:
+#   Cross-page consistency test (US-06, US-19): a source list and the page it opens show the same rows.
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   python3 tests/cross_page_test.py  [--base] [--max]
+################################################################################
+
 """Cross-page consistency test (US-06, US-19): a source list and the page it opens show the same rows.
 
 Read only (GET requests, no answer, no setting): safe on a live station. For every location of the Validation

@@ -1,3 +1,21 @@
+################################################################################
+# scripts/purge_protection.py - AUTOMATIC PURGE PROTECTION
+#
+# PURPOSE:
+#   Automatic purge protection: rewrites the automatic part (##start .. ##end) of disk_check_exclude.txt.
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/disk_check.sh
+#   - scripts/disk_species_clean.sh
+#   - tests/helpers.py
+#
+# USAGE:
+#   python3 scripts/purge_protection.py <arguments> (see main)
+#   Referenced by scripts/daily_cap.py, scripts/disk_check.sh, scripts/disk_species_clean.sh,
+#   scripts/doctor.php, scripts/play.php
+################################################################################
+
 """Automatic purge protection: rewrites the automatic part (##start .. ##end) of disk_check_exclude.txt.
 
 Protected automatically, so the disk purge (disk_check.sh) and the per-species trim (disk_species_clean.sh)

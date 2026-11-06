@@ -1,3 +1,22 @@
+################################################################################
+# scripts/password_reset_send.py - THE RESET LINK OF A FORGOTTEN WEB PASSWORD
+#
+# PURPOSE:
+#   The reset link of a forgotten web password (US-53, owner 2026-11-04): sent only through the channel the
+#   owner chose (PWD_RECOVERY: email or telegram), to the address or group already set up there, never queued
+#   (the link lasts 15 minutes). Run as the station user by scripts/password_reset.php; the link comes on
+#   stdin, never on the command line. Exit 0 = sent, 1 = the channel is not set up or the send failed.
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#   - scripts/utils/i18n.py
+#   - scripts/utils/notifications.py
+#
+# USAGE:
+#   python3 scripts/password_reset_send.py <arguments> (see main)
+#   Referenced by scripts/password_reset.php
+################################################################################
+
 """The reset link of a forgotten web password (US-53, owner 2026-11-04): sent only through the channel the owner chose
 (PWD_RECOVERY: email or telegram), to the address or group already set up there, never queued (the link lasts 15
 minutes). Run as the station user by scripts/password_reset.php; the link comes on stdin, never on the command line.

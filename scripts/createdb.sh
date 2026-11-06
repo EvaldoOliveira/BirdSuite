@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
-# The station database (config/data/birds.db): the one schema, every table, column, index and trigger the code uses.
-# Idempotent: what exists is left as it is (the installer and Clear all data run it).
+################################################################################
+# scripts/createdb.sh - THE STATION DATABASE
+#
+# PURPOSE:
+#   The station database (config/data/birds.db): the one schema, every table, column, index and trigger the
+#   code uses. Idempotent: what exists is left as it is (the installer and Clear all data run it).
+#
+# DEPENDENCIES:
+#   - scripts/paths.sh
+#   - scripts/utils/locations.py
+#
+# USAGE:
+#   bash scripts/createdb.sh
+#   Referenced by scripts/backup_data.sh, scripts/clear_all_data.sh, scripts/install_services.sh,
+#   scripts/lib/db.php, scripts/update_birdnet_snippets.sh, scripts/utils/locations.py,
+#   scripts/utils/shadow.py …
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 mkdir -p "$BS_DATA"
 # One index only (owner 2026-11-05): a species is its scientific name; the common and English names are presentation,
@@ -8,8 +24,8 @@ mkdir -p "$BS_DATA"
 # Com_Name / Orig_Com columns once, after a copy of it (birds.db.before-sci-only): the indexes that held them first,
 # then DROP COLUMN (SQLite 3.35+); the indexes are made again without them below.
 if [ -f "$BS_DB" ] && sqlite3 -cmd ".timeout 60000" "$BS_DB" "PRAGMA table_info(detections);" | cut -d'|' -f2 | grep -qx Com_Name; then
-  [ -f "$BS_DB.before-sci-only" ] || sqlite3 -cmd ".timeout 60000" "$BS_DB" ".backup '$BS_DB.before-sci-only'" || exit 1
-  sqlite3 -cmd ".timeout 60000" "$BS_DB" << 'EOF' && echo "createdb.sh: the common names left the database (copy in $BS_DB.before-sci-only)"
+	[ -f "$BS_DB.before-sci-only" ] || sqlite3 -cmd ".timeout 60000" "$BS_DB" ".backup '$BS_DB.before-sci-only'" || exit 1
+	sqlite3 -cmd ".timeout 60000" "$BS_DB" << 'EOF' && echo "createdb.sh: the common names left the database (copy in $BS_DB.before-sci-only)"
 DROP INDEX IF EXISTS detections_Com_Name;
 DROP INDEX IF EXISTS detections_Location_species;
 DROP INDEX IF EXISTS detections_Sci_Date_Location;
@@ -18,7 +34,7 @@ ALTER TABLE deleted_detections DROP COLUMN Com_Name;
 ALTER TABLE detection_reviews DROP COLUMN Com_Name;
 ALTER TABLE detection_reviews DROP COLUMN Orig_Com;
 EOF
-  REANALYZE=1
+	REANALYZE=1
 fi
 sqlite3 -cmd ".timeout 60000" "$BS_DB" << 'EOF'
 -- the detections: the analysis settings in force (Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override), the
@@ -181,20 +197,20 @@ EOF
 # table as it is): each one once, empty on the old rows
 for tb in detections deleted_detections; do
  for cd in Mic:TEXT Mic_Port:TEXT Mic_Gain:REAL Tz:TEXT Utc_Offset:TEXT Model:TEXT Software:TEXT Species_List:TEXT \
-           Audio_Loss_N:INTEGER Audio_Loss_Ms:REAL Sample_Rate:INTEGER Channels:INTEGER Scenario:TEXT; do
-  tc=$tb:$cd
-  IFS=: read -r tb col typ <<< "$tc"
-  if ! sqlite3 -cmd ".timeout 60000" "$BS_DB" "PRAGMA table_info($tb);" | cut -d'|' -f2 | grep -qx "$col"; then
-    sqlite3 -cmd ".timeout 60000" "$BS_DB" "ALTER TABLE $tb ADD COLUMN $col $typ;" && echo "createdb.sh: $tb.$col added"
-  fi
+					 Audio_Loss_N:INTEGER Audio_Loss_Ms:REAL Sample_Rate:INTEGER Channels:INTEGER Scenario:TEXT; do
+	tc=$tb:$cd
+	IFS=: read -r tb col typ <<< "$tc"
+	if ! sqlite3 -cmd ".timeout 60000" "$BS_DB" "PRAGMA table_info($tb);" | cut -d'|' -f2 | grep -qx "$col"; then
+		sqlite3 -cmd ".timeout 60000" "$BS_DB" "ALTER TABLE $tb ADD COLUMN $col $typ;" && echo "createdb.sh: $tb.$col added"
+	fi
  done
 done
 # the planner's statistics of the indexes made again after the migration (without them the pages took 4 to 20 s on the
 # pilot, 2026-11-05); on every other update only the tables that changed enough are analysed (PRAGMA optimize)
 if [ -n "${REANALYZE:-}" ]; then
-  sqlite3 -cmd ".timeout 60000" "$BS_DB" "ANALYZE;" > /dev/null || true
+	sqlite3 -cmd ".timeout 60000" "$BS_DB" "ANALYZE;" > /dev/null || true
 else
-  sqlite3 -cmd ".timeout 60000" "$BS_DB" "PRAGMA optimize;" > /dev/null || true
+	sqlite3 -cmd ".timeout 60000" "$BS_DB" "PRAGMA optimize;" > /dev/null || true
 fi
 # write-ahead log: the pages read while the analysis writes, without "database is locked"
 sqlite3 -cmd ".timeout 10000" "$BS_DB" "PRAGMA journal_mode=WAL;" > /dev/null || true

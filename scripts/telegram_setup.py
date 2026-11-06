@@ -1,4 +1,20 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/telegram_setup.py - TELEGRAM NOTIFICATIONS, GUIDED
+#
+# PURPOSE:
+#   Telegram notifications, guided (owner 2026-10-20) — run as the station user by Settings › Telegram
+#   (scripts/telegram_settings.php). One bot, two groups: **Normal** (every notified detection) and **Rare**
+#   (the rare tier).
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#
+# USAGE:
+#   python3 scripts/telegram_setup.py <arguments> (see main)
+#   Referenced by scripts/telegram_settings.php
+################################################################################
+
 """Telegram notifications, guided (owner 2026-10-20) — run as the station user by Settings › Telegram
 (scripts/telegram_settings.php). One bot, two groups: **Normal** (every notified detection) and **Rare** (the rare tier).
 

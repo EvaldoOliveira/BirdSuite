@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
-# A comprehensive log dumper
+################################################################################
+# scripts/dump_logs.sh - THE LOG DUMPER
+#
+# PURPOSE:
+#   A comprehensive log dumper
+#
+# DEPENDENCIES:
+#   - scripts/paths.sh
+#   - scripts/install_services.sh
+#
+# USAGE:
+#   bash scripts/dump_logs.sh
+################################################################################
+
 # set -x # Uncomment to debug
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 LOG_DIR="$BS_PROG/logs"
@@ -11,10 +24,10 @@ services=($(awk '/service/ && /systemctl/ && !/php/ {print $3}' ${my_dir}/instal
 
 # Create services logs
 for i in "${services[@]}";do
-  if [ -L "/etc/systemd/system/multi-user.target.wants/${i}" ];then
-    journalctl -u ${i} -n 100 --no-pager > ${LOG_DIR}/${i}.log
-    cp -L /etc/systemd/system/multi-user.target.wants/${i} ${LOG_DIR}/${i}
-  fi
+	if [ -L "/etc/systemd/system/multi-user.target.wants/${i}" ];then
+		journalctl -u ${i} -n 100 --no-pager > ${LOG_DIR}/${i}.log
+		cp -L /etc/systemd/system/multi-user.target.wants/${i} ${LOG_DIR}/${i}
+	fi
 done
 
 # Create password-removed BirdSuite.conf
@@ -22,14 +35,14 @@ sed -e '/PWD=/d' "$BS_CONF" > ${LOG_DIR}/BirdSuite.conf
 
 # Create password-removed Caddyfile
 if [ -f /etc/caddy/Caddyfile ];then
-  sed -e '/basicauth/,+2d' /etc/caddy/Caddyfile > ${LOG_DIR}/Caddyfile
+	sed -e '/basicauth/,+2d' /etc/caddy/Caddyfile > ${LOG_DIR}/Caddyfile
 fi  
 
 # Get sound card specs
 SOUND_CARD="$(aplay -L \
-  | awk -F, '/^hw:/ {print $1}' \
-  | grep -ve 'vc4' -e 'Head' -e 'PCH' \
-  | uniq)"
+	| awk -F, '/^hw:/ {print $1}' \
+	| grep -ve 'vc4' -e 'Head' -e 'PCH' \
+	| uniq)"
 echo "SOUND_CARD=${SOUND_CARD}" > ${LOG_DIR}/soundcard
 script -c "arecord -D ${SOUND_CARD} --dump-hw-params" -a ${LOG_DIR}/soundcard &> /dev/null
 
@@ -37,8 +50,8 @@ script -c "arecord -D ${SOUND_CARD} --dump-hw-params" -a ${LOG_DIR}/soundcard &>
 CALLS=("df -h" "free -h" "ifconfig" "find ${RECS_DIR}")
 
 for i in "${CALLS[@]}";do
-  ${i} >> ${LOG_DIR}/sysinfo
-  echo "
+	${i} >> ${LOG_DIR}/sysinfo
+	echo "
 ===============================================================================
 ===============================================================================
 

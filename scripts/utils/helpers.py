@@ -1,3 +1,21 @@
+################################################################################
+# scripts/utils/helpers.py - SHARED HELPERS: SETTINGS, PATHS, NAMES
+#
+# PURPOSE:
+#   Shared helpers of the Python side: the settings (BirdSuite.conf read like PHP does), the paths of the
+#   layout (core.env), fonts, the language, the species names (common_name, english_name) from the label
+#   files, the test location.
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/core.sh
+#
+# USAGE:
+#   Referenced by scripts/birdnet_changeidentification.sh, scripts/disk_species_count.sh,
+#   scripts/lib/clips.php, scripts/location_data.py, scripts/most_recent.sh, scripts/purge_protection.py,
+#   scripts/purge_stage.py …
+################################################################################
+
 import glob
 import json
 import os

@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
-# US-40: station-side transport to the central sound repository (BirdDB-Br).
-# Moves the local spool (SOUND_REPO_PATH, filled per detection by
-# scripts/utils/reporting.py) to SOUND_REPO_REMOTE — an rclone "remote:path"
-# the station owner configured with their own Google account (Settings ›
-# Repositories). Fired every minute by the sound upload timer (BS_SVC_SOUND_UPLOAD); the interval
-# (SOUND_REPO_UPLOAD_MINUTES) is read from BirdSuite.conf on every call, so a
-# change in the settings page needs no unit reload. Files stay in the spool
-# until the move succeeds, which gives retries for free.
+################################################################################
+# scripts/sound_repo_upload.sh - UPLOAD TO THE CENTRAL SOUND REPOSITORY (BIRDDB-BR)
+#
+# PURPOSE:
+#   US-40: station-side transport to the central sound repository (BirdDB-Br). Moves the local spool
+#   (SOUND_REPO_PATH, filled per detection by scripts/utils/reporting.py) to SOUND_REPO_REMOTE — an rclone
+#   "remote:path" the station owner configured with their own Google account (Settings › Repositories). Fired
+#   every minute by the sound upload timer (BS_SVC_SOUND_UPLOAD); the interval (SOUND_REPO_UPLOAD_MINUTES) is
+#   read from BirdSuite.conf on every call, so a change in the settings page needs no unit reload. Files stay
+#   in the spool until the move succeeds, which gives retries for free.
+#
+# DEPENDENCIES:
+#   - scripts/utils/reporting.py
+#   - scripts/paths.sh
+#
+# USAGE:
+#   bash scripts/sound_repo_upload.sh
+#   Referenced by templates/units/SVC_SOUND_UPLOAD.service
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 spool="${SOUND_REPO_PATH:-$BS_SOUND_REPO}"  # empty = the station's own spool (core.env)
 remote="${SOUND_REPO_REMOTE:-}"
@@ -21,9 +33,9 @@ stamp="$HOME/.sound_repo_last_upload"
 
 # Interval gate: the timer ticks every minute, the setting decides the cadence.
 if [ -f "$stamp" ]; then
-  last=$(stat -c %Y "$stamp")
-  now=$(date +%s)
-  [ $((now - last)) -ge $((minutes * 60)) ] || exit 0
+	last=$(stat -c %Y "$stamp")
+	now=$(date +%s)
+	[ $((now - last)) -ge $((minutes * 60)) ] || exit 0
 fi
 
 # Nothing settled in the spool (a file younger than a minute may still be
@@ -31,18 +43,18 @@ fi
 [ -n "$(find "$spool" -type f -mmin +1 -print -quit 2>/dev/null)" ] || exit 0
 
 if ! rclone listremotes 2>/dev/null | grep -qx "${remote%%:*}:"; then
-  echo "sound repo: rclone remote '${remote%%:*}' is not configured — nothing uploaded (see Settings › Repositories)"
-  exit 0
+	echo "sound repo: rclone remote '${remote%%:*}' is not configured — nothing uploaded (see Settings › Repositories)"
+	exit 0
 fi
 
 touch "$stamp"
 # --min-age 1m: never move a clip or sidecar the writer may still be finishing.
 rclone move "$spool" "$remote" --min-age 1m --delete-empty-src-dirs \
-  --transfers 4 --checkers 4 --stats 0 2>&1
+	--transfers 4 --checkers 4 --stats 0 2>&1
 rc=$?
 if [ $rc -eq 0 ]; then
-  echo "sound repo: upload done"
+	echo "sound repo: upload done"
 else
-  echo "sound repo: rclone move failed (rc=$rc) — files stay in the spool and are retried"
+	echo "sound repo: rclone move failed (rc=$rc) — files stay in the spool and are retried"
 fi
 exit 0

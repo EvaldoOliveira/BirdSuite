@@ -1,3 +1,17 @@
+################################################################################
+# scripts/utils/classes.py - DATA CLASSES OF THE ANALYSIS
+#
+# PURPOSE:
+#   The data classes of the analysis: Detection, ParseFileName (a recording's name into date, time and
+#   location) and the 48-week calendar the location models were trained on.
+#
+# DEPENDENCIES:
+#   - tests/helpers.py
+#
+# USAGE:
+#   Referenced by scripts/lib/locations.php, scripts/species.py
+################################################################################
+
 import datetime
 import os
 import re

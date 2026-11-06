@@ -1,4 +1,16 @@
-// BirdSuite field companion: kept on the phone so it opens without any network (US-120)
+//##############################################################################
+// homepage/companion/sw.js - BIRDSUITE FIELD COMPANION
+//
+// PURPOSE:
+//   BirdSuite field companion: kept on the phone so it opens without any network (US-120)
+//
+// DEPENDENCIES:
+//   - (none beyond the system)
+//
+// USAGE:
+//   <script src="static/sw.js">, loaded by the pages that need it
+//##############################################################################
+
 var CACHE = 'birdsuite-field-v1';
 self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(['./', './index.html', './manifest.json']); })); });
 self.addEventListener('activate', function (e) { e.waitUntil(caches.keys().then(function (k) { return Promise.all(k.filter(function (n) { return n !== CACHE; }).map(function (n) { return caches.delete(n); })); })); });

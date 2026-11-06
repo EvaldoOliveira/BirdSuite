@@ -1,4 +1,27 @@
 #!/usr/bin/env python3
+################################################################################
+# tests/migration_test.py - THE MIGRATION FROM BIRDNET-PI ON THE SAME CARD
+#
+# PURPOSE:
+#   The migration from BirdNET-Pi on the same card (US-01, US-05; owner 2026-11-02), on simulated homes in a
+#   temporary folder: a BirdNET-Pi tree (program folder with scripts/birds.db, birdnet.conf, lists, apprise
+#   file, a unit file; data folder with clips by the common name) next to a BirdSuite program folder, then
+#   scripts/migration.py (detection, the space decision of both branches with a given free space, prepare copy
+#   / move, tick), location_data.py migrate (copy and move) and the root helper's migration-remove /
+#   migration-back on the files.
+#
+# DEPENDENCIES:
+#   - scripts/utils/core as corelib.py
+#   - scripts/migration.py
+#   - scripts/location_data.py
+#   - scripts/createdb.sh
+#   - scripts/core.sh
+#   - birdsuite-root (sudo helper)
+#
+# USAGE:
+#   python3 tests/migration_test.py <arguments> (see main)
+################################################################################
+
 """The migration from BirdNET-Pi on the same card (US-01, US-05; owner 2026-11-02), on simulated homes in a temporary
 folder: a BirdNET-Pi tree (program folder with scripts/birds.db, birdnet.conf, lists, apprise file, a unit file; data
 folder with clips by the common name) next to a BirdSuite program folder, then scripts/migration.py (detection, the

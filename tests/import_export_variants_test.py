@@ -1,3 +1,18 @@
+################################################################################
+# tests/import_export_variants_test.py - IMPORT/EXPORT VARIANTS
+#
+# PURPOSE:
+#   Import/export variants (owner 2026-10-25; run: python3 tests/import_export_variants_test.py): exports to
+#   the old BirdNET format and BirdSuite backups, re-imported into different locations and modes, on
+#   throw-away stations (temporary HOME), with the helpers of tests/import_export_test.py.
+#
+# DEPENDENCIES:
+#   - tests/import_export_test.py
+#
+# USAGE:
+#   python3 tests/import_export_variants_test.py <arguments> (see main)
+################################################################################
+
 """Import/export variants (owner 2026-10-25; run: python3 tests/import_export_variants_test.py): exports to the old
 BirdNET format and BirdSuite backups, re-imported into different locations and modes, on throw-away stations
 (temporary HOME), with the helpers of tests/import_export_test.py."""

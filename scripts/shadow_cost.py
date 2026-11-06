@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/shadow_cost.py - WHAT THE SHADOW MODEL COSTS
+#
+# PURPOSE:
+#   What the shadow model costs (owner 2026-10-25: the price of privacy with BirdNET+ V3, for the README).
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#
+# USAGE:
+#   Called as scripts/shadow_cost.py
+################################################################################
+
 """What the shadow model costs (owner 2026-10-25: the price of privacy with BirdNET+ V3, for the README).
 
 Reads the analysis service's log of the last hours: for every recording, the time of the official model ("DONE! Time

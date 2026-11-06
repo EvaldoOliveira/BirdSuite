@@ -1,3 +1,19 @@
+################################################################################
+# scripts/utils/rarity.py - REGION-RARE DETECTIONS
+#
+# PURPOSE:
+#   Region-rare detections: is a species unexpected at the station's location, now or in any week?
+#
+# DEPENDENCIES:
+#   - scripts/utils/classes.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/i18n.py
+#   - scripts/utils/models.py
+#
+# USAGE:
+#   Referenced by scripts/clip_alternatives.py, scripts/species_page.php
+################################################################################
+
 """Region-rare detections: is a species unexpected at the station's location, now or in any week?
 
 The station's location model (BirdNET+ V3 geo model; the V2.4 meta model on V2.4 stations) gives, for the

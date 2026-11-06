@@ -1,3 +1,19 @@
+################################################################################
+# scripts/build_taxonomy_order.py - BUILDS MODEL/TAXONOMY_ORDER
+#
+# PURPOSE:
+#   Builds model/taxonomy_order.csv: the taxonomic position of every model label (owner 2026-10-10), so
+#   species lists can be shown in field-guide order (By Hour: Sort › Taxonomy). Run once by the maintainer;
+#   the result ships with the fork.
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   python3 scripts/build_taxonomy_order.py <arguments> (see main)
+#   Referenced by scripts/lib/species.php
+################################################################################
+
 """Builds model/taxonomy_order.csv: the taxonomic position of every model label (owner 2026-10-10), so species lists can
 be shown in field-guide order (By Hour: Sort › Taxonomy). Run once by the maintainer; the result ships with the fork.
 

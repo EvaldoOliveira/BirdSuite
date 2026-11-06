@@ -1,3 +1,24 @@
+################################################################################
+# scripts/utils/locations.py - LOCATIONS OF THE STATION
+#
+# PURPOSE:
+#   Locations of the station (US-58, owner 2026-10-21): every detection carries the id of the location it was
+#   recorded at (column Location of detections, deleted_detections and the shadow database), and the pages
+#   filter on that tag. Two locations may share their coordinates (the same building, a microphone at another
+#   window): the tag tells them apart, the coordinates do not.
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/land_cover.py
+#   - scripts/locate_biome.py
+#   - scripts/createdb.sh
+#
+# USAGE:
+#   python3 scripts/utils/locations.py <arguments> (see main)
+#   Referenced by scripts/createdb.sh, scripts/lib/locations.php, scripts/location_data.py,
+#   scripts/locations.php, tests/import_export_test.py
+################################################################################
+
 """Locations of the station (US-58, owner 2026-10-21): every detection carries the id of the location it was recorded
 at (column Location of detections, deleted_detections and the shadow database), and the pages filter on that tag.
 Two locations may share their coordinates (the same building, a microphone at another window): the tag tells them

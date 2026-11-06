@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/location_check.py - HAS THE STATION MOVED?
+#
+# PURPOSE:
+#   Has the station moved? (owner 2026-10-10) Run at every boot by the location check service.
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#   - scripts/utils/core.py
+#   - scripts/utils/locations.py
+#
+# USAGE:
+#   python3 scripts/location_check.py <arguments> (see main)
+#   Referenced by scripts/locate_now.php, scripts/location_moved.php, scripts/location_switch.php,
+#   scripts/mic_hotplug.sh, scripts/overview.php, templates/units/SVC_LOCATION_CHECK.service
+################################################################################
+
 """Has the station moved? (owner 2026-10-10) Run at every boot by the location check service.
 
 The Pi has no GPS: the network gives an approximate position (geolocation of the public IP: ipapi.co, then

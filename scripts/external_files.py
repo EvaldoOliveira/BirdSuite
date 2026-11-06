@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/external_files.py - EXTERNAL FILES
+#
+# PURPOSE:
+#   External files (US-119, owner 2026-10-20): the species in the audio of any folder, with the station's
+#   model.
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#   - scripts/utils/analysis.py
+#   - scripts/utils/classes.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/reporting.py
+#   - scripts/utils/core.py
+#   - scripts/raw_recording.sh
+#
+# USAGE:
+#   python3 scripts/external_files.py action folder [--lat] [--lon] [--loc-id] [--loc-name] [--mode]
+#   [--resume]
+#   Referenced by scripts/external_files.php, scripts/raw_recording.php
+################################################################################
+
 """External files (US-119, owner 2026-10-20): the species in the audio of any folder, with the station's model.
 
   external_files.py analyze <folder> --lat LAT --lon LON --loc-id ID --loc-name NAME [--resume]

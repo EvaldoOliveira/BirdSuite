@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
-# Plan B and the station WiFi address on a real station (owner 2026-10-25: pilot tests before a release).
-# The station WiFi (client) is disconnected; within FIELD_LOST_WAIT_SEC (10 s) + a round the field service must turn on
-# the station's own WiFi at 10.42.N.1 (field_net.ap_addr(), N from the MAC); with no phone on it, within SCAN_EVERY it
-# must go back to the known network by itself (back_home), so a session over ssh reconnects. Everything is written to
-# a log, because the ssh connection drops while it runs. Run it detached so it survives that:
-#   sudo systemd-run --unit=bs-planb-test bash <program folder>/tests/field_planb_test.sh
-#   (about 5 min later)  cat <station home>/field_planb_test.log
-# Needs: the station only on WiFi (with a cable plugged in it is never "without network"), the AP profile created.
-# the program folder and the station home from core.env (this file sits in <program folder>/tests)
+################################################################################
+# tests/field_planb_test.sh - PLAN B AND THE STATION WIFI ADDRESS ON A REAL STATION
+#
+# PURPOSE:
+#   Plan B and the station WiFi address on a real station (owner 2026-10-25: pilot tests before a release).
+#   The station WiFi (client) is disconnected; within FIELD_LOST_WAIT_SEC (10 s) + a round the field service
+#   must turn on the station's own WiFi at 10.42.N.1 (field_net.ap_addr(), N from the MAC); with no phone on
+#   it, within SCAN_EVERY it must go back to the known network by itself (back_home), so a session over ssh
+#   reconnects. Everything is written to a log, because the ssh connection drops while it runs. Run it
+#   detached so it survives that: sudo systemd-run --unit=bs-planb-test bash <program
+#   folder>/tests/field_planb_test.sh (about 5 min later)  cat <station home>/field_planb_test.log Needs: the
+#   station only on WiFi (with a cable plugged in it is never "without network"), the AP profile created. the
+#   program folder and the station home from core.env (this file sits in <program folder>/tests)
+#
+# DEPENDENCIES:
+#   - scripts/core.sh
+#   - scripts/field_net.py
+#
+# USAGE:
+#   bash tests/field_planb_test.sh
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../scripts/core.sh"
 LOG=$BS_HOME/field_planb_test.log
 DIR=$BS_SCRIPTS
@@ -26,15 +39,15 @@ other=$(nmcli -t -f DEVICE,TYPE,STATE device | awk -F: '$1 != "wlan0" && $2 != "
 nmcli -t -f NAME connection show | grep -qx birdsuite-ap || fail "no birdsuite-ap profile (open Settings > Network once)"
 
 restore() {
-  nmcli -t -f NAME,DEVICE connection show --active | grep -q "^$conn:wlan0$" && return
-  say "restoring: station WiFi off, $conn back"
-  python3 "$DIR/field_net.py" ap-off > /dev/null 2>&1
-  nmcli connection up "$conn" ifname wlan0 > /dev/null 2>&1
-  for _ in $(seq 1 12); do
-    sleep 10
-    nmcli -t -f NAME,DEVICE connection show --active | grep -q ":wlan0$" && { say "back on: $(nmcli -t -f NAME,DEVICE connection show --active | grep ':wlan0$')"; return; }
-  done
-  say "WARNING: wlan0 not back after 2 min; the field service brings it back after the station WiFi window"
+	nmcli -t -f NAME,DEVICE connection show --active | grep -q "^$conn:wlan0$" && return
+	say "restoring: station WiFi off, $conn back"
+	python3 "$DIR/field_net.py" ap-off > /dev/null 2>&1
+	nmcli connection up "$conn" ifname wlan0 > /dev/null 2>&1
+	for _ in $(seq 1 12); do
+		sleep 10
+		nmcli -t -f NAME,DEVICE connection show --active | grep -q ":wlan0$" && { say "back on: $(nmcli -t -f NAME,DEVICE connection show --active | grep ':wlan0$')"; return; }
+	done
+	say "WARNING: wlan0 not back after 2 min; the field service brings it back after the station WiFi window"
 }
 trap restore EXIT
 
@@ -43,15 +56,15 @@ say "disconnecting wlan0"
 nmcli connection down "$conn" || fail "nmcli could not take $conn down"
 seen=''
 while [ $(( $(date +%s) - start )) -lt $LIMIT ]; do
-  sleep 2
-  t=$(( $(date +%s) - start ))
-  act=$(nmcli -t -f NAME,DEVICE connection show --active | tr '\n' ' ')
-  addr=$(ip -4 -o addr show wlan0 2>/dev/null | awk '{print $4}' | tr '\n' ' ')
-  say "t=${t}s active: ${act:-none} wlan0: ${addr:-none}"
-  if echo "$act" | grep -q "birdsuite-ap:wlan0"; then
-    seen=$t
-    break
-  fi
+	sleep 2
+	t=$(( $(date +%s) - start ))
+	act=$(nmcli -t -f NAME,DEVICE connection show --active | tr '\n' ' ')
+	addr=$(ip -4 -o addr show wlan0 2>/dev/null | awk '{print $4}' | tr '\n' ' ')
+	say "t=${t}s active: ${act:-none} wlan0: ${addr:-none}"
+	if echo "$act" | grep -q "birdsuite-ap:wlan0"; then
+		seen=$t
+		break
+	fi
 done
 [ -n "$seen" ] || { journalctl -u "$BS_SVC_FIELD" --since "@$start" -o cat --no-pager | tail -n 20 | sed 's/^/  field: /'; fail "the station WiFi did not turn on within $((LIMIT / 60)) min"; }
 sleep 3
@@ -60,12 +73,12 @@ say "station WiFi on after ${seen}s at $addr"
 [ "$addr" = "$want" ] || fail "station WiFi at $addr, expected $want"
 back=''
 while [ $(( $(date +%s) - start )) -lt $((seen + LIMIT)) ]; do
-  sleep 5
-  nmcli -t -f NAME,DEVICE connection show --active | grep -q "^$conn:wlan0$" && { back=$(( $(date +%s) - start )); break; }
+	sleep 5
+	nmcli -t -f NAME,DEVICE connection show --active | grep -q "^$conn:wlan0$" && { back=$(( $(date +%s) - start )); break; }
 done
 journalctl -u "$BS_SVC_FIELD" --since "@$start" -o cat --no-pager | tail -n 20 | sed 's/^/  field: /'
 [ -n "$back" ] || fail "station WiFi at $want, but the station did not go back to $conn by itself within $((LIMIT / 60)) min"
 say "back on $conn by itself after ${back}s"
 grep -q "address=/#/$want" /etc/NetworkManager/dnsmasq-shared.d/*.conf 2>/dev/null && say "captive answer points at $want" \
-  || say "NOTE: no captive dnsmasq file with $want found"
+	|| say "NOTE: no captive dnsmasq file with $want found"
 say "RESULT: PASS - station WiFi after ${seen}s at $want, back on $conn after ${back}s"

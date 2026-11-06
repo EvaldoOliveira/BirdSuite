@@ -1,3 +1,20 @@
+################################################################################
+# scripts/utils/notify_queue.py - OFFLINE NOTIFICATION QUEUE
+#
+# PURPOSE:
+#   Offline notification queue (US-120, owner 2026-10-20): a notification made while the station has no
+#   internet is kept in state/notify_queue.jsonl instead of being lost; the field service
+#   (scripts/field_daemon.py) runs `notify_queue.py flush` as the station user once there is internet, and
+#   every queued one goes out with its original time.
+#
+# DEPENDENCIES:
+#   - scripts/utils/notifications.py
+#   - scripts/field_daemon.py
+#
+# USAGE:
+#   Referenced by scripts/doctor.php, scripts/field_daemon.py, scripts/notify_queue.py
+################################################################################
+
 """Offline notification queue (US-120, owner 2026-10-20): a notification made while the station has no internet is kept
 in state/notify_queue.jsonl instead of being lost; the field service (scripts/field_daemon.py) runs
 `notify_queue.py flush` as the station user once there is internet, and every queued one goes out with its original time."""

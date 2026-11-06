@@ -1,3 +1,30 @@
+################################################################################
+# scripts/recording_watchdog.py - RECORDING WATCHDOG
+#
+# PURPOSE:
+#   Recording watchdog (owner 2026-10-23): the shared microphone access (ALSA dsnoop) can lock up while
+#   recording and livestream keep running — every clip is an empty 44-byte WAV, nothing is analysed and nobody
+#   notices (22:26 to 00:25 on the pilot). Run every minute from cron: when the microphone is present, the
+#   recording service runs and the clip being recorded stays empty (or no clip appears) for two runs in a row,
+#   it stops the livestream and the recording, starts the recording, then the livestream, and tells the
+#   station's notification channel. At most one restart every 10 minutes. State in
+#   state/recording_watchdog.json (with the restarts of the last 24 h, read by the Doctor); what it suspects
+#   and does goes to syslog, tag birdsuite-recording_watchdog (2026-10-23 test run). Usage:
+#   recording_watchdog.py [--print]
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#   - scripts/utils/i18n.py
+#   - scripts/utils/core.py
+#   - scripts/utils/notifications.py
+#   - scripts/birdnet_recording.sh
+#   - scripts/mic_hotplug.sh
+#
+# USAGE:
+#   python3 scripts/recording_watchdog.py <arguments> (see main)
+#   Referenced by scripts/doctor.php, templates/cleanup.cron
+################################################################################
+
 """Recording watchdog (owner 2026-10-23): the shared microphone access (ALSA dsnoop) can lock up while recording and
 livestream keep running — every clip is an empty 44-byte WAV, nothing is analysed and nobody notices (22:26 to 00:25
 on the pilot). Run every minute from cron: when the microphone is present, the recording service runs and the clip

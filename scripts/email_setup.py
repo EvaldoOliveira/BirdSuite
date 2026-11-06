@@ -1,4 +1,24 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/email_setup.py - E-MAIL NOTIFICATIONS THROUGH APPRISE
+#
+# PURPOSE:
+#   E-mail notifications through Apprise (owner 2026-10-20) — run as the station user by Settings › E-mail
+#   (scripts/email_settings.php). A station has no mail server of its own: the e-mail goes out through the
+#   SMTP of a provider (Gmail, Outlook, Yahoo, iCloud, Zoho, or any server), with the sender account's app
+#   password.
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#   - scripts/utils/notify_queue.py
+#   - scripts/utils/notifications.py
+#   - scripts/send_test_notification.py
+#
+# USAGE:
+#   python3 scripts/email_setup.py <arguments> (see main)
+#   Referenced by scripts/email_settings.php
+################################################################################
+
 """E-mail notifications through Apprise (owner 2026-10-20) — run as the station user by Settings › E-mail
 (scripts/email_settings.php). A station has no mail server of its own: the e-mail goes out through the SMTP of a
 provider (Gmail, Outlook, Yahoo, iCloud, Zoho, or any server), with the sender account's app password.

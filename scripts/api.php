@@ -1,4 +1,17 @@
 <?php
+################################################################################
+# scripts/api.php - THE JSON API OF THE STATION
+#
+# PURPOSE:
+#   A small JSON API for other programs and the companion: the request path chooses the answer (the latest
+#   detections, the settings allowed, the station). No login for the reads, as the pages of an open station.
+#
+# DEPENDENCIES:
+#   - scripts/common.php
+#
+# USAGE:
+#   Referenced by homepage/index.php, scripts/lib/images.php
+################################################################################
 
 define('__ROOT__', dirname(dirname(__FILE__)));
 require_once(__ROOT__ . '/scripts/common.php');
@@ -8,32 +21,32 @@ $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 if ($requestMethod !== 'GET') {
-  sendResponse405();
+	sendResponse405();
 }
 
 if (preg_match('#^/api/v1/image/(\S+)$#', $requestUri, $matches)) {
-  $image_provider = new Wikipedia();
-  $sci_name = urldecode($matches[1]);
-  $result = $image_provider->get_image($sci_name);
+	$image_provider = new Wikipedia();
+	$sci_name = urldecode($matches[1]);
+	$result = $image_provider->get_image($sci_name);
 
-  if ($result == false) {
-    http_response_code(404);
-    echo "Error 404! No image found!";
-  } else {
-    http_response_code(200);
-    header('Content-Type: application/json');
-    echo json_encode([
-      "status" => "success",
-      "message" => "successfully image data from database",
-      "data" => $result
-    ]);
-  }
+	if ($result == false) {
+		http_response_code(404);
+		echo "Error 404! No image found!";
+	} else {
+		http_response_code(200);
+		header('Content-Type: application/json');
+		echo json_encode([
+			"status" => "success",
+			"message" => "successfully image data from database",
+			"data" => $result
+		]);
+	}
 } else {
-  http_response_code(404);
-  echo "Error 404! No route found!";
+	http_response_code(404);
+	echo "Error 404! No route found!";
 }
 
 function sendResponse405() {
-  http_response_code(405);
-  echo json_encode(["message" => "Method Not Allowed"]);
+	http_response_code(405);
+	echo json_encode(["message" => "Method Not Allowed"]);
 }

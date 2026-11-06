@@ -1,8 +1,22 @@
 <?php
-/* The danger zone commands on a screen of their own, as the update (owner 2026-10-26): ?start (POST, cmd =
- * clear_all_data.sh or factory_settings.sh) runs it detached from the web request (setsid: a restart of the web server
- * would end a request that waited for it), its output in state/web_danger.log; ?log&from=N answers what was added since
- * byte N and, at the end, the exit code (as status.php ?update=log). */
+################################################################################
+# scripts/danger_run.php - THE DANGER ZONE COMMANDS ON A SCREEN OF THEIR OWN, AS THE UPDATE
+#
+# PURPOSE:
+#   The danger zone commands on a screen of their own, as the update (owner 2026-10-26): ?start (POST, cmd =
+#   clear_all_data.sh or factory_settings.sh) runs it detached from the web request (setsid: a restart of the
+#   web server would end a request that waited for it), its output in state/web_danger.log; ?log&from=N
+#   answers what was added since byte N and, at the end, the exit code (as status.php ?update=log).
+#
+# DEPENDENCIES:
+#   - scripts/common.php
+#   - scripts/clear_all_data.sh
+#   - scripts/factory_settings.sh
+#
+# USAGE:
+#   Referenced by scripts/station_backup.php
+################################################################################
+
 require_once __DIR__ . '/common.php';
 ensure_authenticated(t('str_you_must_change_the_settings_help'));
 header('Content-Type: application/json');
@@ -11,15 +25,15 @@ $dir = BS_STATE;
 $log = $dir . '/web_danger.log';
 $mark = '__BIRDSUITE_DANGER_EXIT__';
 if (isset($_GET['start']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
-  $cmd = (string)($_POST['cmd'] ?? '');
-  if (!in_array($cmd, array('clear_all_data.sh', 'factory_settings.sh'), true)) { echo json_encode(array('ok' => false)); die(); }
-  $txt = (string)@file_get_contents($log);
-  if ($txt !== '' && strpos($txt, $mark) === false && filemtime($log) > time() - 1800) { echo json_encode(array('ok' => false, 'busy' => true)); die(); }
-  file_put_contents($log, '$ ' . $cmd . "\n");
-  shell_exec('setsid -f sh -c ' . escapeshellarg(escapeshellarg(BS_SCRIPTS . '/' . $cmd) . '; echo "' . $mark . ' $?"')
-    . ' >> ' . escapeshellarg($log) . ' 2>&1 < /dev/null');
-  echo json_encode(array('ok' => true));
-  die();
+	$cmd = (string)($_POST['cmd'] ?? '');
+	if (!in_array($cmd, array('clear_all_data.sh', 'factory_settings.sh'), true)) { echo json_encode(array('ok' => false)); die(); }
+	$txt = (string)@file_get_contents($log);
+	if ($txt !== '' && strpos($txt, $mark) === false && filemtime($log) > time() - 1800) { echo json_encode(array('ok' => false, 'busy' => true)); die(); }
+	file_put_contents($log, '$ ' . $cmd . "\n");
+	shell_exec('setsid -f sh -c ' . escapeshellarg(escapeshellarg(BS_SCRIPTS . '/' . $cmd) . '; echo "' . $mark . ' $?"')
+		. ' >> ' . escapeshellarg($log) . ' 2>&1 < /dev/null');
+	echo json_encode(array('ok' => true));
+	die();
 }
 $from = max(0, intval($_GET['from'] ?? 0));
 $txt = (string)@file_get_contents($log);

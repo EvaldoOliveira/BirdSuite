@@ -1,4 +1,23 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/web_password_hash.py - THE WEB PASSWORD IS KEPT ONLY AS A HASH
+#
+# PURPOSE:
+#   The web password is kept only as a hash (2026-11-02 release run 4, SEC-15): a CADDY_PWD in BirdSuite.conf
+#   that is still plain text (an older station, or the first-run answer written before PHP was there) is
+#   replaced by its bcrypt hash ($2b$, read by Caddy and by PHP's password_verify). Empty = the factory
+#   password, left empty. The plain value never leaves this process (passed to php on stdin, not on the
+#   command line). Run by the installer and every update.
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#
+# USAGE:
+#   python3 scripts/web_password_hash.py <arguments> (see main)
+#   Referenced by scripts/install_config.sh, scripts/install_services.sh, scripts/lib/auth.php,
+#   scripts/update_birdnet_snippets.sh, scripts/update_caddyfile.sh
+################################################################################
+
 """The web password is kept only as a hash (2026-11-02 release run 4, SEC-15): a CADDY_PWD in BirdSuite.conf that is
 still plain text (an older station, or the first-run answer written before PHP was there) is replaced by its bcrypt
 hash ($2b$, read by Caddy and by PHP's password_verify). Empty = the factory password, left empty. The plain value

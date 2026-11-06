@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
-
-# This scripts allows to change the identification of a Birdnet-pi detection
+################################################################################
+# scripts/birdnet_changeidentification.sh - CHANGE OF THE IDENTIFICATION OF A DETECTION
+#
+# PURPOSE:
+#   This scripts allows to change the identification of a Birdnet-pi detection
+#
+# DEPENDENCIES:
+#   - scripts/paths.sh
+#   - tests/helpers.py
+#
+# USAGE:
+#   bash scripts/birdnet_changeidentification.sh
+#   Referenced by homepage/static/review-player.js, scripts/play.php
+################################################################################
 
 #################
 # SET VARIABLES #
@@ -34,9 +46,9 @@ if [ ! -f "$DB_FILE" ]; then echo "$DB_FILE doesn't exist, exiting" && exit 1; f
 
 # Check if inputs are valid
 if [[ "$OLDNAME" != *"."* ]]; then
-  echo "The first argument should be a filename finishing by the file extension!"
-  echo "Instead, it is : $OLDNAME"
-  exit 1
+	echo "The first argument should be a filename finishing by the file extension!"
+	echo "Instead, it is : $OLDNAME"
+	exit 1
 fi
 
 # the species is its scientific name only (owner 2026-11-05, one index only): the part before the '_' of a
@@ -45,8 +57,8 @@ NEWNAME_sciname="${NEWNAME%%_*}"
 
 # Check if the species is a label of the model (the part before the '_' of a $LABELS_FILE line)
 if ! cut -d'_' -f1 "$LABELS_FILE" | grep -qxF -- "$NEWNAME_sciname"; then
-    echo "Error: $NEWNAME_sciname not found in $LABELS_FILE"
-    exit 1
+		echo "Error: $NEWNAME_sciname not found in $LABELS_FILE"
+		exit 1
 fi
 
 ##################
@@ -67,14 +79,14 @@ SQL() { sqlite3 -bail -cmd '.timeout 10000' "$DB_FILE" "$@"; }
 IFS='|' read -r OLDNAME_sciname OLDNAME_date OLDNAME_confidence < <(SQL "SELECT Sci_Name, Date, Confidence FROM $DETECTIONS_TABLE WHERE File_Name = '$OLDNAME_SQL' LIMIT 1;")
 
 if [[ -z "$OLDNAME_sciname" ]]; then
-    echo "Error: No line matching $OLDNAME in $DB_FILE"
-    exit 1
+		echo "Error: No line matching $OLDNAME in $DB_FILE"
+		exit 1
 fi
 
 # Check if the species is the same as before
 if [[ "$OLDNAME_sciname" == "$NEWNAME_sciname" ]]; then
-    echo "Error: $OLDNAME is already $NEWNAME_sciname"
-    exit 1
+		echo "Error: $OLDNAME is already $NEWNAME_sciname"
+		exit 1
 fi
 
 # Replace spaces with underscores, and ' with "" (same logic as helpers.py name_safe)
@@ -101,9 +113,9 @@ NEWNAME_filename="${NEWNAME_sciname_safe}${OLD_rest}"
 # sqlite3 rolls it back), and a failed move puts the line back.
 FILE_PATH="$BS_BY_DATE/$OLDNAME_date/$OLD_folder/$OLDNAME"
 if [[ ! -f $FILE_PATH ]]; then
-    # nothing renamed: leave the database as it is (owner 2026-10-22: the line was renamed without its clip)
-    echo "Error: File $FILE_PATH does not exist"
-    exit 1
+		# nothing renamed: leave the database as it is (owner 2026-10-22: the line was renamed without its clip)
+		echo "Error: File $FILE_PATH does not exist"
+		exit 1
 fi
 
 # Escape single quotes for SQL by doubling them
@@ -115,14 +127,14 @@ OLDNAME_sciname_SQL="${OLDNAME_sciname//\'/\'\'}"
 
 # one_row: exactly one line changed, or the transaction is rolled back
 db_change() {
-    local out
-    out="$(SQL "CREATE TEMP TABLE one_row (n INTEGER CHECK (n = 1)); BEGIN IMMEDIATE; $1; INSERT INTO one_row SELECT changes(); COMMIT; SELECT n FROM one_row;" 2>&1)"
-    [[ $? -eq 0 && "$out" == "1" ]] || { printf '%s' "$out" | tr '\n' ' '; return 1; }
+		local out
+		out="$(SQL "CREATE TEMP TABLE one_row (n INTEGER CHECK (n = 1)); BEGIN IMMEDIATE; $1; INSERT INTO one_row SELECT changes(); COMMIT; SELECT n FROM one_row;" 2>&1)"
+		[[ $? -eq 0 && "$out" == "1" ]] || { printf '%s' "$out" | tr '\n' ' '; return 1; }
 }
 
 if ! DB_ERR="$(db_change "UPDATE $DETECTIONS_TABLE SET Sci_Name = '$NEWNAME_sciname_SQL', Confidence = '0', File_Name = '$NEWNAME_filename_SQL' WHERE File_Name = '$OLDNAME_SQL'")"; then
-    echo "Error: database line of $OLDNAME not changed (nothing was moved): $DB_ERR"
-    exit 1
+		echo "Error: database line of $OLDNAME not changed (nothing was moved): $DB_ERR"
+		exit 1
 fi
 [[ "$OUTPUT_TYPE" == "debug" ]] && echo "Database entry changed"
 
@@ -133,15 +145,15 @@ fi
 NEW_DIR="$BS_BY_DATE/$OLDNAME_date/$NEWNAME_sciname_safe"
 MOVED=()
 move_failed() {
-    # the files already moved go back, then the line (owner 2026-11-06)
-    local f
-    for f in "${MOVED[@]}"; do mv -f "$NEW_DIR/$NEWNAME_filename${f#"$FILE_PATH"}" "$f" 2>/dev/null; done
-    if ! DB_ERR="$(db_change "UPDATE $DETECTIONS_TABLE SET Sci_Name = '$OLDNAME_sciname_SQL', Confidence = $OLDNAME_confidence, File_Name = '$OLDNAME_SQL' WHERE File_Name = '$NEWNAME_filename_SQL'")"; then
-        echo "Error: $1, and the database line could not be put back: $DB_ERR"
-    else
-        echo "Error: $1 (nothing was changed)"
-    fi
-    exit 1
+		# the files already moved go back, then the line (owner 2026-11-06)
+		local f
+		for f in "${MOVED[@]}"; do mv -f "$NEW_DIR/$NEWNAME_filename${f#"$FILE_PATH"}" "$f" 2>/dev/null; done
+		if ! DB_ERR="$(db_change "UPDATE $DETECTIONS_TABLE SET Sci_Name = '$OLDNAME_sciname_SQL', Confidence = $OLDNAME_confidence, File_Name = '$OLDNAME_SQL' WHERE File_Name = '$NEWNAME_filename_SQL'")"; then
+				echo "Error: $1, and the database line could not be put back: $DB_ERR"
+		else
+				echo "Error: $1 (nothing was changed)"
+		fi
+		exit 1
 }
 
 # Ensure the new directory exists
@@ -151,10 +163,10 @@ mkdir -p "$NEW_DIR" || move_failed "folder $NEW_DIR not created"
 mv "$FILE_PATH" "$NEW_DIR/$NEWNAME_filename" || move_failed "file $FILE_PATH not moved"
 MOVED+=("$FILE_PATH")
 for ext in png jpg; do
-    if [[ -f "$FILE_PATH.$ext" ]]; then
-        mv "$FILE_PATH.$ext" "$NEW_DIR/$NEWNAME_filename.$ext" || move_failed "file $FILE_PATH.$ext not moved"
-        MOVED+=("$FILE_PATH.$ext")
-    fi
+		if [[ -f "$FILE_PATH.$ext" ]]; then
+				mv "$FILE_PATH.$ext" "$NEW_DIR/$NEWNAME_filename.$ext" || move_failed "file $FILE_PATH.$ext not moved"
+				MOVED+=("$FILE_PATH.$ext")
+		fi
 done
 
 [[ "$OUTPUT_TYPE" == "debug" ]] && echo "Files moved!"

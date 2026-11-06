@@ -1,3 +1,20 @@
+################################################################################
+# scripts/spectro_archive.py - LONG-TERM STORAGE OF THE CLIPS' SPECTROGRAMS AS JPEG
+#
+# PURPOSE:
+#   Long-term storage of the clips' spectrograms as JPEG (owner 2026-10-22).
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/utils/reporting.py
+#   - scripts/disk_species_clean.sh
+#
+# USAGE:
+#   python3 scripts/spectro_archive.py <arguments> (see main)
+#   Referenced by homepage/static/custom-audio-player.js, scripts/disk_species_clean.sh,
+#   scripts/lib/clips.php, scripts/spectrogram_thumb.php, scripts/utils/reporting.py
+################################################################################
+
 """Long-term storage of the clips' spectrograms as JPEG (owner 2026-10-22).
 
 The app draws every clip's spectrogram as <clip>.png (utils/reporting.py) and keeps it so while the day runs.

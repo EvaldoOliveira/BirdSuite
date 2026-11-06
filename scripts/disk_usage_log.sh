@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
-# Disk used day by day (US-133, owner 2026-11-01): one line per day in state/disk-usage.log,
-#   YYYY-MM-DD <lowest used> <highest used> <disk size>   (bytes, the station's own disk: the root filesystem)
-# The lowest is the day's value right after the nightly purge, the highest the one right before it. Called by the
-# nightly purge (disk_species_clean.sh: before and after) and by disk_check.sh every 5 minutes, which also catches a
-# threshold purge, an import or a night the station was off at 02:00. The day's line is updated in place; 90 days kept.
+################################################################################
+# scripts/disk_usage_log.sh - DISK USED DAY BY DAY
+#
+# PURPOSE:
+#   Disk used day by day (US-133, owner 2026-11-01): one line per day in state/disk-usage.log,
+#     YYYY-MM-DD <lowest used> <highest used> <disk size>   (bytes, the station's own disk: the root filesystem)
+#   The lowest is the day's value right after the nightly purge, the highest the one right before it. Called by the
+#   nightly purge (disk_species_clean.sh: before and after) and by disk_check.sh every 5 minutes, which also catches a
+#   threshold purge, an import or a night the station was off at 02:00. The day's line is updated in place; 90 days kept.
+#
+# DEPENDENCIES:
+#   - scripts/disk_species_clean.sh
+#   - scripts/disk_check.sh
+#   - scripts/paths.sh
+#
+# USAGE:
+#   bash scripts/disk_usage_log.sh
+#   Referenced by scripts/disk_check.sh, scripts/disk_species_clean.sh
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 log_file="$BS_STATE/disk-usage.log"
 keep_days=90

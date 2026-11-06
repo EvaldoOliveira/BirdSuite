@@ -1,3 +1,25 @@
+################################################################################
+# scripts/utils/analysis.py - THE ANALYSIS ENGINE
+#
+# PURPOSE:
+#   The analysis engine: loads the model(s), splits a recording into chunks, runs the inference, filters human
+#   voice, applies the settings (reloaded when the configuration changes) and returns the detections; used by
+#   birdnet_analysis.py.
+#
+# DEPENDENCIES:
+#   - scripts/utils/classes.py
+#   - scripts/utils/daylight.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/models.py
+#   - scripts/utils/shadow.py
+#   - scripts/select_species_list.py
+#
+# USAGE:
+#   python3 scripts/utils/analysis.py <arguments> (see main)
+#   Referenced by scripts/ebird_report.py, scripts/model_page.php, scripts/select_species_list.py,
+#   scripts/species_tools.php
+################################################################################
+
 import datetime
 import json
 import logging

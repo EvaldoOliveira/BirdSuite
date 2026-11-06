@@ -1,4 +1,23 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/field_daemon.py - FIELD SERVICE
+#
+# PURPOSE:
+#   Field service (US-120, owner 2026-10-20) — the field service, as root. Decides when the station's own WiFi
+#   is on:
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/field_net.py
+#   - scripts/utils/notify_queue.py
+#   - scripts/mic_state.sh
+#
+# USAGE:
+#   python3 scripts/field_daemon.py <arguments> (see main)
+#   Referenced by scripts/https_temp.php, scripts/network.php, scripts/update_caddyfile.sh,
+#   scripts/utils/notify_queue.py, templates/units/SVC_FIELD.service
+################################################################################
+
 """Field service (US-120, owner 2026-10-20) — the field service, as root. Decides when the station's own WiFi is on:
 
 - With the cable connected the WiFi stays off (owner 2026-10-25: two addresses on one network, the site stalled on the

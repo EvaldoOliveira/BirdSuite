@@ -1,3 +1,24 @@
+################################################################################
+# scripts/clip_alternatives.py - WHICH BIRD WAS IT? RE-ANALYSES ONE EXTRACTED DETECTION CLIP WITH THE
+#
+# PURPOSE:
+#   Which bird was it? Re-analyses one extracted detection clip with the station's model and prints, as JSON,
+#   the species the model scored highest in it (the review player offers them when a detection is "Not this
+#   bird").
+#
+# DEPENDENCIES:
+#   - scripts/utils/analysis.py
+#   - scripts/utils/classes.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/models.py
+#   - scripts/utils/rarity.py
+#   - scripts/review_worker.py
+#
+# USAGE:
+#   python3 scripts/clip_alternatives.py <arguments> (see main)
+#   Referenced by homepage/static/review-player.js, scripts/play.php, scripts/review_worker.py
+################################################################################
+
 """Which bird was it? Re-analyses one extracted detection clip with the station's model and prints, as JSON, the
 species the model scored highest in it (the review player offers them when a detection is "Not this bird").
 

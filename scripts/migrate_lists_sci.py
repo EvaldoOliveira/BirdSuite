@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/migrate_lists_sci.py - THE SPECIES LISTS IN ONE SCIENTIFIC NAME PER LINE
+#
+# PURPOSE:
+#   The species lists in one scientific name per line (owner 2026-11-05, one index only, US-59).
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#
+# USAGE:
+#   python3 scripts/migrate_lists_sci.py <arguments> (see main)
+#   Referenced by scripts/update_birdnet_snippets.sh
+################################################################################
+
 """The species lists in one scientific name per line (owner 2026-11-05, one index only, US-59).
 
 A list made before that day holds "Scientific name_Common name" lines; the analysis and the pages read them by the part

@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
-# This script removes all data that has been collected. It is tantamount to
-# starting all data-collection from scratch. Only run this if you are sure
-# you are okay will losing all the data that you've collected and processed
-# so far.
+################################################################################
+# scripts/clear_all_data.sh - REMOVAL OF ALL COLLECTED DATA
+#
+# PURPOSE:
+#   This script removes all data that has been collected. It is tantamount to starting all data-collection
+#   from scratch. Only run this if you are sure you are okay will losing all the data that you've collected
+#   and processed so far.
+#
+# DEPENDENCIES:
+#   - scripts/paths.sh
+#   - scripts/createdb.sh
+#   - scripts/restart_services.sh
+#
+# USAGE:
+#   bash scripts/clear_all_data.sh
+#   Referenced by homepage/views.php, scripts/danger_run.php, scripts/station_backup.php
+################################################################################
+
 set -x
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 USER=${BIRDNET_USER}

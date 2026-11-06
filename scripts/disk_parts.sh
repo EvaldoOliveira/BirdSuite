@@ -1,11 +1,27 @@
 #!/usr/bin/env bash
-# What fills the station's card, day by day (US-133, owner 2026-11-01): one line per day in state/disk-parts.log,
-#   YYYY-MM-DD <data folder> <program folder> <other home> <system logs> <other root> <other partitions> <card size> <raw recordings>   (bytes)
-# the data folder (BS_RECS), the program folder (BS_PROG) and the raw recordings (every folder of the microphone groups) are their folders with every subfolder;
-# other home = the home folder without them; system logs = /var/log; other root = the rest of the root filesystem (df used minus the above; mounted drives
-# never count); other partitions = the card's other partitions (used when mounted, their size when not). Their sum is
-# the card's total. Measured after the nightly purge (disk_species_clean.sh), the day's lowest; the day's line is
-# replaced, 90 days kept.
+################################################################################
+# scripts/disk_parts.sh - WHAT FILLS THE STATION'S CARD, DAY BY DAY
+#
+# PURPOSE:
+#   What fills the station's card, day by day (US-133, owner 2026-11-01): one line per day in state/disk-parts.log,
+#     YYYY-MM-DD <data folder> <program folder> <other home> <system logs> <other root> <other partitions> <card size> <raw recordings>   (bytes)
+#   the data folder (BS_RECS), the program folder (BS_PROG) and the raw recordings (every folder of the microphone groups) are their folders with every subfolder;
+#   other home = the home folder without them; system logs = /var/log; other root = the rest of the root filesystem (df used minus the above; mounted drives
+#   never count); other partitions = the card's other partitions (used when mounted, their size when not). Their sum is
+#   the card's total. Measured after the nightly purge (disk_species_clean.sh), the day's lowest; the day's line is
+#   replaced, 90 days kept.
+#
+# DEPENDENCIES:
+#   - scripts/disk_species_clean.sh
+#   - scripts/paths.sh
+#   - scripts/raw_groups.py
+#   - birdsuite-root (sudo helper)
+#
+# USAGE:
+#   bash scripts/disk_parts.sh
+#   Referenced by scripts/disk_space.php, scripts/disk_species_clean.sh
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 log_file="$BS_STATE/disk-parts.log"
 keep_days=90
@@ -32,13 +48,13 @@ root_src=$(findmnt -no SOURCE /)
 disk=$(lsblk -no PKNAME "$root_src" 2>/dev/null | head -n1)
 parts=0; card=$root_used
 if [ -n "$disk" ]; then
-  card=$(lsblk -bdno SIZE "/dev/$disk")
-  while read -r name size mnt; do
-    [ "/dev/$name" = "$root_src" ] && continue
-    if [ -n "$mnt" ] && [ "$mnt" != "[SWAP]" ]; then used=$(df -B1 --output=used "$mnt" 2>/dev/null | tail -n1 | tr -d ' ')
-    else used=$size; fi
-    parts=$(( parts + ${used:-0} ))
-  done < <(lsblk -lnbo NAME,TYPE,SIZE,MOUNTPOINT "/dev/$disk" | awk '$2 == "part" {print $1, $3, $4}')
+	card=$(lsblk -bdno SIZE "/dev/$disk")
+	while read -r name size mnt; do
+		[ "/dev/$name" = "$root_src" ] && continue
+		if [ -n "$mnt" ] && [ "$mnt" != "[SWAP]" ]; then used=$(df -B1 --output=used "$mnt" 2>/dev/null | tail -n1 | tr -d ' ')
+		else used=$size; fi
+		parts=$(( parts + ${used:-0} ))
+	done < <(lsblk -lnbo NAME,TYPE,SIZE,MOUNTPOINT "/dev/$disk" | awk '$2 == "part" {print $1, $3, $4}')
 fi
 
 today=$(date +%F)
@@ -48,6 +64,6 @@ flock -w 30 9 || exit 0
 touch "$log_file" || exit 0
 tmp=$(mktemp "$BS_STATE/.disk-parts.XXXXXX") || exit 0
 { awk -v d="$today" -v old="$oldest" '$1 >= old && $1 != d && NF >= 8' "$log_file"
-  echo "$today $songs $suite $home_other $varlog $root_other $parts $card $raw"; } | sort > "$tmp"
+	echo "$today $songs $suite $home_other $varlog $root_other $parts $card $raw"; } | sort > "$tmp"
 chmod 644 "$tmp"
 mv -f "$tmp" "$log_file"

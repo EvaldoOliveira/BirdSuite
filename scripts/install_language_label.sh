@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+################################################################################
+# scripts/install_language_label.sh - THE LABEL FILE OF THE COMMON-NAME LANGUAGE
+#
+# PURPOSE:
+#   Installs the label file of the chosen common-name language into the model folder (utils/maintainer.py),
+#   run at the install and when the language changes.
+#
+# DEPENDENCIES:
+#   - scripts/paths.sh
+#   - scripts/select_species_list.py
+#
+# USAGE:
+#   bash scripts/install_language_label.sh
+#   Referenced by scripts/backup_data.sh, scripts/install_birdnet.sh, scripts/model_page.php,
+#   scripts/setup_wizard.php
+################################################################################
 
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 cd "$BS_SCRIPTS"
@@ -9,8 +25,8 @@ cd "$BS_SCRIPTS"
 # install, 2026-10-07). Fetch the model first, with the station's Python environment.
 venv_python=$BS_PYTHON
 if [ -x "$venv_python" ]; then
-  "$venv_python" -c 'from utils.models import get_model; get_model()' > /dev/null 2>&1 \
-    || echo "Could not prepare the model ${MODEL} (no internet?) - the label file may be incomplete"
+	"$venv_python" -c 'from utils.models import get_model; get_model()' > /dev/null 2>&1 \
+		|| echo "Could not prepare the model ${MODEL} (no internet?) - the label file may be incomplete"
 fi
 
 python3 -c 'from utils.helpers import set_label_file; set_label_file()'

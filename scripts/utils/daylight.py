@@ -1,3 +1,16 @@
+################################################################################
+# scripts/utils/daylight.py - IS IT FULL DAYLIGHT AT THE STATION? FOR THE SPECIES THAT ONLY SING AT
+#
+# PURPOSE:
+#   Is it full daylight at the station? For the species that only sing at night (owner 2026-10-30, US-131).
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   Called as scripts/utils/daylight.py
+################################################################################
+
 """Is it full daylight at the station? For the species that only sing at night (owner 2026-10-30, US-131)."""
 import datetime
 

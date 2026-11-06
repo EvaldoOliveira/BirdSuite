@@ -1,3 +1,23 @@
+################################################################################
+# scripts/clip_dispose.py - WHAT BECOMES OF A CLIP THE STATION REMOVES BY ITSELF
+#
+# PURPOSE:
+#   What becomes of a clip the station removes by itself (US-128, owner 2026-10-29).
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#   - scripts/utils/core.py
+#   - scripts/utils/notifications.py
+#   - scripts/disk_check.sh
+#   - scripts/disk_species_clean.sh
+#   - scripts/daily_cap.py
+#
+# USAGE:
+#   python3 scripts/clip_dispose.py <arguments> (see main)
+#   Referenced by scripts/daily_cap.py, scripts/disk_check.sh, scripts/disk_species_clean.sh,
+#   scripts/doctor.php, scripts/location_data.php
+################################################################################
+
 """What becomes of a clip the station removes by itself (US-128, owner 2026-10-29).
 
 The full-disk purge (disk_check.sh), the per-species limit (disk_species_clean.sh) and the daily cap (daily_cap.py)

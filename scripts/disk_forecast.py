@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/disk_forecast.py - DISK SIZE NEEDED IN THE LONG TERM
+#
+# PURPOSE:
+#   Disk size needed in the long term (US-133, owner 2026-11-01): what the station's disk will hold once the
+#   purge rules cap every species, so the owner can choose an SSD or see how much stays empty. Written to
+#   state/disk-forecast.json after the nightly purge (disk_species_clean.sh) and shown on System > Status with
+#   its premises.
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/disk_species_clean.sh
+#
+# USAGE:
+#   python3 scripts/disk_forecast.py <arguments> (see main)
+#   Referenced by homepage/static/disk-sim.js, scripts/disk_space.php, scripts/disk_species_clean.sh
+################################################################################
+
 """Disk size needed in the long term (US-133, owner 2026-11-01): what the station's disk will hold once the purge rules
 cap every species, so the owner can choose an SSD or see how much stays empty. Written to state/disk-forecast.json after
 the nightly purge (disk_species_clean.sh) and shown on System > Status with its premises.

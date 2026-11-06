@@ -1,4 +1,25 @@
 #!/usr/bin/env bash
+################################################################################
+# scripts/update_caddyfile.sh - THE WEB SERVER CONFIGURATION (CADDYFILE)
+#
+# PURPOSE:
+#   Writes the Caddyfile from the settings (the login on or off, the users, the site address, the trusted LAN)
+#   and reloads Caddy; run by birdsuite-root caddyfile after a save of Station › Access.
+#
+# DEPENDENCIES:
+#   - scripts/paths.sh
+#   - scripts/update_birdnet_snippets.sh
+#   - scripts/web_password_hash.py
+#   - scripts/settings_history.py
+#   - scripts/field_daemon.py
+#   - birdsuite-root (sudo helper)
+#   - birdsuite-svc (sudo helper)
+#
+# USAGE:
+#   bash scripts/update_caddyfile.sh
+#   Referenced by scripts/install_services.sh, scripts/update_birdnet_snippets.sh
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 my_dir=$BS_SCRIPTS
 set -x
@@ -6,10 +27,10 @@ set -x
 # for birdsuite-root caddyfile to check and install; unset: the installer / updater (root) writes and reloads it itself
 OUT=${CADDYFILE_OUT:-$BS_CADDYFILE}
 if [ -z "${CADDYFILE_OUT:-}" ]; then
-  [ -d "$(dirname "$BS_CADDYFILE")" ] || mkdir "$(dirname "$BS_CADDYFILE")"
-  if [ -f "$BS_CADDYFILE" ];then
-    cp "$BS_CADDYFILE" "$BS_CADDYFILE.original"
-  fi
+	[ -d "$(dirname "$BS_CADDYFILE")" ] || mkdir "$(dirname "$BS_CADDYFILE")"
+	if [ -f "$BS_CADDYFILE" ];then
+		cp "$BS_CADDYFILE" "$BS_CADDYFILE.original"
+	fi
 fi
 # Written into both variants (2026-10-23 test run; update_birdnet_snippets.sh writes the file again when it lacks them):
 # - security headers: no MIME sniffing, no referrer to other sites, framed only by the station's own pages (the menu
@@ -51,9 +72,9 @@ AUTH=
 # password, or a plain value left by an older station, is hashed here
 { set +x; } 2>/dev/null # neither the plaintext nor the hash must reach a trace
 if [[ ${CADDY_PWD:-} =~ ^\$2[aby]\$ ]]; then
-  HASHWORD=$CADDY_PWD
+	HASHWORD=$CADDY_PWD
 else
-  HASHWORD=$(caddy hash-password --plaintext "${CADDY_PWD:-$BS_WEB_PASSWORD_DEFAULT}")
+	HASHWORD=$(caddy hash-password --plaintext "${CADDY_PWD:-$BS_WEB_PASSWORD_DEFAULT}")
 fi
 set -x
 WEB_USER=${CADDY_USER:-birdsuite}
@@ -62,11 +83,11 @@ WEB_USER=${CADDY_USER:-birdsuite}
 # bcrypt hash; the file is read, never sourced; a name is letters and digits, a hash only bcrypt characters)
 CREDS="    ${WEB_USER} ${HASHWORD}"
 if [ -r "$BS_CONFIG/users.json" ]; then
-  while IFS=' ' read -r u h; do
-    [[ $u =~ ^[A-Za-z0-9]{1,32}$ ]] && [[ $h =~ ^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$ ]] && [ "$u" != "$WEB_USER" ] || continue
-    CREDS="$CREDS
+	while IFS=' ' read -r u h; do
+		[[ $u =~ ^[A-Za-z0-9]{1,32}$ ]] && [[ $h =~ ^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$ ]] && [ "$u" != "$WEB_USER" ] || continue
+		CREDS="$CREDS
     $u $h"
-  done < <(python3 -c 'import json,sys
+	done < <(python3 -c 'import json,sys
 d=json.load(open(sys.argv[1]))
 for e in d.get("users", []):
     if not e.get("main") and e.get("hash"): print(e.get("name", ""), e["hash"])' "$BS_CONFIG/users.json" 2>/dev/null)
@@ -84,11 +105,11 @@ NOPWD=
 # the factory one stored as its hash counts as none (a new install writes it so); checked by PHP's bcrypt, the values
 # passed in the environment, never on a command line
 pwd_is_factory() {
-  [ -z "${CADDY_PWD:-}" ] && return 0
-  BS_H=$CADDY_PWD BS_F=$BS_WEB_PASSWORD_DEFAULT php -r 'exit(password_verify(getenv("BS_F"), getenv("BS_H")) ? 0 : 1);' 2> /dev/null
+	[ -z "${CADDY_PWD:-}" ] && return 0
+	BS_H=$CADDY_PWD BS_F=$BS_WEB_PASSWORD_DEFAULT php -r 'exit(password_verify(getenv("BS_F"), getenv("BS_H")) ? 0 : 1);' 2> /dev/null
 }
 if [ "${WEB_LOGIN:-on}" != off ] && pwd_is_factory; then
-  NOPWD="  @nopwd {
+	NOPWD="  @nopwd {
     not remote_ip 127.0.0.1 ::1
     path /terminal* /files* /scripts/adminer.php /phpsysinfo/*
   }
@@ -96,10 +117,10 @@ if [ "${WEB_LOGIN:-on}" != off ] && pwd_is_factory; then
 "
 fi
 case "${WEB_LOGIN:-on}" in
-  off) AUTH= ;;
-  *)
-    if [ "${LAN_TRUST:-everyone}" = household ]; then
-      AUTH="  @remote not remote_ip 127.0.0.1 ::1 private_ranges
+	off) AUTH= ;;
+	*)
+		if [ "${LAN_TRUST:-everyone}" = household ]; then
+			AUTH="  @remote not remote_ip 127.0.0.1 ::1 private_ranges
   basicauth @remote {
 ${CREDS}
   }
@@ -111,9 +132,9 @@ ${CREDS}
 ${CREDS}
   }
 "
-    else
-      # the page of a forgotten password opens from a private network without the login (US-53, scripts/password_reset.php)
-      AUTH="  @remote {
+		else
+			# the page of a forgotten password opens from a private network without the login (US-53, scripts/password_reset.php)
+			AUTH="  @remote {
     not remote_ip 127.0.0.1 ::1
     not {
       remote_ip private_ranges
@@ -124,8 +145,8 @@ ${CREDS}
 ${CREDS}
   }
 "
-    fi
-    ;;
+		fi
+		;;
 esac
 set -x
 # the access log (owner 2026-10-31): the origin of each settings change in state/settings_history.log
@@ -164,10 +185,10 @@ EOF
 # station, since the station's own CA is trusted by nobody else.
 HTTPS_MODE=off
 if [ "${HTTPS_ALWAYS:-0}" = 1 ]; then
-  HTTPS_MODE=always
+	HTTPS_MODE=always
 else
-  until=$(cat "$BS_STATE/https_temp" 2>/dev/null)
-  [[ "$until" =~ ^[0-9]+$ ]] && [ "$until" -gt "$(date +%s)" ] && HTTPS_MODE=temp
+	until=$(cat "$BS_STATE/https_temp" 2>/dev/null)
+	[[ "$until" =~ ^[0-9]+$ ]] && [ "$until" -gt "$(date +%s)" ] && HTTPS_MODE=temp
 fi
 HTTP_BODY=$BODY
 [ "$HTTPS_MODE" = always ] && HTTP_BODY='  redir https://{host}{uri} 308'
@@ -210,18 +231,18 @@ ${BODY}
 }
 EOF
 if [ "$HTTPS_MODE" = off ]; then
-  mv -f "$OUT.http" "$OUT"; rm -f "$OUT.https"
+	mv -f "$OUT.http" "$OUT"; rm -f "$OUT.https"
 elif caddy validate --adapter caddyfile --config "$OUT.check" > /dev/null 2>&1; then
-  mv -f "$OUT.https" "$OUT"; rm -f "$OUT.http"
+	mv -f "$OUT.https" "$OUT"; rm -f "$OUT.http"
 else
-  echo "update_caddyfile.sh: Caddy refused the https part - the pages stay on http only" >&2
-  mv -f "$OUT.http" "$OUT"; rm -f "$OUT.https"
+	echo "update_caddyfile.sh: Caddy refused the https part - the pages stay on http only" >&2
+	mv -f "$OUT.http" "$OUT"; rm -f "$OUT.https"
 fi
 rm -f "$OUT.check"
 
 if [ -n "${CADDYFILE_OUT:-}" ]; then
-  caddy fmt --overwrite "$OUT"
+	caddy fmt --overwrite "$OUT"
 else
-  sudo caddy fmt --overwrite "$OUT"
-  sudo systemctl reload caddy
+	sudo caddy fmt --overwrite "$OUT"
+	sudo systemctl reload caddy
 fi

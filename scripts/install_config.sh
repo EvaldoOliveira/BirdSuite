@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
-# Creates and installs config/BirdSuite.conf, the station settings (owner 2026-10-22: no copy in /etc)
+################################################################################
+# scripts/install_config.sh - CREATES AND INSTALLS CONFIG/BIRDSUITE
+#
+# PURPOSE:
+#   Creates and installs config/BirdSuite.conf, the station settings (owner 2026-10-22: no copy in /etc)
+#
+# DEPENDENCIES:
+#   - scripts/install_firstrun.sh
+#   - scripts/core.sh
+#   - scripts/web_password_hash.py
+#   - scripts/install_audio.sh
+#   - scripts/field_net.py
+#   - scripts/paths.sh
+#
+# USAGE:
+#   bash scripts/install_config.sh
+#   Referenced by newinstaller.sh, scripts/install_birdnet.sh, scripts/install_firstrun.sh
+################################################################################
+
 set -x # Uncomment to enable debugging
 set -e
 trap 'exit 1' SIGINT SIGHUP
@@ -14,16 +32,16 @@ birdnet_conf=$BS_CONF
 # Retrieve latitude and longitude from web
 json=$(curl -s4 --max-time 10 http://ip-api.com/json || true)
 if [ -n "$json" ] && [ "$(echo "$json" | jq -r .status)" = "success" ]; then
-  LATITUDE=$(echo "$json" | jq .lat)
-  LONGITUDE=$(echo "$json" | jq .lon)
+	LATITUDE=$(echo "$json" | jq .lat)
+	LONGITUDE=$(echo "$json" | jq .lon)
 else
-  echo -e "\033[33mCouldn't set latitude and longitude automatically, you will need to do this manually from the web interface by navigating to Settings -> Locations.\033[0m"
-  LATITUDE=0.0000
-  LONGITUDE=0.0000
+	echo -e "\033[33mCouldn't set latitude and longitude automatically, you will need to do this manually from the web interface by navigating to Settings -> Locations.\033[0m"
+	LATITUDE=0.0000
+	LONGITUDE=0.0000
 fi
 
 install_config() {
-  cat << EOF > $birdnet_conf
+	cat << EOF > $birdnet_conf
 ################################################################################
 #                    Configuration settings for BirdSuite                     #
 ################################################################################
@@ -167,57 +185,57 @@ THIS_RUN=
 #   of the first run; change them in the web interface                           #
 ################################################################################
 EOF
-  # US-121 (2026-10-20): the behaviour settings come from factory_defaults.conf, the single file of defaults (its header
-  # banner left out), then the first-run answers replace their keys
-  awk 'BEGIN { banner = 0 } banner < 3 && /^#####/ { banner++; next } banner >= 3' $BS_DEFAULTS >> $birdnet_conf
-  set_default() { [ -n "$2" ] && sed -i "s|^$1=.*|$1=$2|" $birdnet_conf; return 0; }
-  set_default MODEL "${FR_MODEL}"
-  set_default SF_THRESH "${FR_SF_THRESH}"
-  set_default OVERLAP "${FR_OVERLAP}"
-  set_default CONFIDENCE "${FR_CONFIDENCE}"
-  set_default SENSITIVITY "${FR_SENSITIVITY}"
-  set_default MULTI_LOCATION "${FR_MULTI_LOCATION}"
-  set_default MULTI_STATION "${FR_MULTI_STATION}"
-  # the fleet seed (US-58): level, preset, context, access, then the profile's settings
-  set_default UI_PRESET "${FR_UI_PRESET:-}"
-  set_default UI_LEVEL "${FR_UI_LEVEL:-}"
-  set_default UI_CONTEXT "${FR_UI_CONTEXT:-}"
-  set_default LAN_TRUST "${FR_LAN_TRUST:-}"
-  set_default WEB_LOGIN "${FR_WEB_LOGIN:-}"
-  local kv
-  for kv in "${FR_PROFILE[@]}"; do set_default "${kv%%=*}" "${kv#*=}"; done
-  return 0
+	# US-121 (2026-10-20): the behaviour settings come from factory_defaults.conf, the single file of defaults (its header
+	# banner left out), then the first-run answers replace their keys
+	awk 'BEGIN { banner = 0 } banner < 3 && /^#####/ { banner++; next } banner >= 3' $BS_DEFAULTS >> $birdnet_conf
+	set_default() { [ -n "$2" ] && sed -i "s|^$1=.*|$1=$2|" $birdnet_conf; return 0; }
+	set_default MODEL "${FR_MODEL}"
+	set_default SF_THRESH "${FR_SF_THRESH}"
+	set_default OVERLAP "${FR_OVERLAP}"
+	set_default CONFIDENCE "${FR_CONFIDENCE}"
+	set_default SENSITIVITY "${FR_SENSITIVITY}"
+	set_default MULTI_LOCATION "${FR_MULTI_LOCATION}"
+	set_default MULTI_STATION "${FR_MULTI_STATION}"
+	# the fleet seed (US-58): level, preset, context, access, then the profile's settings
+	set_default UI_PRESET "${FR_UI_PRESET:-}"
+	set_default UI_LEVEL "${FR_UI_LEVEL:-}"
+	set_default UI_CONTEXT "${FR_UI_CONTEXT:-}"
+	set_default LAN_TRUST "${FR_LAN_TRUST:-}"
+	set_default WEB_LOGIN "${FR_WEB_LOGIN:-}"
+	local kv
+	for kv in "${FR_PROFILE[@]}"; do set_default "${kv%%=*}" "${kv#*=}"; done
+	return 0
 }
 
 # Checks for a BirdSuite.conf file; a new installation answers the first-run questions first (US-51c)
 if ! [ -f ${birdnet_conf} ];then
-  source $my_dir/scripts/install_firstrun.sh
-  { set +x; } 2>/dev/null
-  install_config
-  [ -n "${FR_WIZARD}" ] && touch $BS_FIRSTRUN
-  if [ -n "${FR_TIMEZONE}" ] && [ "${FR_TIMEZONE}" != "$(timedatectl show --value --property=Timezone 2>/dev/null || true)" ]; then
-    sudo timedatectl set-timezone "${FR_TIMEZONE}" && echo "Timezone set to ${FR_TIMEZONE}" || echo "Could not set the timezone - set it with: sudo timedatectl set-timezone ${FR_TIMEZONE}"
-  fi
-  # the phone hotspot (owner 2026-10-24, plan B since 2026-10-25) and, from a seed file, the station's own WiFi password; tracing is off
-  if [ -n "${FR_FLEET_SSID}" ]; then
-    if command -v nmcli > /dev/null && printf '%s\n' "${FR_FLEET_PSK}" | sudo python3 $my_dir/scripts/field_net.py set-fleet "${FR_FLEET_SSID}" > /dev/null; then
-      echo "Phone hotspot '${FR_FLEET_SSID}' set: the station joins it whenever it is on and no other known network is in range"
-    else
-      echo -e "\033[33mCould not store the phone hotspot - set it later in Settings -> Network.\033[0m"
-    fi
-  fi
-  if [ -n "${FR_AP_PSK}" ]; then
-    if command -v nmcli > /dev/null && printf '%s\n' "${FR_AP_PSK}" | sudo python3 $my_dir/scripts/field_net.py set-ap > /dev/null; then
-      echo "Station WiFi ${fr_ap_ssid} has its password (off until no known network is in reach)"
-    else
-      echo -e "\033[33mCould not store the station WiFi password - set it later in Settings -> Network.\033[0m"
-    fi
-  fi
-  # tested while tracing is still off: the URL carries the notification token
-  if [ -n "${FR_APPRISE_URL}" ]; then
-    printf '%s\n' "${FR_APPRISE_URL}" > $BS_NOTIFY/apprise.txt
-  fi
-  set -x
+	source $my_dir/scripts/install_firstrun.sh
+	{ set +x; } 2>/dev/null
+	install_config
+	[ -n "${FR_WIZARD}" ] && touch $BS_FIRSTRUN
+	if [ -n "${FR_TIMEZONE}" ] && [ "${FR_TIMEZONE}" != "$(timedatectl show --value --property=Timezone 2>/dev/null || true)" ]; then
+		sudo timedatectl set-timezone "${FR_TIMEZONE}" && echo "Timezone set to ${FR_TIMEZONE}" || echo "Could not set the timezone - set it with: sudo timedatectl set-timezone ${FR_TIMEZONE}"
+	fi
+	# the phone hotspot (owner 2026-10-24, plan B since 2026-10-25) and, from a seed file, the station's own WiFi password; tracing is off
+	if [ -n "${FR_FLEET_SSID}" ]; then
+		if command -v nmcli > /dev/null && printf '%s\n' "${FR_FLEET_PSK}" | sudo python3 $my_dir/scripts/field_net.py set-fleet "${FR_FLEET_SSID}" > /dev/null; then
+			echo "Phone hotspot '${FR_FLEET_SSID}' set: the station joins it whenever it is on and no other known network is in range"
+		else
+			echo -e "\033[33mCould not store the phone hotspot - set it later in Settings -> Network.\033[0m"
+		fi
+	fi
+	if [ -n "${FR_AP_PSK}" ]; then
+		if command -v nmcli > /dev/null && printf '%s\n' "${FR_AP_PSK}" | sudo python3 $my_dir/scripts/field_net.py set-ap > /dev/null; then
+			echo "Station WiFi ${fr_ap_ssid} has its password (off until no known network is in reach)"
+		else
+			echo -e "\033[33mCould not store the station WiFi password - set it later in Settings -> Network.\033[0m"
+		fi
+	fi
+	# tested while tracing is still off: the URL carries the notification token
+	if [ -n "${FR_APPRISE_URL}" ]; then
+		printf '%s\n' "${FR_APPRISE_URL}" > $BS_NOTIFY/apprise.txt
+	fi
+	set -x
 fi
 chmod g+w ${birdnet_conf}
 grep -ve '^#' -e '^$' $birdnet_conf > $BS_CONFIG/firstrun.ini
@@ -228,11 +246,11 @@ source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 set -x
 # notification bodies (English, whatever the species-names language — owner 2026-10-07); kept on a re-install
 if ! [ -s "$BS_NOTIFY/body.txt" ]; then
-  # the station's own texts as the default (owner 2026-10-21; thresholds, probability and duration 2026-10-22)
-  body='A $common_name ($scientific_name) was detected at $station\nConfidence: $conf_pct%\nReason: $reason\nLocation: $location\nStation: $station\n\nMinimum Confidence: $conf_min_pct\nManual Confidence (override): $conf_manual_pct\nProbability of occurrence this week: $occurrence_probability\nMinimum Probability of occurrence: $occurrence_probability_min\n\nSigmoid Sensitivity: $sigmoid_sensitivity\nOverlap: $overlap s\nRecording Length: $recording_length\n\nLink to the detection: $listen_url\n$image\n$audio'
-  body_rare='A RARE $common_name ($scientific_name) was detected at $station\nConfidence: $conf_pct%\nReason: $reason\nLocation: $location\nStation: $station\n\nMinimum Confidence: $conf_min_pct\nManual Confidence (override): $conf_manual_pct\nProbability of occurrence this week: $occurrence_probability\nMinimum Probability of occurrence: $occurrence_probability_min\n\nSigmoid Sensitivity: $sigmoid_sensitivity\nOverlap: $overlap s\nRecording Length: $recording_length\n\nLink to the detection: $listen_url\n$image\n$audio'
-  printf '%b\n' "$body" | sudo -u $BIRDNET_USER tee "$BS_NOTIFY/body.txt" > /dev/null
-  printf '%b\n' "$body_rare" | sudo -u $BIRDNET_USER tee "$BS_NOTIFY/body-rare.txt" > /dev/null
+	# the station's own texts as the default (owner 2026-10-21; thresholds, probability and duration 2026-10-22)
+	body='A $common_name ($scientific_name) was detected at $station\nConfidence: $conf_pct%\nReason: $reason\nLocation: $location\nStation: $station\n\nMinimum Confidence: $conf_min_pct\nManual Confidence (override): $conf_manual_pct\nProbability of occurrence this week: $occurrence_probability\nMinimum Probability of occurrence: $occurrence_probability_min\n\nSigmoid Sensitivity: $sigmoid_sensitivity\nOverlap: $overlap s\nRecording Length: $recording_length\n\nLink to the detection: $listen_url\n$image\n$audio'
+	body_rare='A RARE $common_name ($scientific_name) was detected at $station\nConfidence: $conf_pct%\nReason: $reason\nLocation: $location\nStation: $station\n\nMinimum Confidence: $conf_min_pct\nManual Confidence (override): $conf_manual_pct\nProbability of occurrence this week: $occurrence_probability\nMinimum Probability of occurrence: $occurrence_probability_min\n\nSigmoid Sensitivity: $sigmoid_sensitivity\nOverlap: $overlap s\nRecording Length: $recording_length\n\nLink to the detection: $listen_url\n$image\n$audio'
+	printf '%b\n' "$body" | sudo -u $BIRDNET_USER tee "$BS_NOTIFY/body.txt" > /dev/null
+	printf '%b\n' "$body_rare" | sudo -u $BIRDNET_USER tee "$BS_NOTIFY/body-rare.txt" > /dev/null
 fi
 chmod g+w "$BS_NOTIFY/body.txt"
 [ -f "$BS_NOTIFY/body-rare.txt" ] && chmod g+w "$BS_NOTIFY/body-rare.txt"

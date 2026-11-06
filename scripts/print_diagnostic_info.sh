@@ -1,13 +1,28 @@
 #!/bin/bash
+################################################################################
+# scripts/print_diagnostic_info.sh - THE DIAGNOSTIC REPORT
+#
+# PURPOSE:
+#   Prints the state of every service, the settings and the recent logs for a diagnostic report
+#   (dump_logs.sh).
+#
+# DEPENDENCIES:
+#   - scripts/core.sh
+#   - scripts/extra_info.sh
+#
+# USAGE:
+#   bash scripts/print_diagnostic_info.sh
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/core.sh"
 
 # 1. Service status
 services=("$BS_SVC_WEB" "$BS_SVC_ANALYSIS" "$BS_SVC_LOG" "$BS_SVC_RECORDING" "$BS_SVC_TERMINAL" "$BS_SVC_SPECTROGRAM" "$BS_SVC_LIVESTREAM")
 
 for service in "${services[@]}"; do
-    echo "========== $service status =========="
-    systemctl status --no-pager $service | cat
-    echo ""
+		echo "========== $service status =========="
+		systemctl status --no-pager $service | cat
+		echo ""
 done
 
 echo "========= Syslog snippet =========="

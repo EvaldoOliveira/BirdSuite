@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+################################################################################
+# tests/import_export_test.py - IMPORT / EXPORT OF TOOLS › BACKUP/IMPORT IN MANY SITUATIONS
+#
+# PURPOSE:
+#   Import / export of Tools › Backup/Import in many situations (owner 2026-10-25: tested before every
+#   release).
+#
+# DEPENDENCIES:
+#   - scripts/utils/core as corelib.py
+#   - scripts/location_data.py
+#   - scripts/createdb.sh
+#   - scripts/utils/locations.py
+#
+# USAGE:
+#   python3 tests/import_export_test.py <arguments> (see main)
+#   Referenced by tests/import_export_variants_test.py
+################################################################################
+
 """Import / export of Tools › Backup/Import in many situations (owner 2026-10-25: tested before every release).
 
 Each run builds simulated stations in a temporary folder (their own HOME: config, birds.db, clips) and drives

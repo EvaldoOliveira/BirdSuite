@@ -1,3 +1,18 @@
+################################################################################
+# tests/helpers.py - HELPERS OF THE UNIT TESTS
+#
+# PURPOSE:
+#   Helpers of the unit tests: the test data folder and a Settings stand-in.
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   Referenced by scripts/birdnet_changeidentification.sh, scripts/disk_species_count.sh,
+#   scripts/lib/clips.php, scripts/location_data.py, scripts/most_recent.sh, scripts/purge_protection.py,
+#   scripts/purge_stage.py …
+################################################################################
+
 import os
 
 TESTDATA = os.path.join(os.path.dirname(__file__), 'testdata')

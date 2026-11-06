@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/mic_event.py - THE MICROPHONES BY NAME, FOR THE HOT-PLUG WINDOW
+#
+# PURPOSE:
+#   The microphones by name, for the hot-plug window (2026-11-03, owner: "the window names the microphone, or
+#   both when two were unplugged, and what used it"). Run by mic_hotplug.sh as the station user.
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/mic_hotplug.sh
+#   - scripts/raw_recording.sh
+#
+# USAGE:
+#   python3 scripts/mic_event.py <arguments> (see main)
+#   Referenced by scripts/location_switch.php, scripts/mic_hotplug.sh
+################################################################################
+
 """The microphones by name, for the hot-plug window (2026-11-03, owner: "the window names the microphone, or both when
 two were unplugged, and what used it"). Run by mic_hotplug.sh as the station user.
 

@@ -1,4 +1,19 @@
 <?php
+################################################################################
+# scripts/backup.php - DOWNLOAD OF A SETTINGS BACKUP
+#
+# PURPOSE:
+#   Sends the settings backup as a file: made now, or one kept on the station (?saved=<name>, Factory settings
+#   saves one first). Needs the login.
+#
+# DEPENDENCIES:
+#   - scripts/common.php
+#   - scripts/backup_data.sh
+#   - birdsuite-svc (sudo helper)
+#
+# USAGE:
+#   Referenced by scripts/backup_import_page.php, scripts/station_backup.php
+################################################################################
 
 define('__ROOT__', dirname(dirname(__FILE__)));
 require_once(__ROOT__.'/scripts/common.php');
@@ -16,11 +31,11 @@ header("Content-Type: application/octet-stream");
 // ?saved=<name>: a settings backup kept on the station (owner 2026-10-24: Factory settings saves one first), from
 // ~/BirdSuite-backups
 if (isset($_GET['saved'])) {
-  $f = "$home/BirdSuite-backups/" . basename((string)$_GET['saved']);
-  if (!preg_match('/^settings-[0-9T-]+\.tar$/', basename($f)) || !station_user_is_file($f)) { http_response_code(404); die(); }
-  header('Content-Disposition: attachment; filename="' . basename($f) . '"');
-  passthru(station_prefix() . 'cat ' . escapeshellarg($f));
-  exit();
+	$f = "$home/BirdSuite-backups/" . basename((string)$_GET['saved']);
+	if (!preg_match('/^settings-[0-9T-]+\.tar$/', basename($f)) || !station_user_is_file($f)) { http_response_code(404); die(); }
+	header('Content-Disposition: attachment; filename="' . basename($f) . '"');
+	passthru(station_prefix() . 'cat ' . escapeshellarg($f));
+	exit();
 }
 // ?mode=settings: the settings, lists, notifications and locations without the database (owner 2026-10-24); ?mode=config
 // with the database; else everything with the audio (owner 2026-10-22)
@@ -42,10 +57,10 @@ syslog($err === 0 ? LOG_INFO : LOG_ERR, "BirdSuite $mode backup download $outcom
 // the restarts asked while it streamed
 $deferred = "$state/backup_deferred";
 if (is_file($deferred)) {
-  $lines = array_unique(array_filter(array_map('trim', file($deferred))));
-  @unlink($deferred);
-  foreach ($lines as $l) {
-    if (preg_match('/^(restart|stop|disable-now)( [A-Za-z0-9@._-]+)+$/', $l)) exec('sudo -n ' . BS_SVC_HELPER . ' ' . $l . ' > /dev/null 2>&1 &');
-  }
+	$lines = array_unique(array_filter(array_map('trim', file($deferred))));
+	@unlink($deferred);
+	foreach ($lines as $l) {
+		if (preg_match('/^(restart|stop|disable-now)( [A-Za-z0-9@._-]+)+$/', $l)) exec('sudo -n ' . BS_SVC_HELPER . ' ' . $l . ' > /dev/null 2>&1 &');
+	}
 }
 exit();

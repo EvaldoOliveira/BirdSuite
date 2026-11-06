@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/settings_history.py - SETTINGS HISTORY
+#
+# PURPOSE:
+#   Settings history (owner 2026-10-31): every change of config/BirdSuite.conf, whoever wrote it (a page, a
+#   saved set of System > Defaults, the update, a service, the command line), becomes one line of
+#   state/settings_history.log:
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#
+# USAGE:
+#   python3 scripts/settings_history.py <arguments> (see main)
+#   Referenced by scripts/install_services.sh, scripts/update_caddyfile.sh,
+#   templates/units/SVC_SETTINGS_HISTORY.service
+################################################################################
+
 """Settings history (owner 2026-10-31): every change of config/BirdSuite.conf, whoever wrote it (a page, a saved set of
 System > Defaults, the update, a service, the command line), becomes one line of state/settings_history.log:
 

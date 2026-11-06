@@ -1,3 +1,22 @@
+################################################################################
+# scripts/utils/notify_channels.py - NOTIFICATION CHANNELS ARE ENABLED ONLY BY THE USER
+#
+# PURPOSE:
+#   Notification channels are enabled only by the user (owner 2026-10-26): an e-mail or Telegram channel sends
+#   only after the user sent a test from its page (Settings > E-mail / Telegram) and answered that it arrived.
+#   Never confirmed, set up again, or a send that failed while the station was online = disabled, until the
+#   next confirmed test; nothing is sent nor queued for a disabled channel, and its page says so. A confirmed
+#   channel can be turned off and on again from its page without a new test ("off"); the switch exists only
+#   for a channel the user already confirmed. State: state/notify_channels.json = {channel: {"state":
+#   "confirmed" | "off" | "setup" | "failed", "at": "YYYY-MM-DD HH:MM"}}.
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   Referenced by scripts/lib/station.php, scripts/notifications_page.php, scripts/utils/notifications.py
+################################################################################
+
 """Notification channels are enabled only by the user (owner 2026-10-26): an e-mail or Telegram channel sends only after
 the user sent a test from its page (Settings > E-mail / Telegram) and answered that it arrived. Never confirmed, set up
 again, or a send that failed while the station was online = disabled, until the next confirmed test; nothing is sent

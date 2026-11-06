@@ -1,3 +1,21 @@
+################################################################################
+# scripts/daily_cap.py - DAILY CAP OF CLIPS PER SPECIES
+#
+# PURPOSE:
+#   Daily cap of clips per species (owner 2026-10-24: a station that hears thousands of the same species a
+#   day).
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/clip_dispose.py
+#   - scripts/purge_protection.py
+#   - scripts/disk_species_clean.sh
+#
+# USAGE:
+#   python3 scripts/daily_cap.py <arguments> (see main)
+#   Referenced by scripts/clip_dispose.py, scripts/disk_species_clean.sh
+################################################################################
+
 """Daily cap of clips per species (owner 2026-10-24: a station that hears thousands of the same species a day).
 
 MAX_FILES_SPECIES_DAY = N (Tools › Data › Life cycle of the sounds; 0 = off): in every day folder of By_Date, each species

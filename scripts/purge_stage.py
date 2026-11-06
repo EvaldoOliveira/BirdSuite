@@ -1,3 +1,19 @@
+################################################################################
+# scripts/purge_stage.py - NIGHTLY STAGING OF THE AUDIO TO PURGE
+#
+# PURPOSE:
+#   Nightly staging of the audio to purge (owner 2026-10-22).
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/disk_species_clean.sh
+#   - tests/helpers.py
+#
+# USAGE:
+#   python3 scripts/purge_stage.py <arguments> (see main)
+#   Referenced by scripts/disk_species_clean.sh, scripts/lib/clips.php, scripts/play.php
+################################################################################
+
 """Nightly staging of the audio to purge (owner 2026-10-22).
 
 The detections answered with a cause (Human, Noise, Ignore) keep their line in the

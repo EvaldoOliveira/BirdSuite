@@ -1,3 +1,16 @@
+################################################################################
+# tests/test_apprise_notifications.py - UNIT TESTS OF THE NOTIFICATIONS
+#
+# PURPOSE:
+#   Unit tests of the Apprise notifications: the channels, the tiers and the texts sent.
+#
+# DEPENDENCIES:
+#   - scripts/utils/notifications.py
+#
+# USAGE:
+#   python3 tests/test_apprise_notifications.py <arguments> (see main)
+################################################################################
+
 import os
 import sqlite3
 import unittest

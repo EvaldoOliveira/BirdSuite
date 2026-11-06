@@ -1,10 +1,26 @@
+################################################################################
+# scripts/utils/shadow.py - SHADOW MODE
+#
+# PURPOSE:
+#   Shadow mode: a second model analyses the same recordings, beside the official one.
+#
+# DEPENDENCIES:
+#   - scripts/utils/classes.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/models.py
+#   - scripts/createdb.sh
+#
+# USAGE:
+#   Referenced by scripts/utils/analysis.py
+################################################################################
+
 """Shadow mode: a second model analyses the same recordings, beside the official one.
 
 The official model (MODEL) keeps feeding birds.db, the extractions and the notifications. The shadow model
 (SHADOW_MODEL_NAME) only writes what it would have detected to a database of its own (scripts/birds_shadow.db), so
 both can be compared over weeks before a model switch. Nothing is extracted and nobody is notified.
 
-BirdSuite.conf keys (none of them ends in the name of an official key: config.php rewrites those with unanchored
+BirdSuite.conf keys (none of them ends in the name of an official key: the settings pages once rewrote those with unanchored
 patterns such as "/MODEL=.*/"): SHADOW_MODEL_NAME (empty = off), SHADOW_MIN_CONF, SHADOW_SENS and
 SHADOW_GEO_THRESH (location threshold of the shadow model); a missing key takes the factory value (factory_defaults.conf).
 """

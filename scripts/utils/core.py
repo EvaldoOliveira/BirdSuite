@@ -1,3 +1,19 @@
+################################################################################
+# scripts/utils/core.py - THE PYTHON READER OF CORE
+#
+# PURPOSE:
+#   The Python reader of core.env (owner 2026-11-02): every BS_* key of that file as a module attribute, read
+#   as text (only ${KEY} of an earlier key is replaced). Seeds: BS_HOME from the environment, else the program
+#   folder is the one above scripts/ and BS_HOME the folder above that. load(home=...) gives the layout of
+#   another home (the tests).
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   Referenced by scripts/common.php, scripts/utils/helpers.py
+################################################################################
+
 """The Python reader of core.env (owner 2026-11-02): every BS_* key of that file as a module attribute, read as text
 (only ${KEY} of an earlier key is replaced). Seeds: BS_HOME from the environment, else the program folder is the one
 above scripts/ and BS_HOME the folder above that. load(home=...) gives the layout of another home (the tests)."""

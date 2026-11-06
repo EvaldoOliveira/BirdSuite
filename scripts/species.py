@@ -1,3 +1,20 @@
+################################################################################
+# scripts/species.py - THE SPECIES OF A LOCATION BY THE META MODEL
+#
+# PURPOSE:
+#   Prints the species the model's location (meta) model expects at the station's coordinates and week, sorted
+#   by occurrence frequency: the source of the Allowed species lists and of the location checks.
+#
+# DEPENDENCIES:
+#   - scripts/utils/classes.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/models.py
+#
+# USAGE:
+#   python3 scripts/species.py  [--threshold]
+#   Referenced by scripts/model_page.php, scripts/species_page.php
+################################################################################
+
 import argparse
 import datetime
 import os

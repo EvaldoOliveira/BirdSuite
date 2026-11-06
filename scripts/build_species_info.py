@@ -1,3 +1,20 @@
+################################################################################
+# scripts/build_species_info.py - BUILDS MODEL/SPECIES_INFO
+#
+# PURPOSE:
+#   Builds model/species_info.csv: what each label of the station's models is and where it lives (owner
+#   2026-10-09), so the species lists can be filtered by type and region. Run once by the maintainer (it
+#   queries GBIF, the Global Biodiversity Information Facility, for every scientific name — about an hour);
+#   the result ships with the fork.
+#
+# DEPENDENCIES:
+#   - scripts/update_species_info.sh
+#
+# USAGE:
+#   python3 scripts/build_species_info.py labels [--out] [--workers] [--base]
+#   Referenced by scripts/lib/species.php, scripts/update_species_info.sh
+################################################################################
+
 """Builds model/species_info.csv: what each label of the station's models is and where it lives (owner 2026-10-09), so
 the species lists can be filtered by type and region. Run once by the maintainer (it queries GBIF, the Global
 Biodiversity Information Facility, for every scientific name — about an hour); the result ships with the fork.

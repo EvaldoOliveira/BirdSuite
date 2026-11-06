@@ -1,9 +1,24 @@
 #!/usr/bin/env bash
+################################################################################
+# scripts/most_recent.sh - THE MOST RECENT DETECTION
+#
+# PURPOSE:
+#   Prints the most recent detection of the database (species, time, date) for the terminal and the field
+#   tools.
+#
+# DEPENDENCIES:
+#   - scripts/core.sh
+#   - tests/helpers.py
+#
+# USAGE:
+#   bash scripts/most_recent.sh
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/core.sh"
 OLDIFS=$IFS
 IFS=\|
 most_recent_results=($(sqlite3 "$BS_DB" \
-  'SELECT Sci_Name, Time, Date FROM detections
+	'SELECT Sci_Name, Time, Date FROM detections
    ORDER BY Date DESC, Time DESC
    LIMIT 1'))
 # the database keeps the scientific name only: the common name is looked up (utils/helpers.py common_name)
@@ -15,20 +30,20 @@ two_days_ago=$(date --date="2 days ago" +%F)
 echo -n The most recent detection was
 
 if [[ "${most_recent_results[0]}" =~ ^[AEIOU].* ]];then
-  echo -n " an ${most_recent_results[0]} at "
+	echo -n " an ${most_recent_results[0]} at "
 else
-  echo -n " a ${most_recent_results[0]} at "
+	echo -n " a ${most_recent_results[0]} at "
 fi
 most_recent_results[1]=$(date --date="${most_recent_results[1]}" +%l:%M%p)
 echo -n ${most_recent_results[1]}
 if [[ ${most_recent_results[2]} == $today ]];then
-  echo " today."
+	echo " today."
 elif [[ ${most_recent_results[2]} == $yesterday ]];then
-  echo " yesterday."
+	echo " yesterday."
 elif [[ ${most_recent_results[2]} == $two_days_ago ]];then
-  echo " two days ago."
+	echo " two days ago."
 else
-  echo " on ${most_recent_results[2]}."
+	echo " on ${most_recent_results[2]}."
 fi
 
 IFS=$OLDIFS

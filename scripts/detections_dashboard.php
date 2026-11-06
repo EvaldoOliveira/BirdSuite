@@ -1,9 +1,24 @@
 <?php
-/* By Hour (owner 2026-10-09; started as the Dashboard trial, replaced All Detections): a period filter, then
- *   - indicator cards with a 14-day sparkline and the change against the previous period of the same length;
- *   - the day by half hour: every species × 48 half-hour cells, with detections and species per half hour under it;
- *   - the year by calendar week: detections and species per KW (every date, species filter only), as on Seasonality.
- * Plain SVG drawn here, no chart library. Opened as views.php?view=By%20Hour. */
+################################################################################
+# scripts/detections_dashboard.php - BY HOUR
+#
+# PURPOSE:
+#   By Hour (owner 2026-10-09; started as the Dashboard trial, replaced All Detections): a period filter, then
+#   - indicator cards with a 14-day sparkline and the change against the previous period of the same length; -
+#   the day by half hour: every species × 48 half-hour cells, with detections and species per half hour under
+#   it; - the year by calendar week: detections and species per KW (every date, species filter only), as on
+#   Seasonality. Plain SVG drawn here, no chart library. Opened as views.php?view=By%20Hour.
+#
+# DEPENDENCIES:
+#   - scripts/common.php
+#   - homepage/static/species-sort.js
+#   - homepage/static/name-mode.js
+#
+# USAGE:
+#   views.php?view=By%20Hour
+#   Referenced by homepage/views.php, scripts/update_caddyfile.sh
+################################################################################
+
 require_once __DIR__ . '/common.php';
 $db = get_db();
 $h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };
@@ -25,10 +40,10 @@ $pfrom = date('Y-m-d', strtotime($from . " -$days days"));
 $pto = date('Y-m-d', strtotime($from . ' -1 day'));
 $spw = $sci !== '' ? ' AND Sci_Name = :s' : '';
 $q = function ($sql, $params) use ($db, $sci) {
-  $st = $db->prepare($sql);
-  foreach ($params as $k => $v) $st->bindValue($k, $v);
-  if ($sci !== '' && strpos($sql, ':s') !== false) $st->bindValue(':s', $sci);
-  return $st->execute();
+	$st = $db->prepare($sql);
+	foreach ($params as $k => $v) $st->bindValue($k, $v);
+	if ($sci !== '' && strpos($sql, ':s') !== false) $st->bindValue(':s', $sci);
+	return $st->execute();
 };
 $one = function ($sql, $params) use ($q) { $r = $q($sql, $params)->fetchArray(SQLITE3_NUM); return $r ? $r[0] : null; };
 $base = 'views.php?view=By%20Hour';
@@ -47,10 +62,10 @@ $prev = array(array_sum(array_column(grouped_counts(array('Sci_Name'), $pfrom, $
 $new = 0;
 $before = $db->prepare('SELECT 1 FROM detections WHERE Sci_Name = :s AND Date < :f LIMIT 1');
 foreach (array_keys($per_sp) as $s) {
-  $before->bindValue(':s', $s); $before->bindValue(':f', $from);
-  $r = $before->execute();
-  if (!($r && $r->fetchArray(SQLITE3_NUM))) $new++;
-  $before->reset();
+	$before->bindValue(':s', $s); $before->bindValue(':f', $from);
+	$r = $before->execute();
+	if (!($r && $r->fetchArray(SQLITE3_NUM))) $new++;
+	$before->reset();
 }
 // species of the period with at least one detection validated "yes" (owner 2026-10-21); +Date: found through the
 // answers, not by walking every day of the period (2026-10-23 run 3)
@@ -64,21 +79,21 @@ $sstart = date('Y-m-d', strtotime($to . ' -13 days'));
 $byday = array();
 foreach (grouped_counts(array('Date'), $sstart, $to, $spw, $sp_param) as $r) $byday[$r[0]] = $r;
 for ($i = 13; $i >= 0; $i--) {
-  $d = date('Y-m-d', strtotime($to . " -$i days"));
-  $spark['n'][] = intval($byday[$d][1] ?? 0);
+	$d = date('Y-m-d', strtotime($to . " -$i days"));
+	$spark['n'][] = intval($byday[$d][1] ?? 0);
 }
 $sparkline = function ($vals) {
-  $w = 120; $hgt = 28; $max = max(1, max($vals)); $n = count($vals);
-  $pts = array();
-  foreach ($vals as $i => $v) $pts[] = round($i * $w / max(1, $n - 1), 1) . ',' . round($hgt - 2 - ($hgt - 4) * $v / $max, 1);
-  $area = '0,' . $hgt . ' ' . implode(' ', $pts) . ' ' . $w . ',' . $hgt;
-  return '<svg class="spark" viewBox="0 0 ' . $w . ' ' . $hgt . '" preserveAspectRatio="none"><polygon points="' . $area . '" class="sa"/><polyline points="' . implode(' ', $pts) . '" class="sl"/></svg>';
+	$w = 120; $hgt = 28; $max = max(1, max($vals)); $n = count($vals);
+	$pts = array();
+	foreach ($vals as $i => $v) $pts[] = round($i * $w / max(1, $n - 1), 1) . ',' . round($hgt - 2 - ($hgt - 4) * $v / $max, 1);
+	$area = '0,' . $hgt . ' ' . implode(' ', $pts) . ' ' . $w . ',' . $hgt;
+	return '<svg class="spark" viewBox="0 0 ' . $w . ' ' . $hgt . '" preserveAspectRatio="none"><polygon points="' . $area . '" class="sa"/><polyline points="' . implode(' ', $pts) . '" class="sl"/></svg>';
 };
 $delta = function ($c, $p, $label) {
-  if ($p === null || floatval($p) == 0) return '<small class="dl">' . t('str_no_data', array('period' => $label)) . '</small>';
-  $pct = round(100 * (floatval($c) - floatval($p)) / floatval($p));
-  $cls = $pct > 0 ? 'up' : ($pct < 0 ? 'down' : '');
-  return '<small class="dl ' . $cls . '">' . ($pct > 0 ? '▲ ' : ($pct < 0 ? '▼ ' : '')) . abs($pct) . '% ' . $label . '</small>';
+	if ($p === null || floatval($p) == 0) return '<small class="dl">' . t('str_no_data', array('period' => $label)) . '</small>';
+	$pct = round(100 * (floatval($c) - floatval($p)) / floatval($p));
+	$cls = $pct > 0 ? 'up' : ($pct < 0 ? 'down' : '');
+	return '<small class="dl ' . $cls . '">' . ($pct > 0 ? '▲ ' : ($pct < 0 ? '▼ ' : '')) . abs($pct) . '% ' . $label . '</small>';
 };
 $vs = $is_today ? t('str_vs_yesterday') : ($days === 1 ? t('str_vs_the_day_before') : t('str_vs_previous_days', array('n' => $days)));
 
@@ -87,7 +102,7 @@ $vs = $is_today ? t('str_vs_yesterday') : ($days === 1 ? t('str_vs_the_day_befor
 // run: 2.5 s per load, 7 s for All at ten times the station's data)
 $hb = array(); $htot = array(); $hb_n = array_fill(0, 48, 0); $hb_sp = array_fill(0, 48, 0);
 foreach (grouped_counts(array('Sci_Name', 'CAST(substr(Time, 1, 2) AS INT) * 2 + (CAST(substr(Time, 4, 2) AS INT) >= 30)'), $is_all ? '' : $from, $to, $spw, $sp_param) as $r) {
-  $hb[$r[0]][$r[1]] = $r[2]; $htot[$r[0]] = ($htot[$r[0]] ?? 0) + $r[2]; $hb_n[$r[1]] += $r[2]; $hb_sp[$r[1]]++;
+	$hb[$r[0]][$r[1]] = $r[2]; $htot[$r[0]] = ($htot[$r[0]] ?? 0) + $r[2]; $hb_n[$r[1]] += $r[2]; $hb_sp[$r[1]]++;
 }
 arsort($htot);
 $com_of = species_com_names(array_unique(array_merge(array_keys($htot), $sci !== '' ? array($sci) : array())));
@@ -95,11 +110,11 @@ $hmax = 1; foreach ($hb as $x) $hmax = max($hmax, max($x));
 $hb_nmax = max(1, max($hb_n)); $hb_spmax = max(1, max($hb_sp));
 // CSV of the half-hour table (owner 2026-10-22): the period and the species filter of the page
 if (isset($_GET['csv'])) {
-  $head = array(t('str_scientific_name'), t('str_common_name'), t('str_total'));
-  for ($b = 0; $b < 48; $b++) $head[] = sprintf('%02d:%02d', intdiv($b, 2), ($b % 2) * 30);
-  $rows = array();
-  foreach ($htot as $s => $n) { $r = array($s, $com_of[$s] ?? $s, $n); for ($b = 0; $b < 48; $b++) $r[] = $hb[$s][$b] ?? 0; $rows[] = $r; }
-  csv_out('by-hour-' . $from . ($to !== $from ? '_' . $to : '') . '.csv', $head, $rows);
+	$head = array(t('str_scientific_name'), t('str_common_name'), t('str_total'));
+	for ($b = 0; $b < 48; $b++) $head[] = sprintf('%02d:%02d', intdiv($b, 2), ($b % 2) * 30);
+	$rows = array();
+	foreach ($htot as $s => $n) { $r = array($s, $com_of[$s] ?? $s, $n); for ($b = 0; $b < 48; $b++) $r[] = $hb[$s][$b] ?? 0; $rows[] = $r; }
+	csv_out('by-hour-' . $from . ($to !== $from ? '_' . $to : '') . '.csv', $head, $rows);
 }
 $now_bin = $is_today ? intval(date('G')) * 2 + (intval(date('i')) >= 30 ? 1 : 0) : -1;
 
@@ -113,11 +128,11 @@ $yr = intval(date('o')); $kmon = array();
 for ($k = 1; $k <= 53; $k++) { $thu = new DateTime(); $thu->setISODate($yr, $k, 4); $kmon[$k] = intval($thu->format('Y')) === $yr ? intval($thu->format('n')) : ($k > 40 ? 13 : 0); }
 $mnames = array(1 => t('str_jan'), t('str_feb'), t('str_mar'), t('str_apr'), t('str_may'), t('str_jun'), t('str_jul'), t('str_aug'), t('str_sep'), t('str_oct'), t('str_nov'), t('str_dec'));
 $cellbar = function ($v, $max, $px, $cls, $title) {
-  return '<td class="b" title="' . $title . '"><div class="bar ' . $cls . '" style="height:' . ($v ? max(2, round($px * $v / $max)) : 0) . 'px"></div></td>';
+	return '<td class="b" title="' . $title . '"><div class="bar ' . $cls . '" style="height:' . ($v ? max(2, round($px * $v / $max)) : 0) . 'px"></div></td>';
 };
 $heatcell = function ($v, $max, $cls, $title) {
-  $a = $v ? 0.15 + 0.85 * log(1 + $v) / log(1 + $max) : 0;
-  return '<td class="c' . $cls . '" title="' . $title . '"' . ($v ? ' style="background:rgba(var(--accent-rgb,43,94,34),' . round($a, 2) . ') !important"' : '') . '></td>';
+	$a = $v ? 0.15 + 0.85 * log(1 + $v) / log(1 + $max) : 0;
+	return '<td class="c' . $cls . '" title="' . $title . '"' . ($v ? ' style="background:rgba(var(--accent-rgb,43,94,34),' . round($a, 2) . ') !important"' : '') . '></td>';
 };
 ?>
 <style>
@@ -178,77 +193,77 @@ $heatcell = function ($v, $max, $cls, $title) {
 .dash table.hm td.nm a { display: block; overflow: hidden; text-overflow: ellipsis; }
 </style>
 <div class="dash">
-  <?php echo location_label(); // the location shown (owner 2026-10-21) ?>
-  <div class="cards">
-    <?php // the cards and their wording set by the owner (2026-10-21): Detections, Confirmed, Validated, New species ?>
-    <div class="card"><small class="t"><?php echo t('str_detections'); ?></small><b><?php echo fmt_num(intval($cur[0])); ?></b><?php echo $delta($cur[0], $prev[0], $vs) . $sparkline($spark['n']); ?></div>
-    <div class="card"><small class="t"><?php echo t('str_confirmed_species'); ?></small><b><?php echo $confirmed; ?></b><small class="dl"><?php echo t('str_confirmed_on_the_species_page'); ?></small></div>
-    <div class="card"><small class="t"><?php echo t('str_validated_species'); ?></small><b><?php echo $validated; ?></b><small class="dl"><?php echo t('str_1_review_yes'); ?></small></div>
-    <div class="card"><small class="t"><?php echo t('str_new_species'); ?></small><b><?php echo intval($new); ?></b><small class="dl"><?php echo t('str_first_detection_in_the_period'); ?></small></div>
-  </div>
-  <div class="bar top sortbar"<?php $cf_rf = get_config(); echo ' data-fphone="' . (($cf_rf['REPORTS_FILTERS_PHONE'] ?? 'closed') === 'open' ? 1 : 0) . '" data-fdesktop="' . (($cf_rf['REPORTS_FILTERS_DESKTOP'] ?? 'open') !== 'closed' ? 1 : 0) . '"'; // REPORTS_FILTERS_* (owner 2026-10-25) ?>><?php // filter line open by default (owner 2026-10-22), last state kept ?>
-    <?php // the period control shared with Validation (owner 2026-10-22): ◀ Today / Last 7 / Last 30 / All / Date range ▶,
-      // always shown (not part of the filter line) ?>
-    <?php echo period_picker('views.php?view=By%20Hour', $pick_from, $pick_to, $first_day, 'hour_period', array('sci' => $sci)); ?>
-    <span>
-      <?php if ($sci !== '') { ?><a class="btn on" href="<?php echo $base . '&amp;from=' . $from . '&amp;to=' . $to; ?>" title="<?php echo t('str_show_every_species'); ?>">&times; <?php echo $h($com_of[$sci] ?? $sci); ?></a><?php } ?></span>
-    <!-- species order (owner 2026-10-10): count (most detections first), taxonomy (eBird/Clements field-guide order), A–Z
-         (by the names shown); remembered in this browser. One top line, laid out as By Week -->
-    <?php // a Sort button on the right opens the sort buttons; open, it stays on their left as › to fold them (owner 2026-10-21) ?>
-    <span class="right"><span class="dashfilter" role="button" tabindex="0" title="<?php echo t('str_filter_and_search_show_hide'); ?>"
-      onclick="this.closest('.bar').classList.toggle('fopen')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }"><svg viewBox="0 0 24 24" width="18" height="18" aria-label="<?php echo t('str_filter'); ?>" role="img"><path fill="currentColor" d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg></span><?php echo sort_toggle() . csv_icon('scripts/detections_dashboard.php?csv=1&from=' . $from . '&to=' . $to . ($sci !== '' ? '&sci=' . rawurlencode($sci) : '')); ?><span class="hmsort" data-table="hmday" data-store="byhour" data-default="n" data-remember="0" title="<?php echo t('str_opens_on_count_most_first_a_help'); ?>"><small><?php echo t('str_sort_colon'); ?></small><button type="button" data-sort="n"><?php echo t('str_count'); ?></button><button type="button" data-sort="tax" title="<?php echo t('str_field_guide_order_ebird_help'); ?>"><?php echo t('str_taxonomy'); ?></button><button type="button" data-sort="az" title="<?php echo t('str_alphabetical_by_the_names_shown'); ?>">A-Z</button></span>
-      <input type="search" class="hmfilter spfilter" data-table="hmday" placeholder="<?php echo t('str_filter_species'); ?>" title="<?php echo t('str_common_scientific_or_english_help'); ?>"></span>
-  </div>
-  <div class="panel">
-    <?php if (!$htot) { echo '<p class="note">' . t('str_no_detections_in_this_period') . '</p>'; } else { ?>
-    <div class="hmwrap"><table class="hm" id="hmday">
-      <tr><th class="nm"><span class="spcount"><?php echo t('str_n_species', array('n' => count($htot))); ?></span><br><select class="namemode" title="<?php echo t('str_names_shown'); ?>"><option value="com"><?php echo t('str_common_name'); ?></option><option value="sci"><?php echo t('str_scientific_name'); ?></option><option value="en"><?php echo t('str_english_name'); ?></option></select></th><?php for ($hh = 0; $hh < 24; $hh++) echo '<th class="m" colspan="2">' . sprintf('%02d', $hh) . '</th>'; ?><th class="t"><?php echo t('str_count'); ?></th></tr>
-      <?php foreach ($htot as $s => $n) {
-        // the name opens the species page; a click on the cells drills down to this species in the dashboard
-        echo '<tr class="drill" data-n="' . intval($n) . '" data-tax="' . taxon_order($s) . '" data-q="' . $h(mb_strtolower(($com_of[$s] ?? $s) . ' ' . $s . ' ' . get_english_name($s))) . '" data-drill="' . $base . '&amp;from=' . $from . '&amp;to=' . $to . '&amp;sci=' . rawurlencode($s) . '"><td class="nm"><a href="views.php?view=Species&amp;sci=' . rawurlencode($s) . '" title="' . t('str_species_page') . '" data-com="' . $h($com_of[$s] ?? $s) . '" data-sci="' . $h($s) . '" data-en="' . $h(get_english_name($s)) . '">' . $h($com_of[$s] ?? $s) . '</a></td>';
-        for ($b2 = 0; $b2 < 48; $b2++) echo $heatcell($hb[$s][$b2] ?? 0, $hmax, $b2 === $now_bin ? ' now' : '', $h(($com_of[$s] ?? $s) . ', ' . sprintf('%02d:%02d', intdiv($b2, 2), ($b2 % 2) * 30) . ': ' . ($hb[$s][$b2] ?? 0)));
-        echo '<td class="t">' . fmt_num($n) . '</td></tr>'; // the count on the right of the hours (owner 2026-10-21)
-      } ?>
-      <?php // the hours again above the bar charts, readable after scrolling down a long species list (owner 2026-10-21) ?>
-      <tr class="chart chead"><th class="nm"></th><?php for ($hh = 0; $hh < 24; $hh++) echo '<th class="m" colspan="2">' . sprintf('%02d', $hh) . '</th>'; ?><th class="t"></th></tr>
-      <tr class="chart"><td class="nm"><b><?php echo t('str_detections'); ?></b><br><small><?php echo t('str_max', array('n' => fmt_num($hb_nmax))); ?></small></td><?php
-        for ($b2 = 0; $b2 < 48; $b2++) echo $cellbar($hb_n[$b2], $hb_nmax, 70, $b2 === $now_bin ? 'now' : '', t('str_time_n_detections', array('time' => sprintf('%02d:%02d', intdiv($b2, 2), ($b2 % 2) * 30), 'n' => fmt_num($hb_n[$b2])))); ?><td class="t"><?php echo fmt_num(array_sum($hb_n)); ?></td></tr>
-      <tr class="chart"><td class="nm"><b><?php echo t('str_species'); ?></b><br><small><?php echo t('str_max', array('n' => $hb_spmax)); ?></small></td><?php
-        for ($b2 = 0; $b2 < 48; $b2++) echo $cellbar($hb_sp[$b2], $hb_spmax, 50, 'sp', t('str_time_n_species', array('time' => sprintf('%02d:%02d', intdiv($b2, 2), ($b2 % 2) * 30), 'n' => $hb_sp[$b2]))); ?><td class="t"><?php echo count($htot); ?></td></tr>
-    </table></div>
-    <?php // owner's wording (2026-10-21) ?>
-    <div class="note"><?php echo t('str_one_cell_half_an_hour'); ?><br><?php echo t('str_darker_more_detections'); ?><br>
-      <?php echo t('str_hover_for_the_numbers_click_a_help'); ?><br><?php echo t('str_click_the_cells_to_see_only_help'); ?></div>
-    <?php } ?>
-  </div>
-  <div class="panel"><h3><?php echo t('str_occurrences_by_calendar_week'); ?><?php echo $sci !== '' ? ', ' . $h($com_of[$sci] ?? $sci) : ''; ?></h3>
-    <div class="hmwrap"><table class="hm">
-      <tr><th class="nm"></th><?php
-        for ($k = 1; $k <= 53; ) { $span = 1; while ($k + $span <= 53 && $kmon[$k + $span] === $kmon[$k]) $span++; echo '<th class="m" colspan="' . $span . '">' . ($mnames[$kmon[$k]] ?? '') . '</th>'; $k += $span; } ?><th></th></tr>
-      <tr><th class="nm"></th><?php for ($k = 1; $k <= 53; $k++) echo '<th class="k">' . ($k % 4 === 1 ? $k : '') . '</th>'; ?><th class="t"><?php echo t('str_total'); ?></th></tr>
-      <tr class="chart"><td class="nm"><b><?php echo t('str_detections'); ?></b><br><small><?php echo t('str_max', array('n' => fmt_num($kw_nmax))); ?></small></td><?php
-        for ($k = 1; $k <= 53; $k++) echo $cellbar($kw_n[$k], $kw_nmax, 70, $k === $cur_kw ? 'now' : '', t('str_kw_detections', array('k' => $k, 'n' => fmt_num($kw_n[$k])))); ?><td class="t"><?php echo fmt_num(array_sum($kw_n)); ?></td></tr>
-      <tr class="chart"><td class="nm"><b><?php echo t('str_species'); ?></b><br><small><?php echo t('str_max', array('n' => $kw_spmax)); ?></small></td><?php
-        for ($k = 1; $k <= 53; $k++) echo $cellbar($kw_sp[$k], $kw_spmax, 50, 'sp', t('str_kw_species', array('k' => $k, 'n' => $kw_sp[$k]))); ?><td class="t"><?php $allsp = array(); foreach ($kw_spset as $x) $allsp += $x; echo count($allsp); ?></td></tr>
-    </table></div>
-    <div class="note"><?php echo t('str_this_week_in_orange'); ?><br><?php echo t('str_mouse_over_for_the_values'); ?></div>
-  </div>
+	<?php echo location_label(); // the location shown (owner 2026-10-21) ?>
+	<div class="cards">
+		<?php // the cards and their wording set by the owner (2026-10-21): Detections, Confirmed, Validated, New species ?>
+		<div class="card"><small class="t"><?php echo t('str_detections'); ?></small><b><?php echo fmt_num(intval($cur[0])); ?></b><?php echo $delta($cur[0], $prev[0], $vs) . $sparkline($spark['n']); ?></div>
+		<div class="card"><small class="t"><?php echo t('str_confirmed_species'); ?></small><b><?php echo $confirmed; ?></b><small class="dl"><?php echo t('str_confirmed_on_the_species_page'); ?></small></div>
+		<div class="card"><small class="t"><?php echo t('str_validated_species'); ?></small><b><?php echo $validated; ?></b><small class="dl"><?php echo t('str_1_review_yes'); ?></small></div>
+		<div class="card"><small class="t"><?php echo t('str_new_species'); ?></small><b><?php echo intval($new); ?></b><small class="dl"><?php echo t('str_first_detection_in_the_period'); ?></small></div>
+	</div>
+	<div class="bar top sortbar"<?php $cf_rf = get_config(); echo ' data-fphone="' . (($cf_rf['REPORTS_FILTERS_PHONE'] ?? 'closed') === 'open' ? 1 : 0) . '" data-fdesktop="' . (($cf_rf['REPORTS_FILTERS_DESKTOP'] ?? 'open') !== 'closed' ? 1 : 0) . '"'; // REPORTS_FILTERS_* (owner 2026-10-25) ?>><?php // filter line open by default (owner 2026-10-22), last state kept ?>
+		<?php // the period control shared with Validation (owner 2026-10-22): ◀ Today / Last 7 / Last 30 / All / Date range ▶,
+			// always shown (not part of the filter line) ?>
+		<?php echo period_picker('views.php?view=By%20Hour', $pick_from, $pick_to, $first_day, 'hour_period', array('sci' => $sci)); ?>
+		<span>
+			<?php if ($sci !== '') { ?><a class="btn on" href="<?php echo $base . '&amp;from=' . $from . '&amp;to=' . $to; ?>" title="<?php echo t('str_show_every_species'); ?>">&times; <?php echo $h($com_of[$sci] ?? $sci); ?></a><?php } ?></span>
+		<!-- species order (owner 2026-10-10): count (most detections first), taxonomy (eBird/Clements field-guide order), A–Z
+				 (by the names shown); remembered in this browser. One top line, laid out as By Week -->
+		<?php // a Sort button on the right opens the sort buttons; open, it stays on their left as › to fold them (owner 2026-10-21) ?>
+		<span class="right"><span class="dashfilter" role="button" tabindex="0" title="<?php echo t('str_filter_and_search_show_hide'); ?>"
+			onclick="this.closest('.bar').classList.toggle('fopen')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }"><svg viewBox="0 0 24 24" width="18" height="18" aria-label="<?php echo t('str_filter'); ?>" role="img"><path fill="currentColor" d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg></span><?php echo sort_toggle() . csv_icon('scripts/detections_dashboard.php?csv=1&from=' . $from . '&to=' . $to . ($sci !== '' ? '&sci=' . rawurlencode($sci) : '')); ?><span class="hmsort" data-table="hmday" data-store="byhour" data-default="n" data-remember="0" title="<?php echo t('str_opens_on_count_most_first_a_help'); ?>"><small><?php echo t('str_sort_colon'); ?></small><button type="button" data-sort="n"><?php echo t('str_count'); ?></button><button type="button" data-sort="tax" title="<?php echo t('str_field_guide_order_ebird_help'); ?>"><?php echo t('str_taxonomy'); ?></button><button type="button" data-sort="az" title="<?php echo t('str_alphabetical_by_the_names_shown'); ?>">A-Z</button></span>
+			<input type="search" class="hmfilter spfilter" data-table="hmday" placeholder="<?php echo t('str_filter_species'); ?>" title="<?php echo t('str_common_scientific_or_english_help'); ?>"></span>
+	</div>
+	<div class="panel">
+		<?php if (!$htot) { echo '<p class="note">' . t('str_no_detections_in_this_period') . '</p>'; } else { ?>
+		<div class="hmwrap"><table class="hm" id="hmday">
+			<tr><th class="nm"><span class="spcount"><?php echo t('str_n_species', array('n' => count($htot))); ?></span><br><select class="namemode" title="<?php echo t('str_names_shown'); ?>"><option value="com"><?php echo t('str_common_name'); ?></option><option value="sci"><?php echo t('str_scientific_name'); ?></option><option value="en"><?php echo t('str_english_name'); ?></option></select></th><?php for ($hh = 0; $hh < 24; $hh++) echo '<th class="m" colspan="2">' . sprintf('%02d', $hh) . '</th>'; ?><th class="t"><?php echo t('str_count'); ?></th></tr>
+			<?php foreach ($htot as $s => $n) {
+				// the name opens the species page; a click on the cells drills down to this species in the dashboard
+				echo '<tr class="drill" data-n="' . intval($n) . '" data-tax="' . taxon_order($s) . '" data-q="' . $h(mb_strtolower(($com_of[$s] ?? $s) . ' ' . $s . ' ' . get_english_name($s))) . '" data-drill="' . $base . '&amp;from=' . $from . '&amp;to=' . $to . '&amp;sci=' . rawurlencode($s) . '"><td class="nm"><a href="views.php?view=Species&amp;sci=' . rawurlencode($s) . '" title="' . t('str_species_page') . '" data-com="' . $h($com_of[$s] ?? $s) . '" data-sci="' . $h($s) . '" data-en="' . $h(get_english_name($s)) . '">' . $h($com_of[$s] ?? $s) . '</a></td>';
+				for ($b2 = 0; $b2 < 48; $b2++) echo $heatcell($hb[$s][$b2] ?? 0, $hmax, $b2 === $now_bin ? ' now' : '', $h(($com_of[$s] ?? $s) . ', ' . sprintf('%02d:%02d', intdiv($b2, 2), ($b2 % 2) * 30) . ': ' . ($hb[$s][$b2] ?? 0)));
+				echo '<td class="t">' . fmt_num($n) . '</td></tr>'; // the count on the right of the hours (owner 2026-10-21)
+			} ?>
+			<?php // the hours again above the bar charts, readable after scrolling down a long species list (owner 2026-10-21) ?>
+			<tr class="chart chead"><th class="nm"></th><?php for ($hh = 0; $hh < 24; $hh++) echo '<th class="m" colspan="2">' . sprintf('%02d', $hh) . '</th>'; ?><th class="t"></th></tr>
+			<tr class="chart"><td class="nm"><b><?php echo t('str_detections'); ?></b><br><small><?php echo t('str_max', array('n' => fmt_num($hb_nmax))); ?></small></td><?php
+				for ($b2 = 0; $b2 < 48; $b2++) echo $cellbar($hb_n[$b2], $hb_nmax, 70, $b2 === $now_bin ? 'now' : '', t('str_time_n_detections', array('time' => sprintf('%02d:%02d', intdiv($b2, 2), ($b2 % 2) * 30), 'n' => fmt_num($hb_n[$b2])))); ?><td class="t"><?php echo fmt_num(array_sum($hb_n)); ?></td></tr>
+			<tr class="chart"><td class="nm"><b><?php echo t('str_species'); ?></b><br><small><?php echo t('str_max', array('n' => $hb_spmax)); ?></small></td><?php
+				for ($b2 = 0; $b2 < 48; $b2++) echo $cellbar($hb_sp[$b2], $hb_spmax, 50, 'sp', t('str_time_n_species', array('time' => sprintf('%02d:%02d', intdiv($b2, 2), ($b2 % 2) * 30), 'n' => $hb_sp[$b2]))); ?><td class="t"><?php echo count($htot); ?></td></tr>
+		</table></div>
+		<?php // owner's wording (2026-10-21) ?>
+		<div class="note"><?php echo t('str_one_cell_half_an_hour'); ?><br><?php echo t('str_darker_more_detections'); ?><br>
+			<?php echo t('str_hover_for_the_numbers_click_a_help'); ?><br><?php echo t('str_click_the_cells_to_see_only_help'); ?></div>
+		<?php } ?>
+	</div>
+	<div class="panel"><h3><?php echo t('str_occurrences_by_calendar_week'); ?><?php echo $sci !== '' ? ', ' . $h($com_of[$sci] ?? $sci) : ''; ?></h3>
+		<div class="hmwrap"><table class="hm">
+			<tr><th class="nm"></th><?php
+				for ($k = 1; $k <= 53; ) { $span = 1; while ($k + $span <= 53 && $kmon[$k + $span] === $kmon[$k]) $span++; echo '<th class="m" colspan="' . $span . '">' . ($mnames[$kmon[$k]] ?? '') . '</th>'; $k += $span; } ?><th></th></tr>
+			<tr><th class="nm"></th><?php for ($k = 1; $k <= 53; $k++) echo '<th class="k">' . ($k % 4 === 1 ? $k : '') . '</th>'; ?><th class="t"><?php echo t('str_total'); ?></th></tr>
+			<tr class="chart"><td class="nm"><b><?php echo t('str_detections'); ?></b><br><small><?php echo t('str_max', array('n' => fmt_num($kw_nmax))); ?></small></td><?php
+				for ($k = 1; $k <= 53; $k++) echo $cellbar($kw_n[$k], $kw_nmax, 70, $k === $cur_kw ? 'now' : '', t('str_kw_detections', array('k' => $k, 'n' => fmt_num($kw_n[$k])))); ?><td class="t"><?php echo fmt_num(array_sum($kw_n)); ?></td></tr>
+			<tr class="chart"><td class="nm"><b><?php echo t('str_species'); ?></b><br><small><?php echo t('str_max', array('n' => $kw_spmax)); ?></small></td><?php
+				for ($k = 1; $k <= 53; $k++) echo $cellbar($kw_sp[$k], $kw_spmax, 50, 'sp', t('str_kw_species', array('k' => $k, 'n' => $kw_sp[$k]))); ?><td class="t"><?php $allsp = array(); foreach ($kw_spset as $x) $allsp += $x; echo count($allsp); ?></td></tr>
+		</table></div>
+		<div class="note"><?php echo t('str_this_week_in_orange'); ?><br><?php echo t('str_mouse_over_for_the_values'); ?></div>
+	</div>
 </div>
 <script>
 // the species names 30 % narrower than the longest one (owner 2026-10-21); the full name on mouse over
 (function () {
-  var t = document.getElementById('hmday');
-  if (!t) return;
-  var w = 0;
-  t.querySelectorAll('td.nm a').forEach(function (a) { w = Math.max(w, a.scrollWidth); a.title = a.textContent; });
-  if (w) t.querySelectorAll('td.nm a').forEach(function (a) { a.style.maxWidth = Math.round(w * 0.7) + 'px'; });
+	var t = document.getElementById('hmday');
+	if (!t) return;
+	var w = 0;
+	t.querySelectorAll('td.nm a').forEach(function (a) { w = Math.max(w, a.scrollWidth); a.title = a.textContent; });
+	if (w) t.querySelectorAll('td.nm a').forEach(function (a) { a.style.maxWidth = Math.round(w * 0.7) + 'px'; });
 })();
 </script>
 <script src="static/species-sort.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/species-sort.js"); ?>"></script>
 <script src="static/name-mode.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/name-mode.js"); ?>"></script>
 <script>
 document.querySelectorAll('tr.drill').forEach(function (tr) {
-  tr.addEventListener('click', function (e) { if (e.target.closest('td.c')) location.href = tr.dataset.drill.replace(/&amp;/g, '&'); });
+	tr.addEventListener('click', function (e) { if (e.target.closest('td.c')) location.href = tr.dataset.drill.replace(/&amp;/g, '&'); });
 });
 
 </script>

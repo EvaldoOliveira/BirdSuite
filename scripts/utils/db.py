@@ -1,3 +1,17 @@
+################################################################################
+# scripts/utils/db.py - THE DATABASE ACCESS OF THE PYTHON SIDE
+#
+# PURPOSE:
+#   The database access of the Python side: the connection, the records of a file, the latest detection,
+#   today's and the week's counts of a species, summaries.
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#
+# USAGE:
+#   Called as scripts/utils/db.py
+################################################################################
+
 import sqlite3
 import time as timeim
 from datetime import datetime

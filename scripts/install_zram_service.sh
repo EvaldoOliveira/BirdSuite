@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+################################################################################
+# scripts/install_zram_service.sh - THE ZRAM SERVICE
+#
+# PURPOSE:
+#   Configures zram (compressed swap in RAM) and installs its service; a reboot makes it effective.
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   bash scripts/install_zram_service.sh
+################################################################################
+
 echo "Configuring zram.service"
 sudo touch /etc/modules-load.d/zram.conf
 echo 'zram' | sudo tee /etc/modules-load.d/zram.conf
@@ -6,7 +19,7 @@ sudo touch /etc/modprobe.d/zram.conf
 echo 'options zram num_devices=1' | sudo tee /etc/modprobe.d/zram.conf
 sudo touch /etc/udev/rules.d/99-zram.rules
 echo 'KERNEL=="zram0", ATTR{comp_algorithm}="zstd", ATTR{disksize}="500M", TAG+="systemd"' \
-  | sudo tee /etc/udev/rules.d/99-zram.rules
+	| sudo tee /etc/udev/rules.d/99-zram.rules
 sudo touch /etc/systemd/system/zram.service
 echo "Installing zram.service"
 cat << EOF | sudo tee /etc/systemd/system/zram.service

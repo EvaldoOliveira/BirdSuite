@@ -1,3 +1,22 @@
+################################################################################
+# scripts/review_worker.py - REVIEW HELPER FOR THE REVIEW PLAYER
+#
+# PURPOSE:
+#   Review helper for the review player: keeps the station's model loaded so "Which bird was it?" answers in
+#   about a second instead of loading the model for every clip, and redraws a clip's spectrogram with the
+#   palette, floor, range and contrast chosen in the player.
+#
+# DEPENDENCIES:
+#   - scripts/utils/models.py
+#   - scripts/utils/core.py
+#   - scripts/clip_alternatives.py
+#   - scripts/spectrogram_png.py
+#
+# USAGE:
+#   python3 scripts/review_worker.py <arguments> (see main)
+#   Referenced by homepage/static/review-player.js, scripts/clip_alternatives.py, scripts/play.php
+################################################################################
+
 """Review helper for the review player: keeps the station's model loaded so "Which bird was it?" answers in about a
 second instead of loading the model for every clip, and redraws a clip's spectrogram with the palette, floor, range
 and contrast chosen in the player.

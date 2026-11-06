@@ -1,3 +1,18 @@
+################################################################################
+# scripts/spectrogram_png.py - SPECTROGRAM IMAGE OF A RECORDING DRAWN WITH THE COLOURS OF THE LIVE
+#
+# PURPOSE:
+#   Spectrogram image of a recording drawn with the colours of the live Spectrogram page.
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#
+# USAGE:
+#   python3 scripts/spectrogram_png.py <arguments> (see main)
+#   Referenced by homepage/static/review-player.js, scripts/spectrogram.php, scripts/spectrogram.sh,
+#   scripts/spectrogram_thumb.php, scripts/utils/reporting.py
+################################################################################
+
 """Spectrogram image of a recording drawn with the colours of the live Spectrogram page.
 
 The Overview's "Currently Analyzing" picture used sox, whose colour maps only approximate the

@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+################################################################################
+# tools/check_views.py - THE VIEW REGISTRY CHECK
+#
+# PURPOSE:
+#   The view registry test (US-50, owner 2026-11-04).
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   python3 tools/check_views.py <arguments> (see main)
+################################################################################
+
 """tools/check_views.py - the view registry test (US-50, owner 2026-11-04).
 
 scripts/view_registry.php is the single list of the station's pages. This test reads it (no PHP needed) and fails when:
@@ -38,7 +51,7 @@ def catalogue(lang):
 
 def registry():
     src = read('scripts/view_registry.php')
-    body = src[src.index('$r = array('):src.index('  );\n  return $r;')]
+    body = src[src.index('$r = array('):re.search(r'\n\s*\);\n\s*return \$r;', src).start()]
     entries = {}
     # 'Key' => $v(group, 'label', 'level'[, 'open'[, array(extra)]]),
     for m in re.finditer(r"^\s*'([^']+)' => \$v\((.*)\),\s*$", body, re.M):

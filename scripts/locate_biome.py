@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/locate_biome.py - THE BIOME AND ECOREGION OF A LATITUDE/LONGITUDE
+#
+# PURPOSE:
+#   The biome and ecoregion of a latitude/longitude (US-27, owner 2026-10-29), offline.
+#
+# DEPENDENCIES:
+#   - scripts/locate_state.py
+#
+# USAGE:
+#   python3 scripts/locate_biome.py <arguments> (see main)
+#   Referenced by scripts/locations.php, scripts/utils/locations.py
+################################################################################
+
 """The biome and ecoregion of a latitude/longitude (US-27, owner 2026-10-29), offline.
 
 Worldwide: RESOLVE Ecoregions 2017 (Dinerstein et al. 2017, BioScience 67:534, CC BY 4.0), 14 biomes and 846

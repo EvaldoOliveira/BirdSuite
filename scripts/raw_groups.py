@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/raw_groups.py - THE RAW RECORDING GROUPS
+#
+# PURPOSE:
+#   The raw recording groups (Tools › Raw Recording): one group of settings per microphone, by its ALSA card
+#   id (stable across replugs), in config/raw_recording.json (BS_RAW_REC_FILE). A microphone without a saved
+#   group gets the defaults of BirdSuite.conf (RAW_REC_*, Settings › Defaults).
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/raw_recording.sh
+#
+# USAGE:
+#   python3 scripts/raw_groups.py <arguments> (see main)
+#   Referenced by scripts/disk_parts.sh, scripts/raw_recording.php, scripts/raw_recording.sh,
+#   scripts/raw_recording_cron.sh
+################################################################################
+
 """The raw recording groups (Tools › Raw Recording): one group of settings per microphone, by its ALSA card id (stable
 across replugs), in config/raw_recording.json (BS_RAW_REC_FILE). A microphone without a saved group gets the defaults
 of BirdSuite.conf (RAW_REC_*, Settings › Defaults).

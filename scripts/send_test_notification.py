@@ -1,3 +1,21 @@
+################################################################################
+# scripts/send_test_notification.py - ONE TEST NOTIFICATION
+#
+# PURPOSE:
+#   Sends one notification through Apprise with the station's settings (--config, --title, --body, the
+#   channel) for the Send test buttons of the notification pages.
+#
+# DEPENDENCIES:
+#   - scripts/utils/db.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/core.py
+#   - scripts/utils/notifications.py
+#
+# USAGE:
+#   python3 scripts/send_test_notification.py  [--config] [--title] [--body]
+#   Referenced by scripts/email_setup.py, scripts/notifications_page.php, scripts/utils/notifications.py
+################################################################################
+
 import argparse
 import datetime
 import logging

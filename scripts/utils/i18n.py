@@ -1,3 +1,18 @@
+################################################################################
+# scripts/utils/i18n.py - INTERFACE LANGUAGE FOR THE PYTHON SIDE
+#
+# PURPOSE:
+#   Interface language for the Python side (US-122, owner 2026-10-20; text keys 2026-11-02): t(key) with the
+#   catalogues of the pages (lang/<code>/*.json, English in lang/en the only reference and the fallback of
+#   every other language), the language from UI_LANG or, when it is empty, from DATABASE_LANG.
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#
+# USAGE:
+#   Called as scripts/utils/i18n.py
+################################################################################
+
 """Interface language for the Python side (US-122, owner 2026-10-20; text keys 2026-11-02): t(key) with the
 catalogues of the pages (lang/<code>/*.json, English in lang/en the only reference and the fallback of every other
 language), the language from UI_LANG or, when it is empty, from DATABASE_LANG."""

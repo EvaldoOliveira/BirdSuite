@@ -1,4 +1,29 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/migration.py - THE MIGRATION FROM BIRDNET-PI ON THE SAME CARD
+#
+# PURPOSE:
+#   The migration from BirdNET-Pi on the same card (US-01, US-05; owner 2026-11-02). The installer
+#   (newinstaller.sh) finds an installation of the original project in the home (its program folder, core.env
+#   BS_UPSTREAM_PROG_DIR, with scripts/birds.db and a birdnet.conf, and no core.env of BirdSuite) and counts
+#   the space; the pages show the record (System › Status, Migration); the import itself is location_data.py
+#   migrate. Runs as the station user.
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#   - scripts/utils/notifications.py
+#   - scripts/utils/core.py
+#   - newinstaller.sh
+#   - scripts/location_data.py
+#   - scripts/disk_check.sh
+#   - birdsuite-root (sudo helper)
+#
+# USAGE:
+#   python3 scripts/migration.py <arguments> (see main)
+#   Referenced by newinstaller.sh, scripts/disk_check.sh, scripts/location_data.py, scripts/status.php,
+#   tests/migration_test.py
+################################################################################
+
 """The migration from BirdNET-Pi on the same card (US-01, US-05; owner 2026-11-02). The installer (newinstaller.sh) finds
 an installation of the original project in the home (its program folder, core.env BS_UPSTREAM_PROG_DIR, with
 scripts/birds.db and a birdnet.conf, and no core.env of BirdSuite) and counts the space; the pages show the record

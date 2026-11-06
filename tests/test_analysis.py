@@ -1,3 +1,17 @@
+################################################################################
+# tests/test_analysis.py - UNIT TESTS OF THE ANALYSIS
+#
+# PURPOSE:
+#   Unit tests of the analysis: run_analysis on the test recordings, the detections and the clips expected.
+#
+# DEPENDENCIES:
+#   - scripts/utils/analysis.py
+#   - scripts/utils/classes.py
+#
+# USAGE:
+#   python3 tests/test_analysis.py <arguments> (see main)
+################################################################################
+
 import os
 import unittest
 from unittest.mock import patch

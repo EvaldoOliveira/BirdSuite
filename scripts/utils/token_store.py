@@ -1,3 +1,21 @@
+################################################################################
+# scripts/utils/token_store.py - THE NOTIFICATION SECRETS STAY
+#
+# PURPOSE:
+#   The notification secrets stay (owner 2026-10-31: "o e-mail e o Telegram têm que ser perpétuos"). Settings
+#   › Telegram and Settings › E-mail keep a second copy of the token store in state/apprise-tokens.keep (mode
+#   600) every time they save it; before each notification the store is checked against that copy and a value
+#   that went missing or was replaced by anything else (2026-10-31: a Mesh start-up hook rewrote the store and
+#   the bot and the groups were gone) is put back. Removing Telegram or e-mail on its page removes it from
+#   both. Standard library only.
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   Referenced by scripts/prepare_image.sh
+################################################################################
+
 """The notification secrets stay (owner 2026-10-31: "o e-mail e o Telegram têm que ser perpétuos"). Settings › Telegram and
 Settings › E-mail keep a second copy of the token store in state/apprise-tokens.keep (mode 600) every time they save it;
 before each notification the store is checked against that copy and a value that went missing or was replaced by

@@ -1,9 +1,25 @@
 #!/usr/bin/env bash
-# Factory settings (owner 2026-10-24, Tools › Backup/Restore › Danger zone): the settings go back to the factory
-# defaults, after a settings backup (backup_data.sh -m settings) saved in ~/BirdSuite-backups/settings-<time>.tar, which
-# Tools › Backup/Restore offers to download and Restore settings takes back. Every key of config/factory_defaults.conf
-# takes its default value; the station's own keys stay (name, coordinates, passwords, paths, Common name Language,
-# update branch), as do the detections, the recordings, the locations, the species lists and the notifications.
+################################################################################
+# scripts/factory_settings.sh - FACTORY SETTINGS
+#
+# PURPOSE:
+#   Factory settings (owner 2026-10-24, Tools › Backup/Restore › Danger zone): the settings go back to the
+#   factory defaults, after a settings backup (backup_data.sh -m settings) saved in
+#   ~/BirdSuite-backups/settings-<time>.tar, which Tools › Backup/Restore offers to download and Restore
+#   settings takes back. Every key of config/factory_defaults.conf takes its default value; the station's own
+#   keys stay (name, coordinates, passwords, paths, Common name Language, update branch), as do the
+#   detections, the recordings, the locations, the species lists and the notifications.
+#
+# DEPENDENCIES:
+#   - scripts/backup_data.sh
+#   - scripts/paths.sh
+#   - scripts/restart_services.sh
+#
+# USAGE:
+#   bash scripts/factory_settings.sh
+#   Referenced by homepage/views.php, scripts/danger_run.php, scripts/station_backup.php
+################################################################################
+
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 # as the station user (the page runs it as the web server's user)
 if [ "$(id -un)" != "$BIRDNET_USER" ]; then exec sudo -n -u "$BIRDNET_USER" "$(readlink -f "$0")" "$@"; fi

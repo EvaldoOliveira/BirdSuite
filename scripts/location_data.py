@@ -1,4 +1,27 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/location_data.py - LOCATION DATA
+#
+# PURPOSE:
+#   Location data (owner 2026-10-20): the records of one location as a whole — Tools › Location Data
+#   (scripts/location_data.php) runs it as the station user, one job at a time, progress in
+#   state/location_job.json of the program folder.
+#
+# DEPENDENCIES:
+#   - scripts/utils/i18n.py
+#   - scripts/utils/helpers.py
+#   - scripts/utils/core.py
+#   - scripts/utils/locations as locations_util.py
+#   - scripts/migration.py
+#   - tests/helpers.py
+#   - scripts/utils/locations.py
+#
+# USAGE:
+#   python3 scripts/location_data.py <arguments> (see main)
+#   Referenced by scripts/lib/locations.php, scripts/location_data.php, scripts/migration.py,
+#   scripts/play.php, tests/import_export_test.py, tests/migration_test.py
+################################################################################
+
 """Location data (owner 2026-10-20): the records of one location as a whole — Tools › Location Data
 (scripts/location_data.php) runs it as the station user, one job at a time, progress in state/location_job.json of the program folder.
 

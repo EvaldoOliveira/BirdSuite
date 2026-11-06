@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
-# This scripts installs NoIP's Dynamic Update Client (DUC)
+################################################################################
+# scripts/install_noip2.sh - THE NOIP DYNAMIC UPDATE CLIENT
+#
+# PURPOSE:
+#   This scripts installs NoIP's Dynamic Update Client (DUC)
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   bash scripts/install_noip2.sh
+################################################################################
+
 cd /usr/local/src && wget https://www.noip.com/client/linux/noip-duc-linux.tar.gz
 tar -vzxf noip-duc-linux.tar.gz
 cd noip-2*

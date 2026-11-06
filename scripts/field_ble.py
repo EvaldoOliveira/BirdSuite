@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/field_ble.py - BLUETOOTH FIELD SERVICE
+#
+# PURPOSE:
+#   Bluetooth field service (US-120, owner 2026-10-20) — the Bluetooth field service, as root, through BlueZ
+#   over D-Bus (python3-dbus + GLib, both on Raspberry Pi OS). A phone (the field companion, static/companion)
+#   finds the station by the name it advertises, BirdSuite-<the whole MAC>, with or without any network:
+#
+# DEPENDENCIES:
+#   - scripts/utils/core.py
+#   - scripts/field_net.py
+#
+# USAGE:
+#   python3 scripts/field_ble.py <arguments> (see main)
+#   Referenced by scripts/field_cli.php, scripts/lib/auth.php, templates/units/SVC_BLE.service
+################################################################################
+
 """Bluetooth field service (US-120, owner 2026-10-20) — the Bluetooth field service, as root, through BlueZ over D-Bus
 (python3-dbus + GLib, both on Raspberry Pi OS). A phone (the field companion, static/companion) finds the station by
 the name it advertises, BirdSuite-<the whole MAC>, with or without any network:

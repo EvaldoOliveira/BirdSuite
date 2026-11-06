@@ -1,3 +1,18 @@
+################################################################################
+# lang/check.py - TEXT KEYS OF THE INTERFACE
+#
+# PURPOSE:
+#   Text keys of the interface (US-122, owner 2026-11-02): the code says t('str_key'), lang/en/*.json holds
+#   the English text of every key (the only reference), every other lang/<code>/*.json translates the keys.
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   python3 lang/check.py <arguments> (see main)
+#   Referenced by scripts/lib/ui.php, tools/hooks/pre-commit
+################################################################################
+
 """Text keys of the interface (US-122, owner 2026-11-02): the code says t('str_key'), lang/en/*.json holds the English
 text of every key (the only reference), every other lang/<code>/*.json translates the keys.
 

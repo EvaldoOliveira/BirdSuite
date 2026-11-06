@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/land_cover.py - THE LAND COVER AROUND A LATITUDE/LONGITUDE
+#
+# PURPOSE:
+#   The land cover around a latitude/longitude (owner 2026-10-29): is the place a city, a forest, a field?
+#
+# DEPENDENCIES:
+#   - (none beyond the system)
+#
+# USAGE:
+#   python3 scripts/land_cover.py <arguments> (see main)
+#   Referenced by scripts/lib/ui.php, scripts/locations.php
+################################################################################
+
 """The land cover around a latitude/longitude (owner 2026-10-29): is the place a city, a forest, a field?
 
 ESA WorldCover 2021 v200 (10 m, Zanaga et al. 2022, CC BY 4.0), read online from its public cloud copy (AWS Open

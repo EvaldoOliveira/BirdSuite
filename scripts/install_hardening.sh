@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
-# System hardening of a fresh install (owner 2026-10-23): an inbound firewall of the station's own (nftables, table
-# inet birdsuite), automatic security updates (Debian security archive only, never an automatic reboot) and no root
-# login over ssh. Run as root by install_services.sh; the updater does not run it, existing stations keep what they have.
-# Undo: systemctl disable --now birdsuite-firewall; rm /etc/apt/apt.conf.d/5{2,3}birdsuite-*; rm /etc/ssh/sshd_config.d/10-birdsuite.conf
+################################################################################
+# scripts/install_hardening.sh - SYSTEM HARDENING OF A FRESH INSTALL
+#
+# PURPOSE:
+#   System hardening of a fresh install (owner 2026-10-23): an inbound firewall of the station's own
+#   (nftables, table inet birdsuite), automatic security updates (Debian security archive only, never an
+#   automatic reboot) and no root login over ssh. Run as root by install_services.sh; the updater does not run
+#   it, existing stations keep what they have. Undo: systemctl disable --now birdsuite-firewall; rm
+#   /etc/apt/apt.conf.d/5{2,3}birdsuite-*; rm /etc/ssh/sshd_config.d/10-birdsuite.conf
+#
+# DEPENDENCIES:
+#   - scripts/install_services.sh
+#
+# USAGE:
+#   bash scripts/install_hardening.sh
+#   Referenced by scripts/install_services.sh
+################################################################################
+
 my_dir=${my_dir:-$(realpath "$(dirname "$0")/..")}
 
 apt-get install -y --no-install-recommends nftables unattended-upgrades || { echo "hardening: packages not installed" >&2; exit 1; }
@@ -54,9 +68,9 @@ systemctl enable --now unattended-upgrades.service apt-daily.timer apt-daily-upg
 printf '# BirdSuite (2026-10-23)\nPermitRootLogin no\n' > /etc/ssh/sshd_config.d/10-birdsuite.conf
 chmod u=rw,go=r /etc/ssh/sshd_config.d/10-birdsuite.conf
 if sshd -t; then
-  systemctl reload ssh.service 2> /dev/null || systemctl reload sshd.service 2> /dev/null
+	systemctl reload ssh.service 2> /dev/null || systemctl reload sshd.service 2> /dev/null
 else
-  rm -f /etc/ssh/sshd_config.d/10-birdsuite.conf
-  echo "hardening: sshd rejected the drop-in, left out" >&2
+	rm -f /etc/ssh/sshd_config.d/10-birdsuite.conf
+	echo "hardening: sshd rejected the drop-in, left out" >&2
 fi
 exit 0

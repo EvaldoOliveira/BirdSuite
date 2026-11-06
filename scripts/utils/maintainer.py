@@ -1,3 +1,17 @@
+################################################################################
+# scripts/utils/maintainer.py - MAINTENANCE OF THE LABEL TRANSLATIONS
+#
+# PURPOSE:
+#   Maintainer tools for the common-name translations of the labels: create and measure the language files,
+#   scrape Wikipedia names, update every language.
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#
+# USAGE:
+#   Called as scripts/utils/maintainer.py
+################################################################################
+
 import os
 import re
 import time

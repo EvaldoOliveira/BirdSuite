@@ -1,7 +1,19 @@
 <?php
-/**
- * based on the upload.php example by Moxiecode Systems AB
- */
+################################################################################
+# scripts/restore.php - UPLOAD OF A SETTINGS BACKUP (RESTORE)
+#
+# PURPOSE:
+#   Receives the settings backup uploaded in chunks by plupload (Tools › Backup/Import › Settings) and
+#   restores it; based on the upload.php example by Moxiecode Systems AB.
+#
+# DEPENDENCIES:
+#   - scripts/common.php
+#   - scripts/backup_data.sh
+#   - scripts/read_chunks.sh
+#
+# USAGE:
+#   Referenced by scripts/backup_import_page.php, scripts/station_backup.php
+################################################################################
 
 session_start(array('cookie_httponly' => true, 'cookie_samesite' => 'Lax'));  // as common.php BS_SESSION_OPTIONS (2026-10-23 test run)
 
@@ -35,30 +47,30 @@ $pipe = $_SESSION['restore_pipe'] ?? '';
 $log=BS_RECS . "/restore.log";
 
 if (!$chunks || $chunk == 0) {
-    exec(station_prefix() . "ps xf | grep -v grep | grep " . escapeshellarg(BS_SCRIPTS . '/backup_data.sh -a restore -f -') . " | awk '{ print $1 }'", $ProcessIDs);
-    foreach ($ProcessIDs as $pid) {
-        exec(station_prefix() . "kill -9 $pid");
-    }
-    if($pipe !== '' && file_exists($pipe)){
-        unlink($pipe);
-        @rmdir(dirname($pipe));
-    }
-    $pipe_dir = sys_get_temp_dir() . '/bs-restore-' . bin2hex(random_bytes(8));
-    if (!@mkdir($pipe_dir, 0700)) {
-        die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
-    }
-    $pipe = $pipe_dir . '/bird_pipe';
-    $_SESSION['restore_pipe'] = $pipe;
-    if(file_exists($log)){
-        unlink($log);
-    }
+		exec(station_prefix() . "ps xf | grep -v grep | grep " . escapeshellarg(BS_SCRIPTS . '/backup_data.sh -a restore -f -') . " | awk '{ print $1 }'", $ProcessIDs);
+		foreach ($ProcessIDs as $pid) {
+				exec(station_prefix() . "kill -9 $pid");
+		}
+		if($pipe !== '' && file_exists($pipe)){
+				unlink($pipe);
+				@rmdir(dirname($pipe));
+		}
+		$pipe_dir = sys_get_temp_dir() . '/bs-restore-' . bin2hex(random_bytes(8));
+		if (!@mkdir($pipe_dir, 0700)) {
+				die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
+		}
+		$pipe = $pipe_dir . '/bird_pipe';
+		$_SESSION['restore_pipe'] = $pipe;
+		if(file_exists($log)){
+				unlink($log);
+		}
 
-    if (!posix_mkfifo($pipe, 0660)){
-        die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
-    }
-    $read_chunks = ($chunks > 0) ? $chunks : 1;
-    $pID = shell_exec("nohup " . BS_SCRIPTS . "/read_chunks.sh -n $read_chunks -f " . escapeshellarg($pipe) . " | " . station_prefix() . BS_SCRIPTS . "/backup_data.sh -a restore -f - > $log 2>&1 & echo $!");
-    $_SESSION['pID'] = $pID;
+		if (!posix_mkfifo($pipe, 0660)){
+				die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
+		}
+		$read_chunks = ($chunks > 0) ? $chunks : 1;
+		$pID = shell_exec("nohup " . BS_SCRIPTS . "/read_chunks.sh -n $read_chunks -f " . escapeshellarg($pipe) . " | " . station_prefix() . BS_SCRIPTS . "/backup_data.sh -a restore -f - > $log 2>&1 & echo $!");
+		$_SESSION['pID'] = $pID;
 }
 
 // Open pipe
@@ -90,19 +102,19 @@ while ($buff = fread($in, 4096)) {
 
 // Check if file has been uploaded
 if (!$chunks || $chunk == $chunks - 1) {
-    $pID = $_SESSION['pID'];
-    exec("ps $pID", $ProcessState);
+		$pID = $_SESSION['pID'];
+		exec("ps $pID", $ProcessState);
 
-    $i = 0;
-    while ($i < 100 && count($ProcessState) >= 2) {
-        unset($ProcessState);
-        exec("ps $pID", $ProcessState);
-        $i++;
-        usleep(200000);
-    }
-    unlink($pipe);
-    @rmdir(dirname($pipe));
-    unset($_SESSION['pID'], $_SESSION['restore_pipe']);
+		$i = 0;
+		while ($i < 100 && count($ProcessState) >= 2) {
+				unset($ProcessState);
+				exec("ps $pID", $ProcessState);
+				$i++;
+				usleep(200000);
+		}
+		unlink($pipe);
+		@rmdir(dirname($pipe));
+		unset($_SESSION['pID'], $_SESSION['restore_pipe']);
 }
 
 // Return Success JSON-RPC response

@@ -1,4 +1,28 @@
 #!/usr/bin/env python3
+################################################################################
+# scripts/ebird_report.py - EBIRD
+#
+# PURPOSE:
+#   EBird (owner 2026-10-27): the species of a day, a week or a month as a table by day and as eBird
+#   checklists, with a filter (only the species confirmed by ear, every detection from a minimum confidence,
+#   or every detection not answered No), sent by e-mail on request or every week by the schedule. Every
+#   species row carries the weather at the hour it was first heard and every checklist the day's weather
+#   (Open-Meteo, no key; N/A without internet).
+#
+# DEPENDENCIES:
+#   - scripts/utils/helpers.py
+#   - scripts/utils/i18n.py
+#   - scripts/utils/analysis.py
+#   - scripts/utils/notifications.py
+#   - scripts/utils/core.py
+#   - scripts/utils/locations.py
+#   - scripts/field_net.py
+#
+# USAGE:
+#   python3 scripts/ebird_report.py <arguments> (see main)
+#   Referenced by scripts/ebird_page.php, scripts/lib/locations.php, templates/cleanup.cron
+################################################################################
+
 """eBird (owner 2026-10-27): the species of a day, a week or a month as a table by day and as eBird checklists, with a
 filter (only the species confirmed by ear, every detection from a minimum confidence, or every detection not answered
 No), sent by e-mail on request or every week by the schedule. Every species row carries the weather at the hour it was

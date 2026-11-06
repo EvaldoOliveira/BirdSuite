@@ -1,6 +1,29 @@
 #!/bin/bash
-
-# KEEP ONLY THE NUMBER OF FILES PER SPECIES DEFINED IN THE OPTIONS
+################################################################################
+# scripts/disk_species_clean.sh - THE CLIPS BEYOND THE NUMBER KEPT PER SPECIES
+#
+# PURPOSE:
+#   Keeps only the number of clips per species set in the settings (MAX_FILES_SPECIES and the purge
+#   protection): the oldest beyond it are removed; part of the nightly disk housekeeping.
+#
+# DEPENDENCIES:
+#   - scripts/paths.sh
+#   - scripts/disk_usage_log.sh
+#   - scripts/disk_forecast.py
+#   - scripts/disk_parts.sh
+#   - scripts/purge_protection.py
+#   - scripts/purge_stage.py
+#   - scripts/spectro_archive.py
+#   - scripts/clip_dispose.py
+#   - scripts/daily_cap.py
+#   - scripts/sound_repo_clean.sh
+#   - scripts/cache_warm.sh
+#
+# USAGE:
+#   bash scripts/disk_species_clean.sh
+#   Referenced by scripts/clip_dispose.py, scripts/daily_cap.py, scripts/disk_forecast.py,
+#   scripts/disk_parts.sh, scripts/disk_usage_log.sh, scripts/purge_protection.py, scripts/purge_stage.py …
+################################################################################
 
 source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/paths.sh"
 base_dir="$BS_BY_DATE"
@@ -36,24 +59,24 @@ export PURGE_LOCK_HELD=1
 
 # the spectrograms of the previous days are kept as JPEG (owner 2026-10-22); the audio clips are not touched
 spectro_archive() {
-    "$BS_PYTHON" "$BS_SCRIPTS"/spectro_archive.py || true
+		"$BS_PYTHON" "$BS_SCRIPTS"/spectro_archive.py || true
 }
 
 # automatic purge protection (top N per species + confirmed reviews) before anything is deleted; no fresh list =
 # nothing deleted (the JPEG archive still runs, it deletes no audio)
 if ! "$BS_PYTHON" "$BS_SCRIPTS"/purge_protection.py; then
-    log "refused: the purge protection list could not be refreshed - no clip deleted"
-    spectro_archive
-    exit 1
+		log "refused: the purge protection list could not be refreshed - no clip deleted"
+		spectro_archive
+		exit 1
 fi
 
 # FULL_DISK=external (US-128, owner 2026-10-29): the clips past the limits are moved to the external folder instead of
 # deleted (clip_dispose.py); when that folder cannot be used nothing is removed tonight
 dispose=("$BS_PYTHON" "$BS_SCRIPTS"/clip_dispose.py)
 if ! why=$("${dispose[@]}" --check); then
-    log "skipped: external backup unavailable ($why) - no clip removed"
-    spectro_archive
-    exit 1
+		log "skipped: external backup unavailable ($why) - no clip removed"
+		spectro_archive
+		exit 1
 fi
 
 # the daily cap per species (owner 2026-10-24, MAX_FILES_SPECIES_DAY): in each day, the best N clips of a species stay,
@@ -65,32 +88,32 @@ fi
 declare -A keep_of
 override_file="$BS_LISTS/species_max_files.txt"
 if [ -s "$override_file" ]; then
-    while IFS= read -r sci; do
-        n=$(grep -m1 "^${sci}=" "$override_file" | cut -d= -f2)
-        if [[ "$n" =~ ^[0-9]+$ ]]; then
-            keep_of["$(echo "$sci" | tr ' ' '_' | tr -d "'" | sed 's/_*$//')"]="$n"
-        fi
-    done < <(sqlite3 -readonly "$BS_DB" "SELECT DISTINCT Sci_Name FROM detections;")
+		while IFS= read -r sci; do
+				n=$(grep -m1 "^${sci}=" "$override_file" | cut -d= -f2)
+				if [[ "$n" =~ ^[0-9]+$ ]]; then
+						keep_of["$(echo "$sci" | tr ' ' '_' | tr -d "'" | sed 's/_*$//')"]="$n"
+				fi
+		done < <(sqlite3 -readonly "$BS_DB" "SELECT DISTINCT Sci_Name FROM detections;")
 fi
 
 # 0 keeps everything (owner 2026-10-24): every day protected (PURGE_RECENT_DAYS=0) or every clip protected
 # (PURGE_PROTECT_TOP_N=0) = the per-species limit deletes nothing
 if [ "$recent_days" = 0 ] || [ "${PURGE_PROTECT_TOP_N:-50}" = 0 ]; then
-    log "nothing to do: every clip kept (PURGE_RECENT_DAYS=$recent_days, PURGE_PROTECT_TOP_N=${PURGE_PROTECT_TOP_N:-50})"
-    spectro_archive
-    exit 0
+		log "nothing to do: every clip kept (PURGE_RECENT_DAYS=$recent_days, PURGE_PROTECT_TOP_N=${PURGE_PROTECT_TOP_N:-50})"
+		spectro_archive
+		exit 0
 fi
 
 # If max_files_species is not higher than 1 and no species has its own number, exit
 if [[ "$max_files_species" -lt 1 && ${#keep_of[@]} -eq 0 ]]; then
-    log "nothing to do: every file of every species is kept"
-    spectro_archive
-    exit 0
+		log "nothing to do: every file of every species is kept"
+		spectro_archive
+		exit 0
 fi
 
 # Get unique species folders: By_Date/<date>/<Sci_safe> (owner 2026-10-24)
 bird_names=$(
-    sqlite3 -readonly "$BS_DB" <<EOF
+		sqlite3 -readonly "$BS_DB" <<EOF
 .mode list
 .headers off
 SELECT DISTINCT Sci_Name FROM detections;
@@ -105,7 +128,7 @@ sanitized_names=$(echo "$sanitized_names" | sed 's/_*$//')
 # Define how date works
 dateformat=""
 if test "$(date -d "-7 days" '+%Y-%m-%d' 2>/dev/null)"; then
-    dateformat=" days"
+		dateformat=" days"
 fi
 # the find conditions that leave out the clips of the last recent_days days (and today)
 recent_not=()
@@ -131,17 +154,17 @@ recent_not+=(-not -name "*$(date '+%Y-%m-%d')*")
 # Read each line from the variable and echo the species
 clips_before=$(count_clips)
 while read -r species; do
-    keep="${keep_of[$species]:-$max_files_species}"
-    # 0 = keep every file of this species
-    if [[ "$keep" -lt 1 ]]; then continue; fi
-    echo -n "$species : "
-    species_san="${species//-/=}"
-    find */"$species" -type f -name "*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*" \
-        -not -name "*.png" -not -name "*.jpg" \
-        "${recent_not[@]}" |
-        grep -vFf "$BS_DISK_EXCLUDE" |
-        sed "s|$species|$species_san|g" |
-        awk -F'/' '{ n=$NF;
+		keep="${keep_of[$species]:-$max_files_species}"
+		# 0 = keep every file of this species
+		if [[ "$keep" -lt 1 ]]; then continue; fi
+		echo -n "$species : "
+		species_san="${species//-/=}"
+		find */"$species" -type f -name "*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*" \
+				-not -name "*.png" -not -name "*.jpg" \
+				"${recent_not[@]}" |
+				grep -vFf "$BS_DISK_EXCLUDE" |
+				sed "s|$species|$species_san|g" |
+				awk -F'/' '{ n=$NF;
             # confidence: new format carries an explicit -conf-NN. marker;
             # legacy is Species-NN-date... (2nd field of the sanitized basename)
             if (match(n, /-conf-[0-9]+\./)) {
@@ -150,13 +173,13 @@ while read -r species; do
                 split(n, a, "-"); conf = a[2] + 0;
             }
             print conf "\t" $0 }' |
-        sort -t"$(printf '\t')" -k1,1nr -k2,2r |
-        cut -f2- |
-        tail -n +"$((keep + 1))" |
-        sed "s|$species_san|$species|g" |
-        sed 'p; s/\(\.[^.]*\)$/\1.png/; p; s/\.png$/.jpg/' |
-        "${dispose[@]}" > /dev/null && echo "success ($(find */"$species" -type f -name "*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*" \
-        -not -name "*.png" -not -name "*.jpg" | wc -l)) remaining" || echo "failed ($?)"
+				sort -t"$(printf '\t')" -k1,1nr -k2,2r |
+				cut -f2- |
+				tail -n +"$((keep + 1))" |
+				sed "s|$species_san|$species|g" |
+				sed 'p; s/\(\.[^.]*\)$/\1.png/; p; s/\.png$/.jpg/' |
+				"${dispose[@]}" > /dev/null && echo "success ($(find */"$species" -type f -name "*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*" \
+				-not -name "*.png" -not -name "*.jpg" | wc -l)) remaining" || echo "failed ($?)"
 done <<<"$sanitized_names"
 clips_after=$(count_clips)
 log "$((clips_before - clips_after)) clips deleted, ${clips_after} kept (${max_files_species} per species, ${#keep_of[@]} species with their own number; protected clips and the last ${recent_days} days kept)"
