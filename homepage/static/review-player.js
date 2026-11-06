@@ -130,9 +130,9 @@ function reviewPlayerStyle() {
     + '@media (max-width:800px){#rpDialog .rp-params{flex-wrap:wrap}#rpDialog .rp-box{flex-direction:column;width:100%;max-height:100%;border-radius:0;padding:8px 8px 96px}'
     + '#rpDialog .rp-side{flex:0 0 auto;margin-top:0}#rpDialog .rp-keys{display:none}#rpDialog .rp-toolsrow{flex-wrap:wrap}'
     // phone: no File (the folder opens the viewer's file manager, a desktop thing, owner 2026-11-06); the palette's numbers
-    // as sliders, one row each, the value beside it
-    + '#rpDialog .rp-folder{display:none}#rpDialog .rp-spec .rp-sf{flex:1 1 100%;gap:8px}#rpDialog .rp-spec input[data-k]{display:none}'
-    + '#rpDialog .rp-spec input[data-r]{display:block;flex:1 1 auto;min-height:28px;padding:0;border:0;background:none;accent-color:#d97a00}#rpDialog .rp-spec .rp-sv{display:inline-block;min-width:3.2em;text-align:right;color:#fff;font-weight:600}'
+    // as sliders on a row of their own under the palette list (owner: two rows), each with its name and value above it
+    + '#rpDialog .rp-folder{display:none}#rpDialog .rp-spec select{flex:1 1 auto;min-width:0;order:0}#rpDialog .rp-spec .rp-specreset{order:1}#rpDialog .rp-spec .rp-sf{order:2;flex:1 1 30%;min-width:0;display:grid;grid-template-columns:1fr auto;gap:0 4px}#rpDialog .rp-spec input[data-k]{display:none}#rpDialog .rp-spec .rp-st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    + '#rpDialog .rp-spec input[data-r]{display:block;grid-column:1/-1;grid-row:2;width:100%;min-height:28px;margin:0;padding:0;border:0;background:none;accent-color:#d97a00}#rpDialog .rp-spec .rp-sv{display:block;grid-area:1/2;text-align:right;color:#fff;font-weight:600}'
     // phone: only Conf., Manual Conf., Prob. and Min. Prob. (owner 2026-10-18)
     + '#rpDialog .rp-params .rp-pr{display:none}#rpDialog .rp-params span{flex:1 1 0}'
     + '#rpDialog:not(.show-audio) .rp-vol{display:none}'
@@ -373,7 +373,7 @@ function rpToast(msg) {
 // typing numbers on a phone is clumsy and the sliders matter more there); both carry the same value
 function rpSpecField(k, text, min, max, step) {
   var a = ' min="' + min + '" max="' + max + '" step="' + step + '"';
-  return '<label class="rp-sf">' + text + ' <input type="number" data-k="' + k + '"' + a + '><input type="range" data-r="' + k + '"' + a + ' aria-label="' + rpEsc(text) + '"><b class="rp-sv"></b></label>';
+  return '<label class="rp-sf"><span class="rp-st">' + text + '</span> <input type="number" data-k="' + k + '"' + a + '><input type="range" data-r="' + k + '"' + a + ' aria-label="' + rpEsc(text) + '"><b class="rp-sv"></b></label>';
 }
 function rpEsc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
