@@ -532,7 +532,7 @@ $bar = function ($values, $labels, $title, $now = null) use ($h) {
     $label = $com . ', ' . $b['Date'] . ' ' . $b['Time'] . ', ' . round($b['Confidence'] * 100) . '%';
     // the Review button on the line of the date and confidence (owner 2026-10-21)
     echo '<div class="clip"' . review_item_attrs($file, $label, $sci, $b + array('Com_Name' => $com)) . '><div class="cliphead"><span><b>' . $h($b['Date'] . ' ' . $b['Time']) . '</b>, ' . round($b['Confidence'] * 100) . '%</span>' . detection_actions($file, false) . '</div>'
-      . '<img class="clipspec" loading="lazy" src="' . $h(clip_spectrogram('/By_Date/' . $file)) . '" alt="' . $h(t('str_spectrogram')) . '" title="' . $h(t('str_listen_and_review')) . '" onclick="reviewDetection(this)"></div>';
+      . '<img class="clipspec" loading="lazy" src="' . $h(clip_spectrogram_thumb('/By_Date/' . $file)) . '" alt="' . $h(t('str_spectrogram')) . '" title="' . $h(t('str_listen_and_review')) . '" onclick="reviewDetection(this)"></div>';
   } ?>
   </div>
   <h3 class="section" id="latest"<?php echo !empty($rv_more) ? ' data-rv-more="1"' : ''; ?>><?php echo $review_mode ? t('str_to_review_without_an_answer', array('n' => count($recent) . (!empty($rv_more) ? '+' : ''))) : t('str_latest_detections'); ?></h3>

@@ -116,12 +116,19 @@ if (isset($_GET['location'])) {
 if (isset($_GET['analysis_status'])) {
   header('Content-Type: application/json');
   $sd = rtrim($config['RECS_DIR'] ?? (BS_RECS), '/') . '/StreamData';
-  $waiting = max(0, count(glob($sd . '/*.wav') ?: array()) - 1);
+  // the analysis and the recording service asked in one systemctl call (one line each, in this order)
+  $states = explode("\n", trim((string)shell_exec('systemctl is-active ' . BS_SVC_ANALYSIS . '.service ' . BS_SVC_RECORDING . '.service 2>/dev/null')));
+  $running = trim($states[0] ?? '') === 'active';
+  $recording = trim($states[1] ?? '') === 'active';
+  // the file being recorded is not waiting, but only while the recorder runs (Gitea #77: a stopped recorder showed one less)
+  $waiting = max(0, count(glob($sd . '/*.wav') ?: array()) - ($recording ? 1 : 0));
   $now = trim((string)@file_get_contents($sd . '/analyzing_now.txt'));
   $shown = preg_match('/(\d{4}-\d{2}-\d{2})_(\d{2})h(\d{2})m(\d{2})s/', basename($now), $m) ? "$m[2]:$m[3]:$m[4]" : '';
-  // behind = age of the recording being analysed (its name carries when it started); without it, waiting × length
-  $behind = $shown !== '' ? max(0, time() - strtotime("$m[1] $shown")) : $waiting * max(1, intval($config['RECORDING_LENGTH'] ?? 15));
-  $running = trim((string)shell_exec('systemctl is-active ' . BS_SVC_ANALYSIS . '.service 2>/dev/null')) === 'active';
+  // behind = age of the recording being analysed (its name carries when it started); without it, waiting × length;
+  // a name strtotime() can not read (e.g. 25h) gives no delay rather than the age of 1970 (Gitea #77)
+  $started = $shown !== '' ? strtotime("$m[1] $shown") : false;
+  if ($shown !== '') $behind = $started === false ? null : max(0, time() - $started);
+  else $behind = $waiting * max(1, intval($config['RECORDING_LENGTH'] ?? 15));
   echo json_encode(array('waiting' => $waiting, 'behind' => $behind, 'shown' => $shown, 'running' => $running));
   die();
 }
@@ -190,7 +197,8 @@ h3.nowsec.nowanalyzing { display: flex; align-items: center; gap: 8px; flex-wrap
 $refresh = max(3, min(60, intval($config['RECORDING_LENGTH'] ?? 15) ?: 15));
 $dividedrefresh = max(1, intval($refresh / 4));  // the newest clip is asked four times per recording
 $time = time();
-echo "<img id=\"spectrogramimage\" src=\"spectrogram.png?nocache=$time\">";
+// the picture named as its button (Gitea #79, WCAG 1.1.1)
+echo "<img id=\"spectrogramimage\" src=\"spectrogram.png?nocache=$time\" alt=\"" . htmlspecialchars(t('str_now_recording'), ENT_QUOTES) . "\">";
 // the Essential level opens in Simple (owner 2026-11-05); Birder and Expert in the station's LATEST_VIEW
 $now_view_cfg = ui_level() === 'essential' ? 'simple' : (in_array($config['LATEST_VIEW'] ?? 'list', array('simple', 'spectrogram'), true) ? $config['LATEST_VIEW'] : 'list');
 
@@ -288,15 +296,17 @@ $now_view_cfg = ui_level() === 'essential' ? 'simple' : (in_array($config['LATES
 </div>
 <script>
 // the periodic questions of the page (2026-11-04 hardening): one at a time per kind (a slow station piled up a request
-// every few seconds), a 15 s timeout, only a 200 answer counts
+// every few seconds), a 15 s timeout, only a 200 answer counts; anything else (503 of a busy database, an error, a
+// timeout) is no answer: the page keeps what it shows and calls miss() when given (Gitea #77)
 var nowBusy = {};
-function nowGet(kind, url, ok) {
+function nowGet(kind, url, ok, miss) {
   if (nowBusy[kind]) return;
   nowBusy[kind] = true;
   var x = new XMLHttpRequest();
+  var answered = false;
   x.timeout = 15000;
-  x.onloadend = function () { nowBusy[kind] = false; };
-  x.onload = function () { if (this.status === 200) ok(this.responseText); };
+  x.onloadend = function () { nowBusy[kind] = false; if (!answered && miss) miss(); };
+  x.onload = function () { if (this.status === 200) { answered = true; ok(this.responseText); } };
   x.open('GET', url, true);
   x.send();
 }
@@ -305,6 +315,7 @@ var lastDetection;
 function loadDetectionIfNewExists() {
   nowGet('latest', 'overview.php?latest_file=1', function (txt) {
     var f = txt.trim();
+    // the text check stays for a station whose busy answer is still a 200 page (the 503 is ignored by nowGet)
     if (f === '' || f.includes("Database is busy") || f === lastDetection) return;
     var first = lastDetection === undefined;
     lastDetection = f;
@@ -333,19 +344,33 @@ function toggleAnalyzing() {
   if (analyzingOn) document.getElementById('spectrogramimage').src = 'spectrogram.png?nocache=' + Date.now();
 }
 document.addEventListener('DOMContentLoaded', applyAnalyzing);
+// the station not answering (Gitea #77): after three missed status questions in a row the first line says so, in the
+// warning colour, until the next good answer
+var nowStatusMissed = 0;
+function nowStatusMiss() {
+  if (++nowStatusMissed < 3) return;
+  var el = document.getElementById('analysis_status');
+  if (!el) return;
+  el.textContent = t('str_the_station_is_not_answering_help');
+  el.classList.add('late');
+}
 function refreshAnalysisStatus() {
   if (document.hidden) return;
   nowGet('status', 'overview.php?analysis_status=1', function (txt) {
-    var st; try { st = JSON.parse(txt); } catch (e) { return; }
-    if (!st) return;
+    var st; try { st = JSON.parse(txt); } catch (e) { st = null; }
+    if (!st || typeof st !== 'object') { nowStatusMiss(); return; }
+    nowStatusMissed = 0;
     var el = document.getElementById('analysis_status');
     if (!el) return;
-    var behind = st.behind >= 60 ? Math.round(st.behind / 60) + 'min' : (st.behind || 0) + 's';
+    // the units through the catalogues (Gitea #79); no delay when the station could not tell it (behind null)
+    var behind = st.behind === null || st.behind === undefined ? ''
+      : st.behind >= 60 ? t('str_n_minutes_short', {n: Math.round(st.behind / 60)}) : t('str_n_seconds_short', {n: st.behind || 0});
     // "12:48:30, Waiting: 2, Delay: 16s" (owner 2026-10-21): the time of the recording shown first
+    var delay = st.waiting === 0 ? t('str_n_seconds_short', {n: 0}) : behind;
     el.textContent = (st.shown ? st.shown + ', ' : '') + (!st.running ? t('str_analysis_stopped') + ', ' : '')
-      + t('str_waiting', {n: st.waiting}) + ', ' + t('str_delay', {time: st.waiting === 0 ? '0s' : behind});
+      + t('str_waiting', {n: st.waiting}) + (delay !== '' ? ', ' + t('str_delay', {time: delay}) : '');
     el.classList.toggle('late', !st.running || st.waiting > 10);
-  });
+  }, nowStatusMiss);
 }
 document.addEventListener('DOMContentLoaded', function () { refreshAnalysisStatus(); setInterval(refreshAnalysisStatus, 5000); });
 // the Now cards page through the detections 50 at a time; only the newest page follows new detections
@@ -522,7 +547,8 @@ document.addEventListener('DOMContentLoaded', function () {
   // detections with lost audio): &lfilter=loss[&lval=N][&lview=spectrogram][&lperiod=today|7d|all]
   var lq = new URLSearchParams(location.search);
   if (lq.get('lfilter') === 'loss') {
-    if (['simple', 'list', 'spectrogram'].indexOf(lq.get('lview')) >= 0) { nowView = lq.get('lview'); nowViewChosen = true; nowModeButtons(); }
+    // the view applied as at load (Gitea #77: lview=spectrogram showed neither the live spectrogram nor Now Recording)
+    if (['simple', 'list', 'spectrogram'].indexOf(lq.get('lview')) >= 0) { nowView = lq.get('lview'); nowViewChosen = true; analyzingOn = true; applyAnalyzing(); nowModeButtons(); }
     if (['today', '7d', 'all'].indexOf(lq.get('lperiod')) >= 0) { nowPeriod = lq.get('lperiod'); var pp = document.getElementById('nowperiod'); if (pp) pp.value = nowPeriod; }
     nowParked = {filters: {loss: /^\d+$/.test(lq.get('lval') || '') ? lq.get('lval') : '0'}, term: ''};
     if (document.getElementById('nowsearch').classList.contains('nfclosed')) nowFilterPanel();
@@ -624,6 +650,30 @@ function nowPage(offset) {
 // (2026-10-20) only an answer to ANOTHER query (filter, search, page, view) is dropped: with a detection every few seconds
 // each one asks again, and dropping every older answer to the same query left the table on the old list while busy
 var nowListQuery = '';
+// the keyboard stays where it was when the list is built again (Gitea #79, WCAG 2.4.3): the same control of the same
+// detection, else the first control of the first row, never the page itself
+var NOW_FOCUS_KINDS = ['button.validatebtn', 'a.spcard', 'a[data-com]'];
+function nowFocusMark(box) {
+  var a = document.activeElement;
+  if (!a || a === box || !box.contains(a)) return null;
+  var row = a.closest('[data-ri]');
+  var file = a.dataset.file || (row ? row.dataset.file : '');
+  var kind = NOW_FOCUS_KINDS.filter(function (k) { return a.matches(k); })[0] || '';
+  return {file: file || '', kind: kind, id: a.id || ''};
+}
+function nowFocusBack(box, mark) {
+  if (!mark) return;
+  // a control of its own outside the rows (the Last N picklist) is found again by its id
+  var own = mark.id ? document.getElementById(mark.id) : null;
+  if (own && box.contains(own)) { own.focus({preventScroll: true}); return; }
+  var rows = box.querySelectorAll('[data-ri]');
+  var row = mark.file ? [].filter.call(rows, function (r) { return r.dataset.file === mark.file; })[0] : null;
+  var el = row && mark.kind ? row.querySelector(mark.kind) : null;
+  if (!el && row) el = row.querySelector(NOW_FOCUS_KINDS.join(','));
+  if (!el && rows.length) el = rows[0].querySelector(NOW_FOCUS_KINDS.join(','));
+  if (!el) el = box.querySelector('a[href], button, select, input, [tabindex="0"]');
+  if (el) el.focus({preventScroll: true});
+}
 function loadFiveMostRecentDetections() {
   const xhttp = new XMLHttpRequest();
   const mine = nowView + '|' + nowCount + '|' + nowOffset + '|' + nowTerm + '|' + nowFilterQuery() + '|' + (!bsPhone());
@@ -636,9 +686,11 @@ function loadFiveMostRecentDetections() {
   xhttp.onload = function() {
     if (mine !== nowListQuery || this.status !== 200) return;
     if(this.responseText.length > 0 && !this.responseText.includes("Database is busy")) {
+      var focusMark = nowFocusMark(box);
       box.innerHTML = this.responseText;
       if (window.stdTables) stdTables(box);
       if (window.applyNameMode) applyNameMode();
+      nowFocusBack(box, focusMark);
     }
   }
   xhttp.open("GET", "todays_detections.php?ajax_detections=true&display_limit=undefined&hard_limit=" + nowCount + "&gallery=1" + (bsPhone() ? "&mobile=true" : "") + "&mode=" + nowView + "&offset=" + nowOffset + (nowTerm ? "&searchterm=" + encodeURIComponent(nowTerm) : "") + nowFilterQuery(), true);
@@ -672,6 +724,12 @@ startAutoRefresh();
 </script>
 
 <style>
+/* a phone's Simple table fits 375 px (Gitea #79: it scrolled 19 px sideways): narrower cell padding and Review button
+   below 400 px; the names still never break */
+@media (max-width: 400px) {
+  #detections_table table.stdtable th, #detections_table table.stdtable td { padding-left: 4px !important; padding-right: 4px !important; }
+  #detections_table table.stdtable td .validatebtn { padding-left: 4px !important; padding-right: 4px !important; }
+}
 </style>
 <script src="static/custom-audio-player.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/custom-audio-player.js"); ?>"></script>
 <script src="static/spectro-dialog.js?v=<?php echo @filemtime(__DIR__ . "/../homepage/static/spectro-dialog.js"); ?>"></script>

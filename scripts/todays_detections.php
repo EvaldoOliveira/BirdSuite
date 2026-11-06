@@ -61,6 +61,10 @@ if(isset($kiosk) && $kiosk == true) {
 } else {
   $kiosk = false;
 }
+// the Kiosk's own refreshes (owner 2026-11-06, Gitea #77): its list and totals come straight to this file, outside
+// views.php, and say so with kiosk=true, so the totals stay plain cards there as in the first draw; only these two
+// answers, never the Kiosk page itself (404 below unless views.php set $kiosk)
+if (!$kiosk && ($_GET['kiosk'] ?? '') === 'true' && (isset($_GET['ajax_detections']) || isset($_GET['today_stats']))) $kiosk = true;
 
 $db = new SQLite3(BS_DB, SQLITE3_OPEN_READONLY);
 apply_location_filter($db); // the location chosen in the header (US-58)
@@ -166,14 +170,21 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
   } else {
     $searchquery = "";
   }
+  $k_limit = 40;
   if(isset($_GET['display_limit']) && is_numeric($_GET['display_limit'])){
-    // the Kiosk: today's detections, 40 a page
-    $statement0 = $db->prepare('SELECT Date, Time, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') ORDER BY Time DESC LIMIT '.max(0, intval($_GET['display_limit'])-40).',40');
-  } elseif(isset($_GET['hard_limit']) && is_numeric($_GET['hard_limit'])) {
+    // the Kiosk: today's detections, 40 a page; up to 4000 (100 pages), a value outside answers the first page
+    // (owner 2026-11-06, Gitea #76)
+    $k_limit = intval($_GET['display_limit']);
+    if ($k_limit < 40 || $k_limit > 4000) $k_limit = 40;
+    $statement0 = $db->prepare('SELECT Date, Time, Sci_Name, Confidence, File_Name FROM detections WHERE Date == Date(\'now\', \'localtime\') ORDER BY Time DESC LIMIT '.($k_limit-40).',40');
+  } elseif(isset($_GET['hard_limit'])) {
+    // the page sizes of the pager (list_pager: 10, 25, 50, 100); any other value answers the default 25
+    // (owner 2026-11-06, Gitea #76: the page passes nowCount as it is)
+    $h_limit = is_numeric($_GET['hard_limit']) && in_array(intval($_GET['hard_limit']), array(10, 25, 50, 100), true) ? intval($_GET['hard_limit']) : 25;
     // the Latest page's most recent detections: not only today's, so the list is never empty after midnight
     // gallery pages: offset = how many newer detections are skipped; one extra row tells whether older ones exist
     $g_offset = max(0, intval($_GET['offset'] ?? 0));
-    $g_limit = intval($_GET['hard_limit']) + (isset($_GET['gallery']) ? 1 : 0);
+    $g_limit = $h_limit + (isset($_GET['gallery']) ? 1 : 0);
     // Now filters (owner 2026-10-09): lowconf = confidence below N %, lowprob = location model probability below N %
     // (or not in the location profile); the probability is not in the database, so lowprob filters while reading
     // uncommon (owner 2026-10-10) = species detected at most N times from yesterday 00:00 until now (species not heard
@@ -247,11 +258,13 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
     $list_rows = array();
     if (!$as_list) echo '<div class="spgallery nowgallery" data-review-list="1">';
     $n = 0;
-    $page = intval($_GET['hard_limit']);
+    $page = $h_limit;
     $more = false;
     $skip = 0;
     // the common name looked up for the rows shown, never in the SQL: a sort before the LIMIT would look it up on every
     // row read (names are presentation only, owner 2026-11-05)
+    // the rows of the page first, cards and list alike (owner 2026-11-06, Gitea #76): their review answers are then read
+    // once for those files alone (review_verdicts_only), not the whole detection_reviews table on every refresh
     while ($g = $result0->fetchArray(SQLITE3_ASSOC)) {
       $g['Com_Name'] = common_name($g['Sci_Name']);
       if (($g_prob ?? null) !== null && empty($g_prob_sql)) {
@@ -261,7 +274,10 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
       }
       if ($n >= $page) { $more = true; break; }
       $n++;
-      if ($as_list) { $list_rows[] = $g; continue; }
+      $list_rows[] = $g;
+    }
+    review_verdicts_only(array_column($list_rows, 'File_Name'));
+    if (!$as_list) foreach ($list_rows as $g) {
       $folder = species_folder($g['Sci_Name']);
       $file = $g['Date'] . '/' . $folder . '/' . $g['File_Name'];
       $clip = '/By_Date/' . $file;
@@ -271,7 +287,8 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
         . '<div class="gnames">' . species_review_name($g['Sci_Name'], $g['Com_Name'], true) . '<br><i>' . htmlspecialchars($g['Sci_Name']) . '</i></div>'
         . '<div class="gacts">' . validate_button($file) . '</div></div>'
         . '<div class="gmeta">' . htmlspecialchars($when) . ', ' . round($g['Confidence'] * 100) . '%</div>'
-        . '<img class="gspec" loading="lazy" src="' . htmlspecialchars(clip_spectrogram($clip)) . '" alt="' . t('str_spectrogram_lc') . '" title="' . t('str_listen_and_review') . '" onclick="reviewDetection(this)"></div></div>';
+        // the small copy of the picture (Gitea #78); the player opens the full one (data-spec of review_item_attrs)
+        . '<img class="gspec" loading="lazy" src="' . htmlspecialchars(clip_spectrogram_thumb($clip)) . '" alt="' . t('str_spectrogram_lc') . '" title="' . t('str_listen_and_review') . '" onclick="reviewDetection(this)"></div></div>';
     }
     echo $as_list ? detection_review_table($list_rows, true, true, ($_GET['mode'] ?? '') === 'simple') : '</div>';
     // a search without a match is "no match" too, not "no detections yet" (2026-10-23 test run)
@@ -319,10 +336,10 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
   <?php }
   echo '</table>';
   if ($iterations == 0) echo '<h3>' . t('str_no_detections_for_today') . '</h3>';
-  // the button only while more detections may follow
-  if ($iterations >= 40) { ?>
+  // the button only while more detections may follow, up to the ceiling of 4000
+  if ($iterations >= 40 && $k_limit + 40 <= 4000) { ?>
   <center>
-  <button class="loadmore" onclick="loadDetections(<?php echo intval($_GET['display_limit']) + 40; ?>, this);"><?php echo t('str_load_40_more'); ?></button>
+  <button class="loadmore" onclick="loadDetections(<?php echo $k_limit + 40; ?>, this);"><?php echo t('str_load_40_more'); ?></button>
   </center>
   <?php }
   die();
@@ -452,7 +469,7 @@ function refreshTodayStats() {
       document.getElementById("todaystats").innerHTML = this.responseText;
     }
   }
-  xhttp.open("GET", "todays_detections.php?today_stats=true", true);
+  xhttp.open("GET", "todays_detections.php?today_stats=true&kiosk=true", true);
   xhttp.send();
 }
 window.addEventListener("load", function(){

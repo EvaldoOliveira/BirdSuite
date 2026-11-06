@@ -22,6 +22,8 @@ fi
 # - no directory listings (no page links to the /By_Date folders; the recordings open from their pages)
 # - pages, scripts and JSON compressed (zstd / gzip; Caddy leaves audio and pictures alone): a species list page went
 #   from 1.6 MB to under 0.3 MB (2026-11-02 release run 4, PERF-50)
+# - the live spectrogram (spectrogram.png, redrawn every few seconds) is always asked again, and answered 304 by its
+#   ETag / Last-Modified while it did not change (owner 2026-11-06, Gitea #78): kept by the browser, never shown stale
 read -r -d '' HARDENING << 'EOF'
   encode zstd gzip
   header {
@@ -30,6 +32,8 @@ read -r -d '' HARDENING << 'EOF'
     X-Frame-Options SAMEORIGIN
     Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
   }
+  @livespec path /spectrogram.png
+  header @livespec Cache-Control no-cache
   @captive path /generate_204 /gen_204 /hotspot-detect.html /library/test/success.html /ncsi.txt /connecttest.txt /canonical.html /success.txt
   redir @captive / 302
   @internal path_regexp "^/scripts/(.*[.](sh|py|pyc|db|db-journal|db-wal|db-shm|json|txt|log|conf|sha256|csv|whl|env)|gotty.*|birdsuite-(root|svc)|(.*/)?__pycache__/.*)$"

@@ -245,8 +245,15 @@ function ui_js() {
     . '<script src="/static/species-modal.js?v=' . @filemtime(__ROOT__ . '/homepage/static/species-modal.js') . '"></script>';
 }
 
+// a statement SQLite could not prepare (the database busy or locked): 503 first (owner 2026-11-06, Gitea #77), so an
+// ajax caller tells it from a page that is empty by right; the text and the refresh stay for a full page (a page
+// included after its first output keeps the 200 it already sent, the text and the refresh as before)
 function ensure_db_ok($sql_stmt) {
   if ($sql_stmt == False) {
+    if (!headers_sent()) {
+      http_response_code(503);
+      header('Retry-After: 1');
+    }
     echo t('str_database_is_busy');
     header("refresh:1;");
     exit;
@@ -773,6 +780,14 @@ function common_name_languages() {
 function clip_spectrogram($clip) {
   $disk = BS_EXTRACTED . '/' . ltrim($clip, '/');
   return (!is_file($disk . '.png') && is_file($disk . '.jpg')) ? $clip . '.jpg' : $clip . '.png';
+}
+// The small copy of that picture for a card drawn under 500 px wide (owner 2026-11-06, Gitea #78,
+// scripts/spectrogram_thumb.php: a JPEG 480 px wide, made once); the player and the share keep the full picture.
+// v = the time of the picture, so a picture drawn again is fetched again despite the week the browser keeps it.
+function clip_spectrogram_thumb($clip) {
+  $spec = clip_spectrogram($clip);
+  $v = @filemtime(BS_EXTRACTED . '/' . ltrim($spec, '/'));
+  return '/scripts/spectrogram_thumb.php?clip=' . rawurlencode('/' . ltrim($spec, '/')) . ($v ? '&v=' . $v : '');
 }
 
 // The station's identity, its ID (owner 2026-10-20, 2026-10-27): the MAC of the Pi's own network port (cable), else of its

@@ -73,6 +73,8 @@
   "str_min_prob_the_minimum_help": "Min. Prob.: the minimum probability of occurrence at the location; species below it this week are left out (SF_THRESH).&#10;Default BirdSuite (V3 model): {def}&#10;Default BirdNET V2.4: 0.03&#10;Range: 0.0005 to 0.99&#10;Higher: only the species expected here (the Whitelist bypasses it).&#10;Lower: more species allowed, rare and vagrant ones too, with more errors.",
   "str_minimums": "Minimums",
   "str_minutes_ago": "{n} minutes ago",
+  "str_n_minutes_short": "{n}min",
+  "str_n_seconds_short": "{n}s",
   "str_name": "Name",
   "str_new_today": "New today",
   "str_newer": "Newer {n}",

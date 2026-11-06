@@ -1283,6 +1283,9 @@ table.stdtable tbody tr:hover td, table.stdtable tr:hover td { background: var(-
 /* black or white, whichever reads better on the Selection colour (common.php contrast_text) */
 table.stdtable tr:hover td a, table.stdtable tr:hover td .small, table.stdtable tr:hover td * { color: var(--on-accent2,#fff); }
 table.stdtable th.sortable { cursor: pointer; } table.stdtable th.sortable:after { content: ' \2195'; opacity: .35; font-size: .85em; }
+/* a sortable title takes the keyboard focus (Gitea #79): the site's focus ring, drawn inside the cell so the next sticky
+   title does not cover it */
+.views table.stdtable th.sortable:focus-visible, table.stdtable th.sortable:focus-visible { outline: 2px solid #d97a00 !important; outline-offset: -2px; }
 table.stdtable th.asc:after { content: ' \25B2'; opacity: .8; } table.stdtable th.desc:after { content: ' \25BC'; opacity: .8; }
 
 /* Now: the search sits on the Most Recent Detections line, on the right */
@@ -1356,8 +1359,9 @@ h3.nowsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margi
    else the ear (off) and the gear were white on their white buttons */
 .banner .stream button svg, .banner .stream button svg * { color: inherit; }
 .nowanalysis .nadefault { width: auto; align-self: center; padding: 3px 10px; font-size: 12px; border-radius: 12px; border: 1px dashed var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
-.nowtoday .nowanalysis { gap: 6px; padding: 5px 8px; } .nowtoday .nowanalysis input, .nowtoday .nowanalysis #na_conf { width: 52px; } .nowanalysis .nagroup { gap: 5px; padding: 3px 6px; }
-.nowanalysis input.nondefault { background: #fff8c4 !important; }
+.nowtoday .nowanalysis { gap: 6px; padding: 5px 8px; } .nowtoday .nowanalysis input, .nowtoday .nowanalysis #na_conf { width: 52px; } .nowtoday .nowanalysis #na_sf { width: 60px; } /* four decimals (Gitea #79) */ .nowanalysis .nagroup { gap: 5px; padding: 3px 6px; }
+/* the Param. field off its default: the Dark rule of every page (html input.nondefault, dark yellow with white text) applies;
+   this light yellow outranked it and left the white text unreadable (Gitea #79) */
 .nowfilters .nowfilterlabel { font-size: 12px; font-weight: 600; margin: 0 2px 0 8px; }
 .nowfilters .nowfilterlabel { display: inline-flex; align-items: center; color: var(--accent,#2b5e22); margin: 0 4px 0 0; }
 button.autolocate { width: auto; padding: 4px 14px; border-radius: 12px; border: 1px solid var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
@@ -1677,6 +1681,10 @@ html body .status .svcname.fail { color: #ef9a9a; }
 /* release run 4 (WCAG 2.2 AA): a species name in a table is a target of 24 px without changing the row (the padding
    grows the hit area, the negative margin keeps the layout); a page frame shows when it has the keyboard focus */
 table.stdtable td a[data-com] { display: inline-block; padding: 4px 0; margin: -4px 0; }
+/* the species card icon and the Review button of the Spectrogram cards, 24 px targets too (Gitea #79, WCAG 2.5.8): the
+   icon's padding grows the hit area, the negative margin keeps the row as it was */
+a.spcard { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; margin: -4.5px; vertical-align: middle; }
+.gcard .validatebtn { min-height: 24px; }
 iframe:focus-visible { outline: 2px solid var(--accent,#2b5e22); outline-offset: 2px; }
 /* not the page frame of index.php (owner 2026-11-03): a line under the header after a click in the page */
 iframe.pageframe:focus, iframe.pageframe:focus-visible, iframe.pageframe:focus-within, iframe.pageframe.bs-focus { outline: none; }

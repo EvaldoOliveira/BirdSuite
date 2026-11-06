@@ -1246,6 +1246,9 @@ table.stdtable tbody tr:hover td, table.stdtable tr:hover td { background: var(-
 /* black or white, whichever reads better on the Selection colour (common.php contrast_text) */
 table.stdtable tr:hover td a, table.stdtable tr:hover td .small, table.stdtable tr:hover td * { color: var(--on-accent2,#fff); }
 table.stdtable th.sortable { cursor: pointer; } table.stdtable th.sortable:after { content: ' \2195'; opacity: .35; font-size: .85em; }
+/* a sortable title takes the keyboard focus (Gitea #79): the site's focus ring, drawn inside the cell so the next sticky
+   title does not cover it */
+.views table.stdtable th.sortable:focus-visible, table.stdtable th.sortable:focus-visible { outline: 2px solid #d97a00 !important; outline-offset: -2px; }
 table.stdtable th.asc:after { content: ' \25B2'; opacity: .8; } table.stdtable th.desc:after { content: ' \25BC'; opacity: .8; }
 
 /* Now: the search sits on the Most Recent Detections line, on the right */
@@ -1315,7 +1318,7 @@ h3.nowsec { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margi
 .banner .stream .hearbtn.on:hover { background: #0d47a1 !important; border-color: #0d47a1 !important; }
 .banner .stream .heargear[hidden] { display: none; }
 .nowanalysis .nadefault { width: auto; align-self: center; padding: 3px 10px; font-size: 12px; border-radius: 12px; border: 1px dashed var(--accent,#2b5e22); background: #fff; color: var(--accent,#2b5e22); font-weight: 600; cursor: pointer; }
-.nowtoday .nowanalysis { gap: 6px; padding: 5px 8px; } .nowtoday .nowanalysis input, .nowtoday .nowanalysis #na_conf { width: 52px; } .nowanalysis .nagroup { gap: 5px; padding: 3px 6px; }
+.nowtoday .nowanalysis { gap: 6px; padding: 5px 8px; } .nowtoday .nowanalysis input, .nowtoday .nowanalysis #na_conf { width: 52px; } .nowtoday .nowanalysis #na_sf { width: 60px; } /* four decimals (Gitea #79) */ .nowanalysis .nagroup { gap: 5px; padding: 3px 6px; }
 .nowanalysis input.nondefault { background: #fff8c4 !important; }
 /* a field that differs from its factory value, every page (owner 2026-10-24, static/ui-standard.js) */
 input.nondefault, select.nondefault, textarea.nondefault, label.nondefault { background: #fff8c4 !important; color: #000 !important; }
@@ -1585,6 +1588,10 @@ table.stdtable td select, table.stdtable td input[type=text] { max-width: 12em; 
 /* release run 4 (WCAG 2.2 AA): a species name in a table is a target of 24 px without changing the row (the padding
    grows the hit area, the negative margin keeps the layout); a page frame shows when it has the keyboard focus */
 table.stdtable td a[data-com] { display: inline-block; padding: 4px 0; margin: -4px 0; }
+/* the species card icon and the Review button of the Spectrogram cards, 24 px targets too (Gitea #79, WCAG 2.5.8): the
+   icon's padding grows the hit area, the negative margin keeps the row as it was */
+a.spcard { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; margin: -4.5px; vertical-align: middle; }
+.gcard .validatebtn { min-height: 24px; }
 /* the focus goes into the frame's own document, where :focus-visible of the parent never matches (release run 5):
    the frame element itself shows it while it holds the focus */
 iframe:focus, iframe:focus-within { outline: 2px solid #d97a00; outline-offset: 2px; }

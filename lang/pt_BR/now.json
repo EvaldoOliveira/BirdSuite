@@ -73,6 +73,8 @@
   "str_min_prob_the_minimum_help": "Prob. mín.: a probabilidade mínima de ocorrência no local; espécies abaixo dela nesta semana ficam de fora (SF_THRESH).&#10;Padrão BirdSuite (modelo V3): {def}&#10;Padrão BirdNET V2.4: 0,03&#10;Faixa: 0,0005 a 0,99&#10;Maior: só as espécies esperadas aqui (a lista de liberadas ignora este limiar).&#10;Menor: mais espécies permitidas, também raras e vagantes, com mais erros.",
   "str_minimums": "Mínimos",
   "str_minutes_ago": "há {n} minutos",
+  "str_n_minutes_short": "{n}min",
+  "str_n_seconds_short": "{n}s",
   "str_name": "Nome",
   "str_new_today": "Novas hoje",
   "str_newer": "{n} mais recentes",

@@ -87,6 +87,15 @@
     Array.prototype.forEach.call(head.cells, function (th, ci) {
       if (th.dataset.nosort !== undefined || !th.textContent.trim()) return;
       th.classList.add('sortable');
+      // the keyboard sorts too (Gitea #79, WCAG 2.1.1 / 4.1.2): the title takes the focus, Enter or Space sorts as a click,
+      // aria-sort tells the sorted column; the cell stays a column header (a role=button would drop aria-sort)
+      th.tabIndex = 0;
+      th.setAttribute('aria-sort', 'none');
+      th.addEventListener('keydown', function (e) {
+        if (e.target !== th || (e.key !== 'Enter' && e.key !== ' ')) return;
+        e.preventDefault();
+        th.click();
+      });
       // first click (2026-10-23 test run): numbers, percentages and dates the largest first, text A to Z; then reversed
       var asc = null;
       th.addEventListener('click', function (e) {
@@ -100,8 +109,9 @@
         }
         if (e.restore !== undefined) asc = e.restore;
         if (mem) { try { localStorage.setItem(mem, JSON.stringify({ci: ci, asc: asc, h: th.textContent.trim()})); } catch (err) {} }
-        Array.prototype.forEach.call(head.cells, function (o) { o.classList.remove('asc', 'desc'); });
+        Array.prototype.forEach.call(head.cells, function (o) { o.classList.remove('asc', 'desc'); if (o.classList.contains('sortable')) o.setAttribute('aria-sort', 'none'); });
         th.classList.add(asc ? 'asc' : 'desc');
+        th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
         var body = Array.prototype.slice.call(t.rows, hi + 1).filter(function (r) { return !r.classList.contains('nosortrow'); });
         var tail = Array.prototype.slice.call(t.rows, hi + 1).filter(function (r) { return r.classList.contains('nosortrow'); });
         // each row's key read once, one collator, and the rows put back in one move (2026-10-23 test run: a click on the
