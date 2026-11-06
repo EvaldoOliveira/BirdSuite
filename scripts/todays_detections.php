@@ -246,19 +246,29 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
 			});
 			if ($recent) $searchquery .= ' AND Sci_Name NOT IN (' . implode(',', array_map(function ($s) { return "'" . SQLite3::escapeString($s) . "'"; }, $recent)) . ')';
 		}
-		// Low Prob in SQL for a bounded period: per day of the period, the species the location model expects at or
-		// above P that week are left out (species outside the profile stay, as before); "all" keeps the row-by-row check
-		if ($g_prob !== null && $g_period !== 'all') {
-			$days = array();
-			for ($d = 0; $d < ($g_period === 'today' ? 1 : 7); $d++) $days[] = date('Y-m-d', strtotime("-$d days"));
-			$parts = array();
-			foreach ($days as $day) {
-				$likely = array_keys(array_filter(location_profile_week($day), function ($p) use ($g_prob) { return $p >= $g_prob; }));
-				$parts[] = "(Date = '$day'" . ($likely ? ' AND Sci_Name NOT IN (' . implode(',', array_map(function ($s) { return "'" . SQLite3::escapeString($s) . "'"; }, $likely)) . ')' : '') . ')';
+			// Low Prob in SQL: per day of a bounded period, or per week of the location model (4 a month, 48 a year) over the
+			// whole history (2026-11-06 Latest review: "all" walked the rows one by one without a LIMIT until the page filled),
+			// the species the model expects at or above P are left out (species outside the profile stay, as before)
+			if ($g_prob !== null) {
+				$parts = array();
+				$not_in = function ($likely) { return $likely ? ' AND Sci_Name NOT IN (' . implode(',', array_map(function ($s) { return "'" . SQLite3::escapeString($s) . "'"; }, $likely)) . ')' : ''; };
+				if ($g_period !== 'all') {
+					for ($d = 0; $d < ($g_period === 'today' ? 1 : 7); $d++) {
+						$day = date('Y-m-d', strtotime("-$d days"));
+						$likely = array_keys(array_filter(location_profile_week($day), function ($p) use ($g_prob) { return $p >= $g_prob; }));
+						$parts[] = "(Date = '$day'" . $not_in($likely) . ')';
+					}
+				} else {
+					// the week of a date as the model counts it (utils/classes.py week48): (month - 1) * 4 + min(4, (day - 1) / 7 + 1)
+					$week_sql = "((CAST(strftime('%m', Date) AS INTEGER) - 1) * 4 + MIN(4, (CAST(strftime('%d', Date) AS INTEGER) - 1) / 7 + 1))";
+					for ($w = 1; $w <= 48; $w++) {
+						$likely = array_keys(array_filter(location_profile_week(sprintf('2025-%02d-%02d', intdiv($w - 1, 4) + 1, (($w - 1) % 4) * 7 + 1)), function ($p) use ($g_prob) { return $p >= $g_prob; }));
+						$parts[] = "($week_sql = $w" . $not_in($likely) . ')';
+					}
+				}
+				$searchquery .= ' AND (' . implode(' OR ', $parts) . ')';
+				$g_prob_sql = true;
 			}
-			$searchquery .= ' AND (' . implode(' OR ', $parts) . ')';
-			$g_prob_sql = true;
-		}
 		$statement0 = $db->prepare('SELECT Date, Time, Sci_Name, Confidence, Cutoff, Sens, Overlap, Loc_Thresh, Rec_Length, Sp_Override, Mic, Mic_Port, Mic_Gain, Model, Audio_Loss_N, Audio_Loss_Ms, Tz, Utc_Offset, File_Name, '.location_columns_sql().' FROM detections WHERE 1 '.$searchquery.' ORDER BY Date DESC, Time DESC'
 			. ($g_prob !== null && empty($g_prob_sql) ? '' : ' LIMIT '.$g_limit.' OFFSET '.$g_offset));
 	} else {
@@ -323,20 +333,21 @@ if(isset($_GET['ajax_detections']) && $_GET['ajax_detections'] == "true"  ) {
 	echo '<table>';
 	$iterations = 0;
 	$image_provider = new Wikipedia();
-	if (!isset($_SESSION['images']) || $image_provider->is_reset()) $_SESSION['images'] = [];
+	// the pictures looked up in this request (the session was closed above, so a session cache never held them; the
+	// provider keeps its own cache in the database)
+	$images = array();
 	while ($todaytable = $result0->fetchArray(SQLITE3_ASSOC)) {
 		$todaytable['Com_Name'] = common_name($todaytable['Sci_Name']);  // presentation only (owner 2026-11-05)
 		$iterations++;
 		$folder = species_folder($todaytable['Sci_Name']);
 		$filename = "/By_Date/" . $todaytable['Date'] . "/" . $folder . "/" . $todaytable['File_Name'];
-		// a species looked up before keeps its picture for the session
-		$key = array_search($folder, array_column($_SESSION['images'], 0));
-		if ($key !== false) {
-			$image = $_SESSION['images'][$key];
+		// a species looked up before keeps its picture for this list
+		if (isset($images[$folder])) {
+			$image = $images[$folder];
 		} else {
 			$cached_image = $image_provider->get_image($todaytable['Sci_Name']) ?: array();
 			$image = array($folder, $cached_image["image_url"] ?? '', $cached_image["title"] ?? '', $cached_image["photos_url"] ?? '', $cached_image["author_url"] ?? '', $cached_image["license_url"] ?? '');
-			$_SESSION['images'][] = $image;
+			$images[$folder] = $image;
 		} ?>
 		<tr class="relative" id="<?php echo $iterations; ?>"><td class="relative">
 			<div class="tdhead">
