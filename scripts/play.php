@@ -27,6 +27,63 @@ if (isset($_GET['deletefile']) || isset($_GET['deletespecies']) || isset($_GET['
   register_shutdown_function(function () { exec(station_prefix() . 'rm -f ' . escapeshellarg(BS_STATE . '/location_formats.json')); });
 }
 
+// Moves files (full paths) into the folder $dst as the station user: one mv per folder in chunks of 200, as the purges
+// remove them (owner 2026-11-06, Gitea #70: one mv per file was slow). Returns the files that moved (gone from where
+// they were and now in $dst); the others did not.
+function move_files_to($files, $dst) {
+  $moved = array();
+  if (!$files) return $moved;
+  exec(station_prefix() . 'mkdir -p ' . escapeshellarg($dst) . ' 2>&1');
+  foreach (array_chunk($files, 200) as $chunk) {
+    $out = array();
+    exec(station_prefix() . 'mv -f -t ' . escapeshellarg($dst) . ' ' . implode(' ', array_map('escapeshellarg', $chunk)) . ' 2>&1', $out);
+    clearstatcache();
+    foreach ($chunk as $f) if (!file_exists($f) && file_exists($dst . '/' . basename($f))) $moved[] = $f;
+  }
+  return $moved;
+}
+// puts the files move_files_to() moved into $dst back where they were
+function move_files_back($moved, $dst) {
+  $by_dir = array();
+  foreach ($moved as $f) $by_dir[dirname($f)][] = $dst . '/' . basename($f);
+  foreach ($by_dir as $dir => $files) move_files_to($files, $dir);
+}
+// the clip and its spectrograms that exist
+function clip_files($clip) {
+  return array_values(array_filter(array($clip, $clip . '.png', $clip . '.jpg'), 'file_exists'));
+}
+// A clip staged for purge at night (Extracted/Purge, scripts/purge_stage.py) goes back to By_Date with its
+// spectrograms; false when it is still staged
+function unstage_clip($date, $sci, $file) {
+  $rel = $date . '/' . species_folder($sci);
+  $src = BS_EXTRACTED . '/Purge/' . $rel . '/' . $file;
+  if (!file_exists($src)) return true;
+  $moved = move_files_to(clip_files($src), BS_BY_DATE . '/' . $rel);
+  return in_array($src, $moved, true);
+}
+// Adds or removes a species of the Confirmed list of Species Management (confirmed_species_list.txt) under a lock held
+// over the whole read and write (owner 2026-11-06, Gitea #69: two answers at once could lose a line, and a failed write
+// went unnoticed). $only_if, when given, is asked under the lock (the last Yes of the species). True when the list is
+// as asked.
+function confirmed_list_set($sci, $add, $only_if = null) {
+  if ($sci === '' || $sci === null) return true;
+  $fh = @fopen(BS_LISTS . '/confirmed_species_list.txt', 'c+');
+  if (!$fh) return false;
+  if (!flock($fh, LOCK_EX)) { fclose($fh); return false; }
+  $lines = array_values(array_filter(array_map('trim', explode("\n", (string)stream_get_contents($fh))), 'strlen'));
+  $ok = true;
+  if ($add !== in_array($sci, $lines, true) && ($only_if === null || $only_if())) {
+    if ($add) $lines[] = $sci;
+    else $lines = array_values(array_diff($lines, array($sci)));
+    sort($lines, SORT_STRING);
+    $text = $lines ? implode("\n", $lines) . "\n" : '';
+    $ok = rewind($fh) && ftruncate($fh, 0) && fwrite($fh, $text) === strlen($text) && fflush($fh);
+  }
+  flock($fh, LOCK_UN);
+  fclose($fh);
+  return $ok;
+}
+
 // Delete = remove detection (owner 2026-10-09): the clip and its spectrogram leave the BirdNET folders for
 // the Removed folder of the clips, Removed/<date>/<species>/, the database line goes to deleted_detections (out of every statistic);
 // nothing is lost until it is deleted by hand (Species › Purge Files, or the species page)
@@ -42,17 +99,28 @@ if(isset($_GET['deletefile'])) {
   $ins->bindValue(':f', $parts[2]);
   $del = $rw->prepare('DELETE FROM detections WHERE File_Name = :f');
   $del->bindValue(':f', $parts[2]);
-  $src = BS_BY_DATE . '/' . $file;
+  // the database first, in one transaction held while the clip moves (owner 2026-11-06, Gitea #70: the clip moved
+  // first and a busy database left the line counting with its clip in Removed): a failed move rolls the line back, a
+  // failed write leaves the files where they are; a clip staged for the purge (Extracted/Purge) moves from there, and
+  // both spectrograms (.png and the archived .jpg) when both exist
+  $clip = review_clip_path($file);
+  $files = $clip ? clip_files($clip) : array();
   $dst = deleted_dir() . '/' . $parts[0] . '/' . $parts[1];
-  $out = array();
-  $rc = 0;
-  exec(station_prefix() . 'mkdir -p ' . escapeshellarg($dst) . ' && ' . station_prefix() . 'mv -f ' . escapeshellarg($src) . ' '
-    . (file_exists($src . '.jpg') && !file_exists($src . '.png') ? escapeshellarg($src . '.jpg') : escapeshellarg($src . '.png')) . ' ' . escapeshellarg($dst . '/') . ' 2>&1; ' . station_prefix() . 'rm -f ' . escapeshellarg(BS_BY_DATE . '/shifted/' . $file) . ' 2>&1', $out, $rc);
-  if ($ins->execute() === false || $del->execute() === false || $rw->changes() === 0) {
-    echo 'Error - ' . t('str_database_line_not_moved', array('msg' => $rw->lastErrorMsg()));
-  } elseif ($rc !== 0 && is_file($src)) {
-    echo 'Error - ' . t('str_file_not_moved', array('msg' => implode(', ', $out)));
+  if (!@$rw->exec('BEGIN IMMEDIATE') || $ins->execute() === false || $rw->changes() !== 1 || $del->execute() === false || $rw->changes() !== 1) {
+    $msg = $rw->lastErrorMsg();
+    @$rw->exec('ROLLBACK');
+    echo 'Error - ' . t('str_database_line_not_moved', array('msg' => $msg));
+  } elseif (count($moved = move_files_to($files, $dst)) !== count($files)) {
+    move_files_back($moved, $dst);
+    @$rw->exec('ROLLBACK');
+    echo 'Error - ' . t('str_file_not_moved', array('msg' => implode(', ', array_map('basename', array_diff($files, $moved)))));
+  } elseif (!@$rw->exec('COMMIT')) {
+    $msg = $rw->lastErrorMsg();
+    move_files_back($moved, $dst);
+    @$rw->exec('ROLLBACK');
+    echo 'Error - ' . t('str_database_line_not_moved', array('msg' => $msg));
   } else {
+    exec(station_prefix() . 'rm -f ' . escapeshellarg(BS_BY_DATE . '/shifted/' . $file) . ' 2>&1');
     echo "OK";
   }
   $rw->close();
@@ -72,59 +140,72 @@ if (isset($_GET['deletespecies'])) {
   // only the location the pages show, as the count the dialog gave (with several locations a day folder can hold
   // clips of more than one place, so the clips move one by one)
   $loc = (count(locations_load()) >= 2 && ($l = location_shown()) !== null) ? ' AND ' . location_sql($l) : '';
-  $errors = array();
+  // Files first, then the database (owner 2026-11-06, Gitea #70): the files of a whole species can be thousands, too many
+  // to move while the transaction holds the database the analysis writes to, so they move first (one mv per folder) and
+  // go back when a move fails or the database does not take the change; the lines move in one transaction, only those
+  // read now (a detection the analysis adds meanwhile is not removed without its clip). Staged clips (Extracted/Purge)
+  // move too.
+  $max = intval($rw->querySingle('SELECT MAX(rowid) FROM detections'));
+  $cond = "Sci_Name = :s AND rowid <= $max$loc";
+  $groups = array();  // the Removed folder => the files that go there
+  $cleanup = array(); // emptied folders and the shifted copies, removed once the database took the change
   if ($loc !== '') {
-    $st = $rw->prepare("SELECT Date, Sci_Name, File_Name FROM detections WHERE Sci_Name = :s$loc");
+    $st = $rw->prepare("SELECT Date, Sci_Name, File_Name FROM detections WHERE $cond");
     $st->bindValue(':s', $sci);
     $res = $st->execute();
     while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
       $rel = $r['Date'] . '/' . species_folder($r['Sci_Name']);
-      $src = BS_BY_DATE . '/' . $rel . '/' . $r['File_Name'];
-      $dst = deleted_dir() . '/' . $rel;
-      if (!file_exists($src)) continue;
-      $out = array();
-      $rc = 0;
-      exec(station_prefix() . 'mkdir -p ' . escapeshellarg($dst) . ' && ' . station_prefix() . 'mv -f ' . escapeshellarg($src) . ' '
-        . (file_exists($src . '.png') ? escapeshellarg($src . '.png') . ' ' : '') . (file_exists($src . '.jpg') ? escapeshellarg($src . '.jpg') . ' ' : '') . escapeshellarg($dst . '/') . ' 2>&1; ' . station_prefix() . 'rm -f '
-        . escapeshellarg(BS_BY_DATE . '/shifted/' . $rel . '/' . $r['File_Name']) . ' 2>&1', $out, $rc);
-      if ($rc !== 0 && file_exists($src)) $errors[] = $rel . '/' . $r['File_Name'] . ': ' . implode(', ', $out);
+      $clip = review_clip_path($rel . '/' . $r['File_Name']);
+      if ($clip) foreach (clip_files($clip) as $f) $groups[deleted_dir() . '/' . $rel][] = $f;
+      $cleanup[] = BS_BY_DATE . '/shifted/' . $rel . '/' . $r['File_Name'];
     }
-    $res = false;
   } else {
-    $st = $rw->prepare('SELECT DISTINCT Date FROM detections WHERE Sci_Name = :s');
+    $st = $rw->prepare("SELECT DISTINCT Date FROM detections WHERE $cond");
     $st->bindValue(':s', $sci);
     $res = $st->execute();
+    // a day's folder of the species (scientific name), in By_Date and staged for the purge
+    while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
+      $rel = $r['Date'] . '/' . name_safe($sci);
+      foreach (array(BS_BY_DATE, BS_EXTRACTED . '/Purge') as $root) {
+        $dir = $root . '/' . $rel;
+        if (!is_dir($dir)) continue;
+        foreach (array_diff(scandir($dir) ?: array(), array('.', '..')) as $n) if (is_file($dir . '/' . $n)) $groups[deleted_dir() . '/' . $rel][] = $dir . '/' . $n;
+      }
+      $cleanup[] = BS_BY_DATE . '/shifted/' . $rel;
+    }
   }
-  // a day's folder of the species (scientific name)
-  $rels = array();
-  while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
-    $rels[$r['Date'] . '/' . name_safe($sci)] = 1;
+  if ($res) $res->finalize();
+  $moved = array();
+  $failed = array();
+  foreach ($groups as $dst => $files) {
+    $moved[$dst] = move_files_to($files, $dst);
+    foreach (array_diff($files, $moved[$dst]) as $f) $failed[] = basename($f);
   }
-  foreach (array_keys($rels) as $rel) {
-    $src = BS_BY_DATE . '/' . $rel;
-    $dst = deleted_dir() . '/' . $rel;
-    if (!is_dir($src)) continue;
-    $out = array();
-    $rc = 0;
-    exec(station_prefix() . 'mkdir -p ' . escapeshellarg($dst) . ' && ' . station_prefix() . 'find ' . escapeshellarg($src)
-      . ' -maxdepth 1 -type f -exec mv -f -t ' . escapeshellarg($dst . '/') . ' {} + && ' . station_prefix() . 'rmdir ' . escapeshellarg($src)
-      . ' 2>&1; ' . station_prefix() . 'rm -rf ' . escapeshellarg(BS_BY_DATE . '/shifted/' . $rel) . ' 2>&1', $out, $rc);
-    if ($rc !== 0 && is_dir($src) && count(glob($src . '/*'))) $errors[] = $rel . ': ' . implode(', ', $out);
+  $undo = function () use ($moved) { foreach ($moved as $dst => $m) move_files_back($m, $dst); };
+  if ($failed) {
+    $undo();
+    echo 'Error - ' . t('str_files_not_moved', array('msg' => implode(', ', array_slice($failed, 0, 5))));
+    $rw->close();
+    die();
   }
-  if ($errors) { echo 'Error - ' . t('str_files_not_moved', array('msg' => implode('; ', $errors))); $rw->close(); die(); }
-  $rw->exec('BEGIN');
   $ins = $rw->prepare("INSERT INTO deleted_detections (Date, Time, Sci_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Deleted_At, Loc_Thresh, Rec_Length, Sp_Override, Location, Mic, Mic_Port, Mic_Gain, Tz, Utc_Offset, Model, Software, Species_List, Audio_Loss_N, Audio_Loss_Ms, Sample_Rate, Channels, Scenario)
-    SELECT Date, Time, Sci_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, datetime('now', 'localtime'), Loc_Thresh, Rec_Length, Sp_Override, Location, Mic, Mic_Port, Mic_Gain, Tz, Utc_Offset, Model, Software, Species_List, Audio_Loss_N, Audio_Loss_Ms, Sample_Rate, Channels, Scenario FROM detections WHERE Sci_Name = :s$loc");
+    SELECT Date, Time, Sci_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, datetime('now', 'localtime'), Loc_Thresh, Rec_Length, Sp_Override, Location, Mic, Mic_Port, Mic_Gain, Tz, Utc_Offset, Model, Software, Species_List, Audio_Loss_N, Audio_Loss_Ms, Sample_Rate, Channels, Scenario FROM detections WHERE $cond");
   $ins->bindValue(':s', $sci);
-  $del = $rw->prepare("DELETE FROM detections WHERE Sci_Name = :s$loc");
+  $del = $rw->prepare("DELETE FROM detections WHERE $cond");
   $del->bindValue(':s', $sci);
-  if ($ins->execute() === false || $del->execute() === false) {
+  $n = -1;
+  if (!@$rw->exec('BEGIN IMMEDIATE') || $ins->execute() === false || ($n = $rw->changes()) < 0 || $del->execute() === false
+      || $rw->changes() !== $n || !@$rw->exec('COMMIT')) {
     $msg = $rw->lastErrorMsg();
-    $rw->exec('ROLLBACK');
+    @$rw->exec('ROLLBACK');
+    $undo();
     echo 'Error - ' . t('str_database_lines_not_moved', array('msg' => $msg));
   } else {
-    $n = $rw->changes();
-    $rw->exec('COMMIT');
+    // the emptied day folders go (as before), the others stay
+    $dirs = array();
+    foreach ($moved as $m) foreach ($m as $f) $dirs[dirname($f)] = 1;
+    foreach (array_chunk(array_keys($dirs), 200) as $chunk) exec(station_prefix() . 'rmdir ' . implode(' ', array_map('escapeshellarg', $chunk)) . ' 2>/dev/null');
+    foreach (array_chunk($cleanup, 200) as $chunk) exec(station_prefix() . 'rm -rf ' . implode(' ', array_map('escapeshellarg', $chunk)) . ' 2>&1');
     echo "OK " . $n;
   }
   $rw->close();
@@ -160,11 +241,13 @@ if (isset($_GET['purgeaudio'])) {
     $excl_found = $excl ? excluded_with_detections($db_r, $excl) : '';
     $res = $excl_found !== '' ? $db_r->query("SELECT Date, File_Name, Sci_Name FROM main.detections WHERE Sci_Name IN ("
       . $excl_found . ") AND File_Name NOT IN (SELECT File_Name FROM detection_reviews WHERE Verdict = 'yes')" . $ploc) : false;
-    $locked = locked_clips();
   }
+  // the protected clips (locks, top N) are kept by both kinds (owner 2026-11-06, Gitea #71: the causes removed a locked
+  // clip; purge_stage.py never stages one, but a lock set after the staging was not seen)
+  $locked = locked_clips();
   while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
-    if ($kind === 'others' && (!isset($excl[$r['Sci_Name']]) || ($sci !== '' && $r['Sci_Name'] !== $sci)
-        || isset($locked[$r['Date'] . '/' . species_folder($r['Sci_Name']) . '/' . $r['File_Name']]))) continue;
+    if (isset($locked[$r['Date'] . '/' . species_folder($r['Sci_Name']) . '/' . $r['File_Name']])) continue;
+    if ($kind === 'others' && (!isset($excl[$r['Sci_Name']]) || ($sci !== '' && $r['Sci_Name'] !== $sci))) continue;
     // the causes are deleted from Extracted/Purge (staged at night by purge_stage.py), the excluded species from By_Date
     $src = BS_EXTRACTED . '/' . ($kind === 'causes' ? 'Purge' : 'By_Date') . '/' . $r['Date'] . '/' . species_folder($r['Sci_Name']) . '/' . $r['File_Name'];
     foreach (array($src, $src . '.png', $src . '.jpg') as $f) if (file_exists($f)) $files[] = $f;
@@ -221,30 +304,42 @@ if (isset($_GET['restore'])) {
   $into = ($_GET['loc'] ?? '') === 'none' && $one === '' ? location_current() : null;
   $place = $into ? ':lat, :lon' : 'Lat, Lon';
   $place_id = $into ? ':loc' : 'Location';
+  // the two statements prepared once, not per detection (owner 2026-11-06, Gitea #70)
+  $ins = $rw->prepare("INSERT INTO detections (Date, Time, Sci_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Loc_Thresh, Rec_Length, Sp_Override, Location, Mic, Mic_Port, Mic_Gain, Tz, Utc_Offset, Model, Software, Species_List, Audio_Loss_N, Audio_Loss_Ms, Sample_Rate, Channels, Scenario)
+    SELECT Date, Time, Sci_Name, Confidence, $place, Cutoff, Week, Sens, Overlap, File_Name, Loc_Thresh, Rec_Length, Sp_Override, $place_id, Mic, Mic_Port, Mic_Gain, Tz, Utc_Offset, Model, Software, Species_List, Audio_Loss_N, Audio_Loss_Ms, Sample_Rate, Channels, Scenario FROM deleted_detections WHERE File_Name = :f
+    AND NOT EXISTS (SELECT 1 FROM detections WHERE File_Name = :f)");
+  $del = $rw->prepare('DELETE FROM deleted_detections WHERE File_Name = :f');
+  if (!$ins || !$del) { echo 'Error - ' . t('str_database_lines_not_moved', array('msg' => $rw->lastErrorMsg())); $rw->close(); die(); }
+  if ($into) {
+    $ins->bindValue(':lat', floatval($into['lat']), SQLITE3_FLOAT);
+    $ins->bindValue(':lon', floatval($into['lon']), SQLITE3_FLOAT);
+    $ins->bindValue(':loc', intval($into['id']), SQLITE3_INTEGER);
+  }
+  // the clips of the detections the database took, by the By_Date folder they go back to (one mv per folder)
+  $groups = array();
   $n = 0;
   foreach ($rows as $r) {
     if (!@$rw->exec('BEGIN IMMEDIATE')) continue;  // busy beyond the timeout: left in the list, not counted
-    $ins = $rw->prepare("INSERT INTO detections (Date, Time, Sci_Name, Confidence, Lat, Lon, Cutoff, Week, Sens, Overlap, File_Name, Loc_Thresh, Rec_Length, Sp_Override, Location, Mic, Mic_Port, Mic_Gain, Tz, Utc_Offset, Model, Software, Species_List, Audio_Loss_N, Audio_Loss_Ms, Sample_Rate, Channels, Scenario)
-      SELECT Date, Time, Sci_Name, Confidence, $place, Cutoff, Week, Sens, Overlap, File_Name, Loc_Thresh, Rec_Length, Sp_Override, $place_id, Mic, Mic_Port, Mic_Gain, Tz, Utc_Offset, Model, Software, Species_List, Audio_Loss_N, Audio_Loss_Ms, Sample_Rate, Channels, Scenario FROM deleted_detections WHERE File_Name = :f
-      AND NOT EXISTS (SELECT 1 FROM detections WHERE File_Name = :f)");
     $ins->bindValue(':f', $r['File_Name']);
-    if ($into) {
-      $ins->bindValue(':lat', floatval($into['lat']), SQLITE3_FLOAT);
-      $ins->bindValue(':lon', floatval($into['lon']), SQLITE3_FLOAT);
-      $ins->bindValue(':loc', intval($into['id']), SQLITE3_INTEGER);
-    }
-    $del = $rw->prepare('DELETE FROM deleted_detections WHERE File_Name = :f');
     $del->bindValue(':f', $r['File_Name']);
-    if ($ins && $ins->execute() !== false && $del && $del->execute() !== false && @$rw->exec('COMMIT')) {
+    $ok = $ins->execute() !== false && $del->execute() !== false && @$rw->exec('COMMIT');
+    $ins->reset();
+    $del->reset();
+    if ($ok) {
       $rel = $r['Date'] . '/' . species_folder($r['Sci_Name']);
       $src = deleted_dir() . '/' . $rel . '/' . $r['File_Name'];
-      $dst = BS_BY_DATE . '/' . $rel;
-      exec(station_prefix() . 'mkdir -p ' . escapeshellarg($dst) . ' && ' . station_prefix() . 'mv -f '
-        . escapeshellarg($src) . ' ' . (file_exists($src . '.jpg') && !file_exists($src . '.png') ? escapeshellarg($src . '.jpg') : escapeshellarg($src . '.png')) . ' ' . escapeshellarg($dst . '/') . ' 2>&1');
-      $n++;
+      // a detection without its clip in Removed has nothing to move: restored all the same (as before)
+      if (file_exists($src)) $groups[BS_BY_DATE . '/' . $rel][$src] = clip_files($src);
+      else $n++;
     } else {
       @$rw->exec('ROLLBACK');
     }
+  }
+  // a detection whose clip did not move back is not counted (its line is in detections, its clip still in Removed): the
+  // answer says "OK <moved> of <asked>"
+  foreach ($groups as $dst => $clips) {
+    $moved = move_files_to(array_merge(...array_values($clips)), $dst);
+    foreach (array_keys($clips) as $src) if (in_array($src, $moved, true)) $n++;
   }
   exec(station_prefix() . 'find ' . escapeshellarg(deleted_dir()) . ' -mindepth 1 -type d -empty -delete 2>&1');
   $rw->close();
@@ -273,6 +368,10 @@ if (isset($_GET['wipe'])) {
     echo json_encode($rows);
     die();
   }
+  // the database lines first, in one transaction, and the files only once it took them (owner 2026-11-06, Gitea #70:
+  // the files went first and a failed delete kept the lines, unrestorable without their clips); the list is read inside
+  // the transaction, so it is exactly the lines deleted
+  if (!@$rw->exec('BEGIN IMMEDIATE')) { echo 'Error - ' . t('str_database_lines_not_deleted', array('msg' => $rw->lastErrorMsg())); $rw->close(); die(); }
   $st = $rw->prepare("SELECT Date, Sci_Name, File_Name FROM deleted_detections$where");
   if ($sci !== '') $st->bindValue(':s', $sci);
   $res = $st->execute();
@@ -285,21 +384,28 @@ if (isset($_GET['wipe'])) {
     $paths[] = $p . '.jpg';
     $names[] = $r['File_Name'];
   }
+  if ($res) $res->finalize();
+  $d = $rw->prepare("DELETE FROM deleted_detections$where");
+  if ($d && $sci !== '') $d->bindValue(':s', $sci);
+  $ok = $res !== false && $d && $d->execute() !== false;
+  $wiped = $rw->changes();
+  // their reviews go too (the detections no longer exist)
+  foreach (array_chunk($names, 400) as $chunk) {
+    if (!$ok) break;
+    $ok = $rw->exec("DELETE FROM detection_reviews WHERE File_Name IN ('" . implode("','", array_map('SQLite3::escapeString', $chunk)) . "')");
+  }
+  if (!$ok || !@$rw->exec('COMMIT')) {
+    $msg = $rw->lastErrorMsg();
+    @$rw->exec('ROLLBACK');
+    $rw->close();
+    echo 'Error - ' . t('str_database_lines_not_deleted', array('msg' => $msg));
+    die();
+  }
+  $rw->close();
   foreach (array_chunk($paths, 200) as $chunk) {
     exec(station_prefix() . 'rm -f ' . implode(' ', array_map('escapeshellarg', $chunk)) . ' 2>&1');
   }
   exec(station_prefix() . 'find ' . escapeshellarg(deleted_dir()) . ' -mindepth 1 -type d -empty -delete 2>&1');
-  $d = $rw->prepare("DELETE FROM deleted_detections$where");
-  if ($sci !== '') $d->bindValue(':s', $sci);
-  $d->execute();
-  $wiped = $rw->changes();
-  // their reviews go too (the detections no longer exist)
-  if ($names) {
-    foreach (array_chunk($names, 400) as $chunk) {
-      $rw->exec("DELETE FROM detection_reviews WHERE File_Name IN ('" . implode("','", array_map('SQLite3::escapeString', $chunk)) . "')");
-    }
-  }
-  $rw->close();
   echo 'OK ' . $wiped;
   die();
 }
@@ -314,27 +420,29 @@ if(isset($_GET['excludefile'])) {
   // lock the station user had created, and a fixed /tmp name can be planted); opened read-only, flock needs no more
   $purge_lock = @fopen(BS_STATE . '/purge.lock', 'r') ?: @fopen(BS_STATE . '/purge.lock', 'c');
   if ($purge_lock) flock($purge_lock, LOCK_EX);
+  // one clip, <date>/<species folder>/<file> (owner 2026-11-06, Gitea #71: an empty or partial value unlocked every line
+  // containing it, a value with a newline added lines of its own)
+  $txt = html_entity_decode((string)$_GET['excludefile'], ENT_QUOTES);
+  if (strpos($txt, '..') !== false || !preg_match('~^\d{4}-\d{2}-\d{2}/[^/\r\n]+/[^/\r\n]+$~D', $txt)) { echo "Error"; die(); }
   if(isset($_GET['exclude_add'])) {
     $myfile = fopen(BS_DISK_EXCLUDE, "a") or die(t('str_unable_to_open_file'));
-    $txt = $_GET['excludefile'];
-    fwrite($myfile, $txt."\n");
-    fwrite($myfile, $txt.".png\n");
-    fwrite($myfile, $txt.".jpg\n");
+    $add = $txt . "\n" . $txt . ".png\n" . $txt . ".jpg\n";
+    $ok = fwrite($myfile, $add) === strlen($add);
     fclose($myfile);
-    echo "OK";
+    echo $ok ? "OK" : 'Error - ' . t('str_unable_to_open_file');
     die();
   } else {
     $lines  = file(BS_DISK_EXCLUDE);
-    $search = $_GET['excludefile'];
-
+    if ($lines === false) { echo 'Error - ' . t('str_unable_to_open_file'); die(); }
+    // only this clip's own lines (##start / ##end and every other clip stay)
+    $mine = array($txt, $txt . '.png', $txt . '.jpg');
     $result = '';
     foreach($lines as $line) {
-      if(stripos($line, $search) === false && stripos($line, $search.".png") === false) {
+      if (!in_array(trim($line), $mine, true)) {
         $result .= $line;
       }
     }
-    file_put_contents(BS_DISK_EXCLUDE, $result);
-    echo "OK";
+    echo file_put_contents(BS_DISK_EXCLUDE, $result) !== false ? "OK" : 'Error - ' . t('str_unable_to_open_file');
     die();
   }
 }
@@ -350,7 +458,15 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
   $rw->busyTimeout(5000);
   // why a detection is "not this bird": human, noise or ignore (none = another species, Change species)
   $reason = in_array($_GET['reason'] ?? '', PURGE_CAUSES, true) ? $_GET['reason'] : '';
-  if ($verdict === 'clear') {
+  // the answer it had (owner 2026-11-06, Gitea #69): clear on a detection that came from Change species keeps its row,
+  // the only place of the species the model gave and its confidence, back as Change species wrote it (Yes, 'changed');
+  // clear of a Yes takes the species off the Confirmed list when it was its last Yes
+  $was = $verdict === 'clear' ? $rw->querySingle("SELECT r.Verdict, r.Orig_Sci, COALESCE(d.Sci_Name, r.Sci_Name) AS Sci FROM detection_reviews r
+    LEFT JOIN detections d ON d.File_Name = r.File_Name WHERE r.File_Name = '" . SQLite3::escapeString($file_name) . "' LIMIT 1", true) : array();
+  if ($verdict === 'clear' && !empty($was['Orig_Sci'])) {
+    $st = $rw->prepare("UPDATE detection_reviews SET Verdict = 'yes', Reason = 'changed' WHERE File_Name = :f");
+    $st->bindValue(':f', $file_name);
+  } elseif ($verdict === 'clear') {
     $st = $rw->prepare('DELETE FROM detection_reviews WHERE File_Name = :f');
     $st->bindValue(':f', $file_name);
   } else {
@@ -366,31 +482,30 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
     $st->bindValue(':r', $verdict === 'no' ? $reason : '');
   }
   $ok = $st->execute() !== false && ($verdict === 'clear' || $rw->changes() > 0);
-  // a positive review also confirms the species (Confirmed list of Species Management), owner 2026-10-08
+  // a positive review also confirms the species (Confirmed list of Species Management), owner 2026-10-08; the list under
+  // a lock (confirmed_list_set); a list that could not be written leaves the answer saved and goes to the web server's log
   if ($ok && $verdict === 'yes') {
     $sci = $rw->querySingle("SELECT Sci_Name FROM detections WHERE File_Name = '" . SQLite3::escapeString($file_name) . "' LIMIT 1");
-    $list = BS_LISTS . '/confirmed_species_list.txt';
-    $lines = is_file($list) ? file($list, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
-    if ($sci && !in_array($sci, $lines, true)) {
-      $lines[] = $sci;
-      sort($lines, SORT_STRING);
-      file_put_contents($list, implode("\n", $lines) . "\n", LOCK_EX);
-    }
+    if ($sci && !confirmed_list_set($sci, true)) error_log('BirdSuite: confirmed_species_list.txt not written (' . $sci . ')');
+  }
+  // the Undo of a Yes (the player sends unconfirm=1 only then, never on a plain Clear, so a species confirmed by hand in
+  // Species Management is never dropped by a Clear): the species leaves the Confirmed list only when no other Yes of it
+  // remains (a Yes written by Change species is a Yes too)
+  if ($ok && $verdict === 'clear' && isset($_GET['unconfirm']) && ($was['Verdict'] ?? '') === 'yes' && empty($was['Orig_Sci']) && !empty($was['Sci'])) {
+    $last = function () use ($rw, $was) {
+      $c = $rw->prepare("SELECT COUNT(*) FROM detection_reviews WHERE Verdict = 'yes' AND Sci_Name = :s");
+      $c->bindValue(':s', $was['Sci']);
+      $res = $c ? $c->execute() : false;
+      $row = $res ? $res->fetchArray(SQLITE3_NUM) : false;
+      return $row !== false && intval($row[0]) === 0;
+    };
+    if (!confirmed_list_set($was['Sci'], false, $last)) error_log('BirdSuite: confirmed_species_list.txt not written (' . $was['Sci'] . ')');
   }
   // a clip staged for purge at night goes back at once when its answer is no longer a cause (owner 2026-10-22: it can be
   // listened to again right away)
   if ($ok && !($verdict === 'no' && in_array($reason, PURGE_CAUSES, true))) {
     $d = $rw->querySingle("SELECT Date, Sci_Name, File_Name FROM detections WHERE File_Name = '" . SQLite3::escapeString($file_name) . "' LIMIT 1", true);
-    if ($d) {
-      $rel = $d['Date'] . '/' . species_folder($d['Sci_Name']);
-      $src = BS_EXTRACTED . '/Purge/' . $rel . '/' . $file_name;
-      if (file_exists($src)) {
-        $dst = BS_BY_DATE . '/' . $rel;
-        $files = array_filter(array($src, $src . '.png', $src . '.jpg'), 'file_exists');
-        exec(station_prefix() . 'mkdir -p ' . escapeshellarg($dst) . ' && ' . station_prefix() . 'mv -f '
-          . implode(' ', array_map('escapeshellarg', $files)) . ' ' . escapeshellarg($dst . '/'));
-      }
-    }
+    if ($d) unstage_clip($d['Date'], $d['Sci_Name'], $file_name);
   }
   $rw->close();
   echo $ok ? "OK" : 'Error - ' . t('str_detection_not_found');
@@ -403,7 +518,10 @@ if (isset($_GET['review_batch'], $_GET['sci'], $_GET['date'], $_GET['hour'])) {
   ensure_role('operator', t('str_you_must_review_detections_help'));  // a household device on the LAN reviews without the login (US-53)
   $hour = intval($_GET['hour']);
   if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date']) || $hour < 0 || $hour > 23) { echo "Error"; die(); }
-  $reason = in_array($_GET['reason'] ?? '', PURGE_CAUSES, true) ? $_GET['reason'] : '';
+  // a batch is always a cause (owner 2026-11-06, Gitea #69: without one the hour was marked "not this bird" with no
+  // reason, read as Change species)
+  if (!in_array($_GET['reason'] ?? '', PURGE_CAUSES, true)) { echo 'Error - ' . t('str_reason_missing_or_unknown'); die(); }
+  $reason = $_GET['reason'];
   $rw = new SQLite3(BS_DB, SQLITE3_OPEN_READWRITE);
   $rw->busyTimeout(5000);
   // only the clips the player listed and counted for the user (files, one per line; 2026-10-23 run 3: without it the
@@ -419,20 +537,23 @@ if (isset($_GET['review_batch'], $_GET['sci'], $_GET['date'], $_GET['hour'])) {
   $st->bindValue(':d', $_GET['date']);
   $st->bindValue(':h', $hour);
   $st->bindValue(':r', $reason);
+  // the answer is the number of detections really marked (at most 500 per request; those with an answer already and
+  // those outside the hour are not counted)
   $ok = $st->execute() !== false;
-  echo $ok ? 'OK ' . $rw->changes() : 'Error';
+  echo $ok ? 'OK ' . $rw->changes() : 'Error - ' . $rw->lastErrorMsg();
   $rw->close();
   die();
 }
 
 // Review helper (scripts/review_worker.py): keeps the model loaded and redraws clip spectrograms; started on demand as
 // the station user, it stops itself when idle. review_worker_get() starts it when it is not answering.
-function review_worker_get($path, $timeout = 30, $wait = true) {
+// $start = false: only asked when it is already running (a viewer never starts it, owner 2026-11-06)
+function review_worker_get($path, $timeout = 30, $wait = true, $start = true) {
   global $home, $user;
   $url = 'http://127.0.0.1:8099' . $path;
   $ctx = stream_context_create(array('http' => array('timeout' => $timeout, 'ignore_errors' => true)));
   $out = @file_get_contents($url, false, $ctx);
-  if ($out === false) {
+  if ($out === false && $start) {
     exec(station_prefix() . 'nohup ' . escapeshellarg(BS_PYTHON) . ' '
       . escapeshellarg(BS_SCRIPTS . '/review_worker.py') . ' > /dev/null 2>&1 &');
     for ($i = 0; $wait && $i < 60 && $out === false; $i++) { usleep(250000); $out = @file_get_contents($url, false, $ctx); }
@@ -479,7 +600,19 @@ if (isset($_GET['spectro'])) {
   $q = array('clip' => $clip);
   if (isset($_GET['palette']) && preg_match('/^[a-z]+$/', $_GET['palette'])) $q['palette'] = $_GET['palette'];
   foreach (array('floor', 'range', 'contrast') as $k) if (isset($_GET[$k]) && is_numeric($_GET[$k])) $q[$k] = $_GET[$k];
-  $png = $clip ? review_worker_get('/spectro?' . http_build_query($q)) : false;
+  // the helper is started for a reviewer (operator or more, as Which bird was it?); a viewer gets the redrawn picture
+  // while it is running, else the stored one (owner 2026-11-06: an anonymous caller started the model on the station)
+  $start = role_rank(current_role()) >= role_rank('operator');
+  $png = $clip ? review_worker_get('/spectro?' . http_build_query($q), 30, true, $start) : false;
+  if ($png === false && $clip && !$start) {
+    foreach (array('png' => 'image/png', 'jpg' => 'image/jpeg') as $ext => $type) {
+      if (!is_file($clip . '.' . $ext)) continue;
+      header('Content-Type: ' . $type);
+      header('Cache-Control: private, max-age=60');
+      readfile($clip . '.' . $ext);
+      die();
+    }
+  }
   if ($png === false) { http_response_code(404); die(); }
   header('Content-Type: image/png');
   header('Cache-Control: private, max-age=3600');
@@ -505,10 +638,21 @@ if(isset($_GET['changefile']) && isset($_GET['newname'])) {
   // 2026-10-22: a name with an apostrophe failed, and a crafted one could run commands)
   $oldname = basename(html_entity_decode($_GET['changefile'], ENT_QUOTES));
   $newname = html_entity_decode($_GET['newname'], ENT_QUOTES);
-  $old = get_db()->querySingle("SELECT Sci_Name, Confidence FROM main.detections WHERE File_Name = '" . SQLite3::escapeString($oldname) . "'", true) ?: array();
+  $old = get_db()->querySingle("SELECT Sci_Name, Date, Confidence FROM main.detections WHERE File_Name = '" . SQLite3::escapeString($oldname) . "'", true) ?: array();
   // changed before: the species the model gave stays the origin (A to B to C keeps A, with the model's confidence)
   $prev = get_db()->querySingle("SELECT Orig_Sci, Confidence FROM main.detection_reviews WHERE File_Name = '" . SQLite3::escapeString($oldname) . "' AND Orig_Sci IS NOT NULL AND Orig_Sci <> ''", true) ?: array();
-  if (!exec(station_prefix() . '' . escapeshellarg(BS_SCRIPTS . '/birdnet_changeidentification.sh') . ' ' . escapeshellarg($oldname) . ' ' . escapeshellarg($newname) . ' log_errors 2>&1', $output)) {
+  // a clip staged for the purge (answered with a cause) comes back to By_Date first, where the script renames it, as an
+  // answer that is no longer a cause brings it back (owner 2026-11-06, Gitea #69: it failed with "File does not exist")
+  if ($old && !unstage_clip($old['Date'], $old['Sci_Name'], $oldname)) {
+    echo 'Error - ' . t('str_file_not_moved', array('msg' => $oldname));
+    die();
+  }
+  // the script's exit status tells (owner 2026-11-06): 0 = the line and the files changed, else nothing changed and its
+  // last line is the reason
+  $output = array();
+  $rc = 1;
+  exec(station_prefix() . '' . escapeshellarg(BS_SCRIPTS . '/birdnet_changeidentification.sh') . ' ' . escapeshellarg($oldname) . ' ' . escapeshellarg($newname) . ' log_errors 2>&1', $output, $rc);
+  if ($rc === 0) {
     // Change species is an answer too (owner 2026-10-22): the renamed detection keeps a review Yes with the reason
     // 'changed', so the Review button reads Changed and the statistics know how many were changed (the new file name
     // follows birdnet_changeidentification.sh)
@@ -516,27 +660,32 @@ if(isset($_GET['changefile']) && isset($_GET['newname'])) {
     $new_file = name_safe(explode('_', $newname, 2)[0]) . clip_rest($oldname);
     $rw = new SQLite3(BS_DB, SQLITE3_OPEN_READWRITE);
     $rw->busyTimeout(5000);
-    $del = $rw->prepare('DELETE FROM detection_reviews WHERE File_Name = :f');
-    $del->bindValue(':f', $oldname);
-    $del->execute();
-    // the review keeps the confidence the model gave (the script zeroes the detection's) and the species it came from
-    $ins = $rw->prepare("INSERT OR REPLACE INTO detection_reviews (File_Name, Sci_Name, Date, Confidence, Verdict, Reviewed_At, Reason, Orig_Sci)
-      SELECT File_Name, Sci_Name, Date, :c, 'yes', datetime('now', 'localtime'), 'changed', :os FROM main.detections WHERE File_Name = :f LIMIT 1");
-    $ins->bindValue(':f', $new_file);
-    $ins->bindValue(':c', floatval($prev ? $prev['Confidence'] : ($old['Confidence'] ?? 0)));
-    $ins->bindValue(':os', (string)($prev ? $prev['Orig_Sci'] : ($old['Sci_Name'] ?? '')));
-    $ins->execute();
-    $rw->close();
-    // the species chosen by ear is confirmed, as a Yes confirms it (Confirmed list of Species Management)
-    $new_sci = explode('_', $newname, 2)[0];
-    $list = BS_LISTS . '/confirmed_species_list.txt';
-    $lines = is_file($list) ? file($list, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
-    if ($new_sci !== '' && !in_array($new_sci, $lines, true)) {
-      $lines[] = $new_sci;
-      sort($lines, SORT_STRING);
-      file_put_contents($list, implode("\n", $lines) . "\n", LOCK_EX);
+    // the old answer out and the new one in, in one transaction (owner 2026-11-06, Gitea #69: a busy database could drop
+    // the old row and never write the new one, losing the species the model gave)
+    $saved = (bool)@$rw->exec('BEGIN IMMEDIATE');
+    if ($saved) {
+      $del = $rw->prepare('DELETE FROM detection_reviews WHERE File_Name = :f');
+      $del->bindValue(':f', $oldname);
+      $saved = $del->execute() !== false;
     }
-    echo "OK";
+    if ($saved) {
+      // the review keeps the confidence the model gave (the script zeroes the detection's) and the species it came from
+      $ins = $rw->prepare("INSERT OR REPLACE INTO detection_reviews (File_Name, Sci_Name, Date, Confidence, Verdict, Reviewed_At, Reason, Orig_Sci)
+        SELECT File_Name, Sci_Name, Date, :c, 'yes', datetime('now', 'localtime'), 'changed', :os FROM main.detections WHERE File_Name = :f LIMIT 1");
+      $ins->bindValue(':f', $new_file);
+      $ins->bindValue(':c', floatval($prev ? $prev['Confidence'] : ($old['Confidence'] ?? 0)));
+      $ins->bindValue(':os', (string)($prev ? $prev['Orig_Sci'] : ($old['Sci_Name'] ?? '')));
+      $saved = $ins->execute() !== false && $rw->changes() === 1;
+    }
+    if ($saved) $saved = (bool)@$rw->exec('COMMIT');
+    $msg = $rw->lastErrorMsg();
+    if (!$saved) @$rw->exec('ROLLBACK');
+    $rw->close();
+    // the species chosen by ear is confirmed, as a Yes confirms it (Confirmed list of Species Management), under the
+    // list's lock (confirmed_list_set)
+    $new_sci = explode('_', $newname, 2)[0];
+    if ($new_sci !== '' && !confirmed_list_set($new_sci, true)) error_log('BirdSuite: confirmed_species_list.txt not written (' . $new_sci . ')');
+    echo $saved ? "OK" : 'Error - ' . t('str_species_changed_answer_not_saved', array('msg' => $msg));
   } else {
     echo "Error : " . implode(", ", $output) . "<br>";
   }

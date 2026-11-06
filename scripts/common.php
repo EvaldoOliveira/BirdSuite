@@ -1961,8 +1961,9 @@ function review_verdicts() {
   if ($verdicts === null) {
     $verdicts = array();
     $db = get_db();
-    $res = $db->query("SELECT File_Name, Verdict, COALESCE(Reason, '') FROM detection_reviews");
-    while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $verdicts[$r[0]] = array($r[1], $r[2]);
+    // [2]: the detection came from Change species (Orig_Sci kept): clear leaves it Changed (play.php, Gitea #69)
+    $res = $db->query("SELECT File_Name, Verdict, COALESCE(Reason, ''), COALESCE(Orig_Sci, '') <> '' FROM detection_reviews");
+    while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $verdicts[$r[0]] = array($r[1], $r[2], (bool)$r[3]);
   }
   return $verdicts;
 }
@@ -2115,7 +2116,9 @@ function review_item_attrs($file, $label, $sci = '', $row = null) {
   if ($gone && is_file(BS_EXTRACTED . '/Purge/' . $file)) { $gone = false; $base = '/Purge/'; }
   // data-reason: the cause of the answer, so the player's Undo puts it back (owner 2026-10-22)
   $reason = review_reason(basename($file));
-  return ' data-ri="1"' . ($gone ? ' data-gone="1"' : '') . ($reason !== '' ? ' data-reason="' . htmlspecialchars($reason, ENT_QUOTES) . '"' : '') . ' data-file="' . htmlspecialchars($file, ENT_QUOTES) . '" data-clip="' . htmlspecialchars($base . $file, ENT_QUOTES)
+  // data-changed: it came from Change species, so clear shows it as Changed again, as the station keeps it (Gitea #69)
+  $changed = review_verdicts()[basename($file)][2] ?? false;
+  return ' data-ri="1"' . ($gone ? ' data-gone="1"' : '') . ($reason !== '' ? ' data-reason="' . htmlspecialchars($reason, ENT_QUOTES) . '"' : '') . ($changed ? ' data-changed="1"' : '') . ' data-file="' . htmlspecialchars($file, ENT_QUOTES) . '" data-clip="' . htmlspecialchars($base . $file, ENT_QUOTES)
     . '" data-spec="' . htmlspecialchars(clip_spectrogram($base . $file), ENT_QUOTES)
     . '" data-label="' . htmlspecialchars($label, ENT_QUOTES) . '" data-dir="' . htmlspecialchars($dir, ENT_QUOTES) . '"'
     . ($sci !== '' ? ' data-sci="' . htmlspecialchars($sci, ENT_QUOTES) . '" data-en="' . htmlspecialchars(get_english_name($sci), ENT_QUOTES) . '"' : '')

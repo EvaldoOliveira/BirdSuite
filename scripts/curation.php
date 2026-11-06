@@ -34,7 +34,10 @@ function recent_reviews_html($db, $limit, $offset) {
     $out .= '<tr><td>' . $h($r['Reviewed_At']) . '</td><td><a href="views.php?view=Species&amp;sci=' . rawurlencode($r['Sci_Name']) . '" data-com="' . $h($r['Com_Name']) . '" data-sci="' . $h($r['Sci_Name']) . '" data-en="' . $h(get_english_name($r['Sci_Name'])) . '">' . $h($r['Com_Name']) . '</a></td>'
       . '<td>' . $h($r['Date'] . ' ' . ($r['Time'] ?? '')) . '</td><td class="num">' . round($r['Confidence'] * 100) . '%</td>'
       . '<td>' . $h($ans) . '</td>'
-      . '<td><button type="button" class="openbtn" onclick="undoReview(' . $h(json_encode($r['File_Name'])) . ', this)" title="' . t('str_remove_this_answer') . '">' . t('str_undo') . '</button></td></tr>';
+      // a Changed answer has no Undo (owner 2026-11-06, Gitea #69): it is the only record of the species the model gave and
+      // its confidence, and clear keeps it as it is (play.php); a later answer on it is undone back to Changed
+      . '<td>' . ($r['Verdict'] === 'yes' && ($r['Reason'] ?? '') === 'changed' ? ''
+        : '<button type="button" class="openbtn" onclick="undoReview(' . $h(json_encode($r['File_Name'])) . ', this)" title="' . t('str_remove_this_answer') . '">' . t('str_undo') . '</button>') . '</td></tr>';
   }
   $out .= '</table>';
   $out .= list_pager(t('str_last_select_reviews', array('select' => '{select}')), $offset, count($recent), $limit, $more, 'curRecentCount', 'curRecent');

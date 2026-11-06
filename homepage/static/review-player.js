@@ -364,6 +364,28 @@ function rpToast(msg) {
   document.body.appendChild(b);
   setTimeout(function () { b.remove(); }, 4000);
 }
+// a text put into innerHTML (species names from the model or the labels file, 2026-11-06 review)
+function rpEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+// One request helper of the player (2026-11-06, #68: a lost answer of the station left a wrong verdict on the page):
+// o.ok(text) when the station answers 200 with the expected reply (o.expect(text), default any), else o.fail(kind, xhr)
+// with kind 'auth' (401), 'reply' (another status or reply) or 'net' (no answer: error or o.timeout ms, default 20 s)
+function rpRequest(method, url, o) {
+  var x = new XMLHttpRequest(), done = false;
+  var fail = function (kind) { if (done) return; done = true; if (o.fail) o.fail(kind, x); };
+  x.onload = function () {
+    if (done) return;
+    if (x.status === 200 && (!o.expect || o.expect(x.responseText))) { done = true; if (o.ok) o.ok(x.responseText); }
+    else fail(x.status === 401 ? 'auth' : 'reply');
+  };
+  x.onerror = function () { fail('net'); };
+  x.ontimeout = function () { fail('net'); };
+  x.open(method, url, true);
+  x.timeout = o.timeout || 20000;
+  x.send();
+  return x;
+}
 // The list of a review is exactly what its source passed (owner 2026-11-02: "the review player must list exactly what the
 // source table, filtered or not, passed"), the same rule for every source: the items ([data-ri]) of the list the clicked
 // item belongs to ([data-review-list]), in the order shown, without those the page's filter hides (style display none
@@ -472,7 +494,8 @@ function openReviewPlayer(el, opts) {
       }).join('')
     // Human and Noise left the answers (owner 2026-11-03): they stay as causes in Change species
     + '</div>'
-    + '<div class="rp-msg"></div>'
+    // a screen reader hears the saved / not saved messages (2026-11-06 review)
+    + '<div class="rp-msg" aria-live="polite"></div>'
     + '</div>'
     + '<div class="rp-nav rp-spnav"><button type="button" data-spnav="-1" title="' + t('str_previous_species') + '">&#9664; ' + t('str_prev_sp') + '</button><label class="rp-skip" title="' + t('str_next_previous_and_the_answers_help') + '"><input type="checkbox" class="rp-skipbox"> ' + t('str_skip_reviewed') + '</label><button type="button" data-spnav="1" title="' + t('str_next_species') + '">' + t('str_next_sp') + ' &#9654;</button></div>'
     + '<div class="rp-nav"><button type="button" data-nav="-1">&#9664; ' + t('str_previous') + '</button><button type="button" data-nav="1">' + t('str_next_skip') + ' &#9654;</button></div>'
@@ -483,7 +506,7 @@ function openReviewPlayer(el, opts) {
     + '<div class="rp-causes">'
     + REVIEW_CAUSES.map(function (c) { return '<button type="button" class="rp-cause" data-r="' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</div>'
     + '<div class="rp-sub">' + t('str_or_one_of_the_species_the_help') + '</div><div class="rp-alts"></div>'
-    + '<input type="search" class="rp-search" placeholder="' + t('str_or_search_any_species') + '"><div class="rp-found"></div>'
+    + '<input type="search" class="rp-search" placeholder="' + t('str_or_search_any_species') + '" aria-label="' + t('str_or_search_any_species') + '"><div class="rp-found"></div>'
     + '<button type="button" class="rp-back">&#9664; ' + t('str_back') + '</button></div>'
     + '<button type="button" class="rp-delete" title="' + t('str_not_a_bird_worth_keeping_the_help') + '">&#128683; ' + t('str_no_ignore') + '</button>'
     + '</div></div>';
@@ -503,6 +526,7 @@ function openReviewPlayer(el, opts) {
   function show(i, msg) {
     d.querySelector('.rp-batchbox').checked = false;  // "the whole hour" belongs to the detection it was ticked on
     idx = i;
+    armAt = Date.now();
     var item = items[i];
     // title: date and time on the left, common name centred, scientific name on the right (owner 2026-10-18: no
     // English name — one line less on the phone)
@@ -570,24 +594,33 @@ function openReviewPlayer(el, opts) {
       item.dataset.gone = '1';
       items.splice(idx, 1);
       if (!items.length) { if (reviewModeOn(item)) { reviewModeEnd(item, null); return; } close(); rpUnhist(false); rpToast(t('str_the_audio_of_this_detection_is_help')); return; }
-      show(Math.min(idx, items.length - 1), t('str_the_audio_of_this_detection_is_help'));
+      // on to the detection that really comes next (Skip reviewed included, 2026-11-06 #67); none = stay on the last
+      var nj = nextUp(idx - 1, idx);
+      show(nj >= 0 ? nj : Math.min(idx, items.length - 1), t('str_the_audio_of_this_detection_is_help'));
     });
     if (a) { applyVolume(a); applySpeed(a); a.src = window.bsClipSrc ? bsClipSrc(clipUrl) : clipUrl; a.play().catch(function () {}); }
     d.classList.remove('notmode');
     preloadNext();
     item.scrollIntoView({block: 'nearest'});
   }
-  function answer(v, reason) {
+  // the second click of a double-click (or a double tap) lands on the buttons of the detection shown next: answers are
+  // ignored for 350 ms after a detection or the Change species panel appears (2026-11-06, #66)
+  var armAt = 0;
+  function tooSoon() { return Date.now() - armAt < 350; }
+  // batchUndo: what the Undo of this answer also takes back (the same cause given to the whole hour, reject())
+  function answer(v, reason, batchUndo) {
     if (v === 'no' && reason === undefined) { openNot(); return; }
     d.classList.remove('notmode');
     var item = items[idx];
     var before = verdictOf(item), beforeReason = item.dataset.reason || '';
     send(item, v, reason);
-    setVerdict(item, v, reviewLabel(v, reason), reason);
+    // a detection that came from Change species stays Changed after Clear (the station keeps its origin, Gitea #69)
+    var keptChanged = v === 'clear' && item.dataset.changed === '1';
+    setVerdict(item, keptChanged ? 'yes' : v, reviewLabel(keptChanged ? 'yes' : v, keptChanged ? 'changed' : reason), keptChanged ? 'changed' : reason);
     progress();
     // the next detection starts right away (inside this click)
     var said = t('str_saved_what', {what: reviewLabel(v, reason).replace(/^\W+ /, '')});
-    var nx = step(idx, 1);
+    var nx = nextUp(idx);
     // the first Yes of a species not confirmed yet moves on to the next species (no next detection of this one)
     var confirms = v === 'yes' && reviewModeUnconfirmed(item);
     if (confirms) d.querySelector('.rp-msg').textContent = said;
@@ -595,8 +628,10 @@ function openReviewPlayer(el, opts) {
     else d.querySelector('.rp-msg').textContent = said + '. ' + t('str_that_was_the_last_detection_to_help');
     offerUndo(function () {
       // the answer before, with its cause (data-reason): an undone Ignore over a Dog stays Dog
-      send(item, before || 'clear', beforeReason || undefined);
+      // the Undo of a Yes also takes the species off the Confirmed list when that Yes was its only one (unconfirm=1, play.php)
+      send(item, before || 'clear', beforeReason || undefined, null, null, v === 'yes' && !before ? '&unconfirm=1' : '');
       setVerdict(item, before || 'clear', before ? reviewLabel(before, beforeReason) : undefined, beforeReason);
+      if (batchUndo) batchUndo();
       show(items.indexOf(item), t('str_answer_undone'));
       if (v === 'yes') {
         try {
@@ -609,24 +644,55 @@ function openReviewPlayer(el, opts) {
     if (confirms) { reviewModeConfirmed(item, doUndo); return; }
     if (nx < 0) reviewModeEnd(item, doUndo);
   }
-  function send(item, v, reason) {
+  // the detection named in a message: common name and time
+  function whatOf(item) {
+    var lab = (item.dataset.label || '').split(', ');
+    return [item.dataset.com || lab[0] || '', item.dataset.when || lab[1] || ''].filter(Boolean).join(', ');
+  }
+  // what: the text naming what was not saved (default the detection)
+  function notSaved(kind, x, item, what) {
+    what = what || whatOf(item);
+    if (kind === 'auth') return t('str_log_in_first_to_review_detections');
+    if (kind === 'net') return t('str_not_saved_no_answer', {what: what});
+    return t('str_not_saved_msg', {msg: what + ': ' + String(x.responseText || x.status).slice(0, 200)});
+  }
+  // the answer to the station. When it is not taken (refused, or no answer in 20 s) the detection gets back the verdict
+  // it had (2026-11-06, #68: it became "not reviewed", and a lost request left the new one shown): prev, else the one
+  // shown when send() is called (before the caller marks the new answer). A later answer of the same detection wins.
+  // done: called once the station answered or failed (the batch Undo sends one at a time)
+  function send(item, v, reason, done, prev, extra) {
     answered = true;
-    var x = new XMLHttpRequest();
-    x.onload = function () {
-      if (this.responseText != 'OK') {
-        d.querySelector('.rp-msg').textContent = (this.status === 401 ? t('str_log_in_first_to_review_detections') : t('str_not_saved_msg', {msg: this.responseText}));
-        setVerdict(item, 'clear');
-        progress();
-      }
-    };
+    prev = prev || {v: verdictOf(item), reason: item.dataset.reason || ''};
+    var seq = item.rpSeq = (item.rpSeq || 0) + 1;
     try { localStorage.setItem('bs_answered', String(Date.now())); } catch (e) {}
-    x.open('POST', 'play.php?review=' + encodeURIComponent(item.dataset.file) + '&verdict=' + v + (reason ? '&reason=' + encodeURIComponent(reason) : ''), true);
-    x.send();
+    rpRequest('POST', 'play.php?review=' + encodeURIComponent(item.dataset.file) + '&verdict=' + v + (reason ? '&reason=' + encodeURIComponent(reason) : '') + (extra || ''), {
+      expect: function (r) { return r.trim() === 'OK'; },
+      ok: function () { if (done) done(); },
+      fail: function (kind, x) {
+        if (done) done();
+        if (item.rpSeq !== seq) return;
+        d.querySelector('.rp-msg').textContent = notSaved(kind, x, item);
+        setVerdict(item, prev.v || 'clear', prev.v ? reviewLabel(prev.v, prev.reason) : undefined, prev.reason);
+        progress();
+        if (items[idx] === item) d.querySelectorAll('.rp-opt:not(.rp-qopt)').forEach(function (b) { b.classList.toggle('current', b.dataset.v === prev.v); });
+      }
+    });
   }
   // the next (dir 1) or previous (-1) detection; with "Skip reviewed" on, the next one without an answer (-1: none)
   function step(from, dir) {
     var skip = d.querySelector('.rp-skipbox').checked;  // the boxes are kept equal
     for (var j = from + dir; j >= 0 && j < items.length; j += dir) if (!skip || !verdictOf(items[j])) return j;
+    return -1;
+  }
+  // the detection an answer moves on to: the next one; with Skip reviewed on and none left after it, the first one
+  // without an answer before it (2026-11-06, #67: those skipped earlier were left out). The search before it stops at
+  // upto, by default from, so the one shown is never returned (the audio-error path, whose item has left the list,
+  // passes from - 1 and upto idx); one pass each way, no loop
+  function nextUp(from, upto) {
+    var j = step(from, 1);
+    if (j >= 0 || !d.querySelector('.rp-skipbox').checked) return j;
+    if (upto === undefined) upto = from;
+    for (var k = 0; k < upto && k < items.length; k++) if (!verdictOf(items[k])) return k;
     return -1;
   }
   // "Detection 5 of 30 · 12 reviewed" and one mark per detection (green yes, red no, grey review later); a click jumps there
@@ -674,13 +740,14 @@ function openReviewPlayer(el, opts) {
     });
   }
   function nextAfter(msg) {
-    var nx = step(idx, 1);
+    var nx = nextUp(idx);
     if (nx >= 0) show(nx, msg + ', ' + t('str_next_detection'));
     else { d.classList.remove('notmode'); d.querySelector('.rp-msg').textContent = msg + '. ' + t('str_that_was_the_last_detection_of_help'); reviewModeEnd(items[idx], null); }
   }
   function altButton(a, i) {
-    return '<button type="button" class="rp-alt' + (a.expected === false ? ' far' : '') + '" data-label="' + a.label.replace(/"/g, '&quot;') + '" data-com="' + a.com.replace(/"/g, '&quot;') + '">'
-      + '<span>' + (i !== null ? '<b>' + (i + 1) + '</b> ' : '') + a.com + ' <i>' + a.sci + '</i></span><small>'
+    // the names escaped (2026-11-06 review: a label with < or & broke the list)
+    return '<button type="button" class="rp-alt' + (a.expected === false ? ' far' : '') + '" data-label="' + rpEsc(a.label) + '" data-com="' + rpEsc(a.com) + '">'
+      + '<span>' + (i !== null ? '<b>' + (i + 1) + '</b> ' : '') + rpEsc(a.com) + ' <i>' + rpEsc(a.sci) + '</i></span><small>'
       + (a.score !== undefined ? Math.round(a.score * 100) + '%' : '') + (a.prob !== undefined && a.prob !== null ? ' | ' + t('str_here_pct', {p: Math.round(a.prob * 100)}) : (a.expected === false ? ' | ' + t('str_not_expected_here') : '')) + '</small></button>';
   }
   function bindAlts(box) {
@@ -689,6 +756,7 @@ function openReviewPlayer(el, opts) {
   function openNot() {
     var item = items[idx];
     d.classList.add('notmode');
+    armAt = Date.now();  // the panel's causes sit where the answers were (#66)
     var when = item.dataset.when || '';
     // tick BEFORE choosing the cause (the cause saves at once); the count says what it will reach in this list
     var others = items.filter(function (it) {
@@ -706,42 +774,60 @@ function openReviewPlayer(el, opts) {
     var box = d.querySelector('.rp-alts');
     box.innerHTML = '<div class="rp-wait">' + t('str_asking_the_stations_model_about_help') + '</div>';
     var asked = item;
-    var x = new XMLHttpRequest();
-    x.onload = function () {
-      if (items[idx] !== asked || !d.classList.contains('notmode')) return;
-      var alts = [];
-      try { alts = JSON.parse(this.responseText); } catch (e) {}
-      box.innerHTML = alts.length ? alts.map(altButton).join('') : '<div class="rp-wait">' + (this.status === 401 ? t('str_log_in_first') : t('str_the_model_found_no_other_help')) + '</div>';
-      bindAlts(box);
-    };
-    x.open('GET', 'play.php?alternatives=' + encodeURIComponent(item.dataset.file), true);
-    x.send();
+    // 40 s: the model may have to load first (scripts/review_worker.py); no answer replaces the waiting line (#68)
+    rpRequest('GET', 'play.php?alternatives=' + encodeURIComponent(item.dataset.file), {
+      timeout: 40000,
+      expect: function (r) { try { return Array.isArray(JSON.parse(r)); } catch (e) { return false; } },
+      ok: function (r) {
+        if (items[idx] !== asked || !d.classList.contains('notmode')) return;
+        var alts = JSON.parse(r);
+        box.innerHTML = alts.length ? alts.map(altButton).join('') : '<div class="rp-wait">' + t('str_the_model_found_no_other_help') + '</div>';
+        bindAlts(box);
+      },
+      fail: function (kind) {
+        if (items[idx] !== asked || !d.classList.contains('notmode')) return;
+        box.innerHTML = '<div class="rp-wait">' + (kind === 'auth' ? t('str_log_in_first') : t('str_the_model_did_not_answer')) + '</div>';
+      }
+    });
     focusFirst();
   }
+  // the labels are fetched once (an empty list or a refusal is not kept: the next letter asks again); only the newest
+  // query is drawn (2026-11-06, #68)
+  var labelsWait = false, searchSeq = 0;
   function search(q) {
-    var found = d.querySelector('.rp-found');
+    var found = d.querySelector('.rp-found'), my = ++searchSeq;
     q = q.trim().toLowerCase();
     if (q.length < 2) { found.innerHTML = ''; return; }
     function render() {
+      if (my !== searchSeq) return;
       var hits = labels.filter(function (l) { return l.toLowerCase().indexOf(q) >= 0; }).slice(0, 8);
       found.innerHTML = hits.map(function (l) { var p = l.split('_'); return altButton({label: l, sci: p[0], com: p.slice(1).join('_') || p[0]}, null); }).join('');
       bindAlts(found);
     }
     if (labels) { render(); return; }
-    var x = new XMLHttpRequest();
-    x.onload = function () { try { labels = JSON.parse(this.responseText); } catch (e) { labels = []; } render(); };
-    x.open('GET', 'play.php?getlabels=1', true);
-    x.send();
+    if (labelsWait) return;  // the reply draws the query typed by then
+    labelsWait = true;
+    rpRequest('GET', 'play.php?getlabels=1', {
+      expect: function (r) { try { var l = JSON.parse(r); return Array.isArray(l) && l.length > 0; } catch (e) { return false; } },
+      ok: function (r) { labelsWait = false; labels = JSON.parse(r); search(d.querySelector('.rp-search').value); },
+      fail: function (kind) {
+        labelsWait = false;
+        if (my === searchSeq) found.innerHTML = '<div class="rp-wait">' + (kind === 'auth' ? t('str_log_in_first') : t('str_the_species_list_did_not_load')) + '</div>';
+      }
+    });
   }
   function changeTo(label, com) {
     var item = items[idx];
-    var x = new XMLHttpRequest();
-    x.onload = function () {
-      if (this.responseText.trim() == 'OK') setVerdict(item, 'yes', reviewLabel('yes', 'changed'));
-      else d.querySelector('.rp-msg').textContent = t('str_species_not_changed', {msg: this.responseText});
-    };
-    x.open('POST', 'play.php?changefile=' + encodeURIComponent(item.dataset.file) + '&newname=' + encodeURIComponent(label), true);
-    x.send();
+    // the verdict changes only when the station says OK: nothing to put back on a failure; 40 s, the clip and its
+    // picture are moved and renamed (scripts/birdnet_changeidentification.sh)
+    rpRequest('POST', 'play.php?changefile=' + encodeURIComponent(item.dataset.file) + '&newname=' + encodeURIComponent(label), {
+      timeout: 40000,
+      expect: function (r) { return r.trim() === 'OK'; },
+      ok: function () { setVerdict(item, 'yes', reviewLabel('yes', 'changed')); progress(); },
+      fail: function (kind, x) {
+        d.querySelector('.rp-msg').textContent = kind === 'net' ? t('str_not_saved_no_answer', {what: whatOf(item)}) : t('str_species_not_changed', {msg: String(x.responseText || x.status).slice(0, 200)});
+      }
+    });
     d.classList.remove('notmode');
     nextAfter(t('str_changed_to', {name: com}));
   }
@@ -749,28 +835,45 @@ function openReviewPlayer(el, opts) {
     var item = items[idx];
     if (!d.querySelector('.rp-batchbox').checked) { answer('no', reason); return; }
     var when = item.dataset.when || '', date = when.slice(0, 10), hour = when.slice(11, 13), sci = item.dataset.sci || '';
-    // exactly the detections the label counted (2026-10-23 run 3: the station marked the whole hour of every location)
-    var files = items.filter(function (it) {
+    // exactly the detections the label counted (2026-10-23 run 3: the station marked the whole hour of every location);
+    // at most 500, what the station takes (play.php review_batch), so only those sent are marked
+    var batch = items.filter(function (it) {
       var w = it.dataset.when || '';
       return it !== item && !verdictOf(it) && it.dataset.sci === sci && w.slice(0, 10) === date && w.slice(11, 13) === hour;
-    }).map(function (it) { return it.dataset.file; });
-    var x = new XMLHttpRequest();
-    x.onload = function () {
-      var m = this.responseText.match(/^OK (\d+)/);
-      if (!m) { d.querySelector('.rp-msg').textContent = t('str_not_saved_msg', {msg: this.responseText}); return; }
-      items.forEach(function (it) {
-        var w = it.dataset.when || '';
-        // the server keeps answers given before (INSERT OR IGNORE): only the ones without an answer change here
-        if (it !== item && !verdictOf(it) && it.dataset.sci === sci && w.slice(0, 10) === date && w.slice(11, 13) === hour) setVerdict(it, 'no', reviewLabel('no', reason), reason);
-      });
+    }).slice(0, 500);
+    // marked here BEFORE the answer below (2026-11-06, #67): its next detection then skips them (Skip reviewed), as the
+    // station keeps answers given before (INSERT OR IGNORE) they all were without one; a refusal takes the marks back
+    batch.forEach(function (it) { setVerdict(it, 'no', reviewLabel('no', reason), reason); });
+    var state = 'sent', undone = false;
+    var unmark = function () {
+      batch.forEach(function (it) { if (verdictOf(it) === 'no' && it.dataset.reason === reason) setVerdict(it, 'clear'); });
+      progress();
+    };
+    // the Undo of the batch clears each one at the station, one request at a time, after the batch itself has arrived
+    var clearAll = function () {
+      var k = 0;
+      (function next() { if (k < batch.length) send(batch[k++], 'clear', undefined, next, {v: 'no', reason: reason}); })();
     };
     d.querySelector('.rp-batchbox').checked = false;  // one hour per tick (a later one-click cause must not repeat it)
-    x.open('POST', 'play.php?review_batch=1&sci=' + encodeURIComponent(sci) + '&date=' + date + '&hour=' + parseInt(hour, 10) + '&reason=' + encodeURIComponent(reason) + '&files=' + encodeURIComponent(files.join('\n')), true);
-    x.send();
+    rpRequest('POST', 'play.php?review_batch=1&sci=' + encodeURIComponent(sci) + '&date=' + date + '&hour=' + parseInt(hour, 10) + '&reason=' + encodeURIComponent(reason) + '&files=' + encodeURIComponent(batch.map(function (it) { return it.dataset.file; }).join('\n')), {
+      expect: function (r) { return /^OK \d+/.test(r); },
+      ok: function () { state = 'ok'; if (undone) clearAll(); },
+      fail: function (kind, x) {
+        state = 'failed';
+        if (undone) return;
+        unmark();
+        d.querySelector('.rp-msg').textContent = notSaved(kind, x, item, (item.dataset.com || sci) + ', ' + date + ' ' + hour + ':00\u2013' + hour + ':59');
+      }
+    });
     // this detection too (it may have had an answer already), then the next one outside that hour
-    answer('no', reason);
+    answer('no', reason, function () {
+      undone = true;
+      if (state === 'failed') return;
+      unmark();
+      if (state === 'ok') clearAll();
+    });
   }
-  d.querySelectorAll('.rp-cause, .rp-qopt').forEach(function (b) { b.onclick = function () { reject(b.dataset.r); }; });  // also the cause buttons
+  d.querySelectorAll('.rp-cause, .rp-qopt').forEach(function (b) { b.onclick = function () { if (!tooSoon()) reject(b.dataset.r); }; });  // also the cause buttons
   d.querySelector('.rp-back').onclick = function () { d.classList.remove('notmode'); focusFirst(); };
   d.querySelector('.rp-search').oninput = function () { search(this.value); };
 
@@ -822,22 +925,30 @@ function openReviewPlayer(el, opts) {
     };
   });
   var preloaded = null;
+  // the clip an answer really moves on to (Skip reviewed included), from the address the player will ask for (the
+  // hearing aid's lowered sound when it is on), 2026-11-06 #67
   function preloadNext() {
-    var nx = items[idx + 1];
+    var j = nextUp(idx), nx = j >= 0 ? items[j] : null;
     if (!nx) return;
     if (preloaded) { preloaded.removeAttribute('src'); preloaded.load(); }
     preloaded = new Audio();
     preloaded.preload = 'auto';
-    preloaded.src = nx.dataset.clip;
+    preloaded.src = window.bsClipSrc ? bsClipSrc(nx.dataset.clip) : nx.dataset.clip;
     (new Image()).src = specSrc(nx);
   }
+  // only a swipe on the spectrogram picture answers (2026-11-06, #66: dragging the play bar's seek slider, the palette
+  // or the speed buttons gave a Yes or Change species)
   var touch = null;
-  d.querySelector('.rp-left').addEventListener('touchstart', function (e) { var t = e.changedTouches[0]; touch = {x: t.clientX, y: t.clientY}; }, {passive: true});
+  d.querySelector('.rp-left').addEventListener('touchstart', function (e) {
+    var t = e.changedTouches[0], g = e.target;
+    var onPicture = g && g.closest && g.closest('.rp-player') && !g.closest('.cap-controls, input, select, textarea, a');
+    touch = onPicture && !d.classList.contains('rp-leaving') ? {x: t.clientX, y: t.clientY} : null;
+  }, {passive: true});
   d.querySelector('.rp-left').addEventListener('touchend', function (e) {
     if (!touch) return;
     var t = e.changedTouches[0], dx = t.clientX - touch.x, dy = t.clientY - touch.y;
     touch = null;
-    if (Math.abs(dx) > 80 && Math.abs(dy) < 60) answer(dx > 0 ? 'yes' : 'no');
+    if (Math.abs(dx) > 80 && Math.abs(dy) < 60 && !tooSoon()) answer(dx > 0 ? 'yes' : 'no');
   }, {passive: true});
 
   // volume (remembered in this browser): steps of 10 %, mute
@@ -908,7 +1019,8 @@ function openReviewPlayer(el, opts) {
     if (!img) return;
     img.classList.toggle('rp-crop', !specOverride());
     img.src = specSrc(items[idx]);
-    if (items[idx + 1]) (new Image()).src = specSrc(items[idx + 1]);
+    var nj = nextUp(idx);
+    if (nj >= 0) (new Image()).src = specSrc(items[nj]);
   }
   // rp:closed tells the page whether answers were given, so it can refresh what depends on them (species page Precision)
   // the hearing aid on (owner 2026-11-04): the picture is the clip as recorded, so a second scale over its right edge says
@@ -933,7 +1045,7 @@ function openReviewPlayer(el, opts) {
       var y = (512 - (k / h.r) * 512 / 12000) * sy;
       if (y < 18 || y > 513 * sy - 6) continue;
       var s1 = document.createElement('span');
-      s1.style.top = (y - 7) + 'px'; s1.textContent = (k / 1000) + ' kHz -';
+      s1.style.top = (y - 7) + 'px'; s1.textContent = t('str_khz_mark', {n: k / 1000});
       box.appendChild(s1);
     }
     pl.appendChild(box);
@@ -958,9 +1070,17 @@ function openReviewPlayer(el, opts) {
     document.removeEventListener('keydown', key);
     window.removeEventListener('popstate', onPop);
     if (preloaded) { preloaded.removeAttribute('src'); preloaded.load(); preloaded = null; }
+    // and its timers and observer (2026-11-06 review): a pending "leaving" close, a palette redraw, the Undo offer
+    clearTimeout(rpQueueTimer); rpLeaveRestore = null;
+    clearTimeout(specTimer); clearTimeout(undoTimer); undoFn = null;
+    if (padObserver) { padObserver.disconnect(); padObserver = null; }
     if (window.rpDispose === dispose) window.rpDispose = null;
   }
+  // closed once (2026-11-06 review: Esc during the end-of-list message and its timer both closed, so leave() went back twice)
+  var closed = false;
   function close() {
+    if (closed) return;
+    closed = true;
     d.querySelectorAll('audio').forEach(function (a) { a.pause(); }); d.remove(); dispose();
     if (opener && opener.isConnected && opener.focus) opener.focus(); else if (el && el.isConnected && el.focus) el.focus();
     document.dispatchEvent(new CustomEvent('rp:closed', {detail: {answered: answered}}));
@@ -988,6 +1108,7 @@ function openReviewPlayer(el, opts) {
   // closing goes back to the review's return point (rpReturnGo); review mode without one (an old link) to Validation
   var rpUnhist = function () {};
   function leave() {
+    if (closed) return;
     var sci = items[idx] && items[idx].dataset.sci;
     close();
     var reviewMode = /[?&]review=1/.test(location.search);
@@ -1003,17 +1124,37 @@ function openReviewPlayer(el, opts) {
     if (reviewMode) location.href = 'views.php?view=Review';
   }
   function key(e) {
+    // the Share question (askModal's #spModal, species-modal.js) over the player has the keyboard: no answer, no Esc
+    // closing the player, no Tab trap taking its focus (2026-11-06, #66)
+    var sm = document.getElementById('spModal');
+    if (sm && sm.style.display !== 'none' && sm.getClientRects().length) return;
+    // Ctrl / Cmd / Alt + a letter is the browser's or the system's (Ctrl+C copied, Ctrl+R reloaded and answered)
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'Tab') { trap(e); return; }
     if (e.defaultPrevented) return;  // already handled (ui-standard.js: Enter / Space on an icon button)
-    if (e.target && e.target.classList && e.target.classList.contains('rp-search')) { if (e.key === 'Escape') { d.classList.remove('notmode'); focusFirst(); } return; }
+    // greyed out with the "opening next species" / "that was the last" message: only Esc and Undo
+    if (d.classList.contains('rp-leaving') && e.key !== 'Escape' && e.key !== 'z' && e.key !== 'Z') return;
+    var g = e.target || {}, tag = g.tagName || '', typ = String(g.type || '').toLowerCase();
+    if (g.classList && g.classList.contains('rp-search')) { if (e.key === 'Escape') { d.classList.remove('notmode'); focusFirst(); } return; }
+    // a field that takes typing (the palette's numbers, a select) keeps every key, before the Change species digits
+    // below: a 5 typed in Floor picked the fifth species (#66)
+    var typing = tag === 'TEXTAREA' || tag === 'SELECT' || (tag === 'INPUT' && !/^(checkbox|radio|range|button|submit|reset)$/.test(typ));
+    if (typing || (g.closest && g.closest('.rp-spec'))) return;
+    // Space and the arrows on a checkbox or a slider (the play bar's seek) stay with it (WCAG 2.1.1); Space on a
+    // button presses it, except on the answers and causes, where the focus rests on opening (Space there plays / pauses,
+    // as the shortcuts line says; Enter presses them)
+    if (e.key === ' ' && (tag === 'INPUT' || (tag === 'BUTTON' && !(g.closest && g.closest('.rp-opt, .rp-cause, .rp-mdel, .rp-delete'))))) return;
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') && tag === 'INPUT' && typ === 'range') return;
+    // a held key repeats: one answer per press (Y N R C X and Z)
+    if (e.repeat && /^[ynrcxz]$/i.test(e.key)) return;
     if (d.classList.contains('notmode')) {
       if (e.key === 'Escape') { d.classList.remove('notmode'); focusFirst(); return; }
       var n = parseInt(e.key, 10), alts = d.querySelectorAll('.rp-alts .rp-alt');
       if (n >= 1 && n <= alts.length) { e.preventDefault(); alts[n - 1].click(); }
       return;
     }
-    if (e.target && e.target.closest && e.target.closest('.rp-spec')) return;
     if (e.key === 'Escape') { leave(); return; }
+    if (d.classList.contains('rp-leaving')) { if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); doUndo(); } return; }
     var j = e.key === 'ArrowRight' ? step(idx, 1) : (e.key === 'ArrowLeft' ? step(idx, -1) : -2);
     if (j >= 0) { e.preventDefault(); show(j); return; }
     if (j === -1) return;
@@ -1063,13 +1204,14 @@ function openReviewPlayer(el, opts) {
   function tool(which) {
     var item = items[idx], file = item.dataset.file;
     if (which === 'share') { share(item); return; }
-    var x = new XMLHttpRequest();
     if (which === 'lock') {
       var add = item.dataset.locked !== '1';
-      // only the icon changes: the sound keeps playing
-      x.onload = function () { if (this.responseText == 'OK') { item.dataset.locked = add ? '1' : '0'; toolIcons(item); d.querySelector('.rp-msg').textContent = add ? t('str_protected_from_the_disk_purge') : t('str_no_longer_protected'); } };
-      x.open('POST', 'play.php?excludefile=' + encodeURIComponent(file) + (add ? '&exclude_add=true' : '&exclude_del=true'), true);
-      x.send();
+      // only the icon changes: the sound keeps playing; a refusal or no answer says so (2026-11-06, #68)
+      rpRequest('POST', 'play.php?excludefile=' + encodeURIComponent(file) + (add ? '&exclude_add=true' : '&exclude_del=true'), {
+        expect: function (r) { return r.trim() === 'OK'; },
+        ok: function () { item.dataset.locked = add ? '1' : '0'; if (items[idx] === item) toolIcons(item); d.querySelector('.rp-msg').textContent = add ? t('str_protected_from_the_disk_purge') : t('str_no_longer_protected'); },
+        fail: function (kind, x) { d.querySelector('.rp-msg').textContent = notSaved(kind === 'auth' ? 'reply' : kind, x, item); }
+      });
     }
   }
   d.querySelectorAll('.rp-vol [data-vol]').forEach(function (b) { b.onclick = function () { volume(b.dataset.vol); }; });
@@ -1078,8 +1220,8 @@ function openReviewPlayer(el, opts) {
   d.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-t]'); if (b && d.contains(b)) tool(b.dataset.t); });
   d.addEventListener('keydown', function (e) { var b = e.target.closest && e.target.closest('[data-t]'); if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); tool(b.dataset.t); } });
   // Delete became Ignore (owner 2026-10-22): nothing leaves the database in a review, every detection keeps its answer
-  d.querySelector('.rp-delete').onclick = function () { reject('ignore'); };
-  d.querySelector('.rp-mdel').onclick = function () { reject('ignore'); };
+  d.querySelector('.rp-delete').onclick = function () { if (!tooSoon()) reject('ignore'); };
+  d.querySelector('.rp-mdel').onclick = function () { if (!tooSoon()) reject('ignore'); };
   // Previous / Next species (owner 2026-10-18): only in a review started from Curation (review mode + its species list)
   var spnav = d.querySelector('.rp-spnav'), spSci = (items[idx] && items[idx].dataset.sci) || '';
   var inQueue = /[?&]review=1/.test(location.search) && spSci && (reviewQueueNeighbour(spSci, 1) || reviewQueueNeighbour(spSci, -1));
@@ -1098,13 +1240,14 @@ function openReviewPlayer(el, opts) {
     try { set(localStorage.getItem(k) === '1'); } catch (e) { set(false); }
     b.onclick = function () { set(!d.classList.contains(cls)); };
   });
+  var padObserver = null;
   // phone (owner 2026-10-25): "Detection 1 of 4" and its bar on top of the fixed answer bar, always in sight, and the
   // page scrolls far enough for nothing to stay under that bar
   if (window.matchMedia('(max-width:800px)').matches) {
     var opts = d.querySelector('.rp-opts'), prog = d.querySelector('.rp-prog');
     if (opts && prog && prog.parentNode !== opts) opts.insertBefore(prog, opts.firstChild);
     var box = d.querySelector('.rp-box');
-    if (opts && box && window.ResizeObserver) new ResizeObserver(function () { box.style.paddingBottom = (opts.offsetHeight + 12) + 'px'; }).observe(opts);
+    if (opts && box && window.ResizeObserver) { padObserver = new ResizeObserver(function () { box.style.paddingBottom = (opts.offsetHeight + 12) + 'px'; }); padObserver.observe(opts); }
   }
   // closing (owner 2026-11-03): ×, Close at the bottom of the phone's bar, Esc, a click beside the box, pulling the box
   // down by its handle, and the phone's Back button (a history entry while the player is open; closing otherwise takes
@@ -1135,7 +1278,7 @@ function openReviewPlayer(el, opts) {
     grab.addEventListener('pointercancel', end);
   })();
   // the cause buttons share the look (rp-opt) but answer through reject() (bound above, with the hour option)
-  d.querySelectorAll('.rp-opt:not(.rp-qopt)').forEach(function (b) { b.onclick = function () { answer(b.dataset.v); }; });
+  d.querySelectorAll('.rp-opt:not(.rp-qopt)').forEach(function (b) { b.onclick = function () { if (!tooSoon()) answer(b.dataset.v); }; });
   d.querySelectorAll('[data-nav]').forEach(function (b) { b.onclick = function () { var j = step(idx, parseInt(b.dataset.nav, 10)); if (j >= 0) show(j); }; });
   d.querySelector('.rp-bar').onclick = function (e) { if (e.target.dataset.j) show(parseInt(e.target.dataset.j, 10)); };
   // Skip reviewed: on unless switched off in this browser
