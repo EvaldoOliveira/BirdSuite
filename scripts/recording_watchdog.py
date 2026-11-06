@@ -23,6 +23,38 @@ STATE = os.path.join(core.BS_STATE, 'recording_watchdog.json')
 EMPTY = 1024          # a WAV header is 44 bytes; a clip with audio grows by ~96 KB a second
 QUIET_RESTART = 600   # seconds between two restarts
 DAY = 86400
+LOSS_LOG = os.path.join(core.BS_STATE, 'audio_loss.log')
+LOSS_KEEP = 8 * DAY   # the page shows 24 h, a detection reads its own 15 s; a week of margin
+
+
+def prune_loss_log(state):
+    """state/audio_loss.log (birdnet_recording.sh, one line per overrun: time ms) kept to the last 8 days, once a day:
+    it was read whole by every recording analysed and by Station › Microphone and grew without end (Gitea #86).
+    True when the state changed (the day stamp)."""
+    now = time.time()
+    if now - state.get('loss_pruned', 0) < DAY or not os.path.exists(LOSS_LOG):
+        return False
+    state['loss_pruned'] = now
+    try:
+        with open(LOSS_LOG, encoding='utf-8') as f:
+            lines = f.readlines()
+        keep = []
+        for ln in lines:
+            parts = ln.split()
+            try:
+                if parts and float(parts[0]) >= now - LOSS_KEEP:
+                    keep.append(ln)
+            except ValueError:
+                continue
+        if len(keep) < len(lines):
+            tmp = LOSS_LOG + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                f.writelines(keep)
+            os.replace(tmp, LOSS_LOG)   # the recorder appends by path, so it goes on with the pruned file
+            log(f'audio_loss.log pruned: {len(lines) - len(keep)} line(s) older than 8 days dropped, {len(keep)} kept')
+    except OSError as e:
+        log(f'audio_loss.log not pruned: {e}')
+    return True
 
 
 def log(text):
@@ -98,6 +130,8 @@ def notify(conf, text):
 def main():
     conf = get_settings()
     state = load()
+    if prune_loss_log(state):
+        save(state)
     if not active(core.BS_SVC_RECORDING) or not capture_card():
         state['suspect'] = 0
         save(state)

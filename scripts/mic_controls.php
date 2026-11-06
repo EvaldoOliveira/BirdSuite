@@ -45,7 +45,7 @@
       <br>
       <label for="micgain"><?php echo t('str_microphone_gain'); ?> </label>
       <?php if ($mic_gain) { ?>
-      <input id="micgain" type="range" min="0" max="100" step="1" style="vertical-align:middle;width:12em;max-width:50%"
+      <input id="micgain" type="range" min="0" max="100" step="1" style="vertical-align:middle;width:12em;max-width:50%;height:24px"
         value="<?php echo intval($mic_gain['percent']); ?>" data-db="<?php echo htmlspecialchars((string)$mic_gain['db']); ?>"
         aria-describedby="micgainval">
       <span id="micgainval"></span> <span id="micgainmsg" class="small"></span><br>

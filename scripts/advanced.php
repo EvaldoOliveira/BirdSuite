@@ -22,13 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $_GET = array_intersect_key((array)$_GET, array_flip(array('view', 'status')));
 }
 
-if(isset($_GET['submit'])) {
+$adv_error = '';
+if(isset($_GET['submit'])) try {
   // only the fields of Settings › Audio and Settings › Access (and the stream choice / pitch switch of the Spectrogram
   // page); every value checked by conf_set_many() (common.php, one rule per key), all or nothing written
   $set = array();
   $restart_livestream = false;
   $update_caddyfile = false;
-  $fail = function ($msg) { die(htmlspecialchars($msg)); };
+  // a refused value: nothing written, the page shows again with the reason in a notice (Gitea #85: it died after the
+  // menu, leaving a bare sentence and no form)
+  $fail = function ($msg) { throw new RuntimeException((string)$msg); };
   // a changed value of these keys: written, and what reads it restarted
   $changed = function ($key, $val, $what = '') use (&$set, &$restart_livestream, &$update_caddyfile, $config) {
     if (strcmp((string)$val, (string)($config[$key] ?? '')) === 0) return;
@@ -77,11 +80,14 @@ if(isset($_GET['submit'])) {
   }
 
   if(isset($_GET["rtsp_stream"])) {
-    $rtsp_stream = str_replace(array("\r\n", "\n"), ",", trim($_GET["rtsp_stream"]));
-    foreach (array_filter(explode(",", $rtsp_stream), 'strlen') as $u) {
-      if (conf_check('RTSP_STREAM', trim($u)) === null) $fail(t('str_not_a_stream_url', array('url' => $u)));
+    // one URL per line or comma, each trimmed, empty ones dropped (Gitea #87: a space after a comma reached the recorder)
+    $urls = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', (string)$_GET["rtsp_stream"])), 'strlen'));
+    foreach ($urls as $u) {
+      if (conf_check('RTSP_STREAM', $u) === null) $fail(t('str_not_a_stream_url', array('url' => $u)));
     }
-    $changed('RTSP_STREAM', $rtsp_stream, BS_SVC_LIVESTREAM);
+    $changed('RTSP_STREAM', implode(',', $urls), BS_SVC_LIVESTREAM);
+    // the stream heard (Sonogram page) stays inside the list when it shrinks
+    if (intval($config['RTSP_STREAM_TO_LIVESTREAM'] ?? 0) >= max(1, count($urls))) $changed('RTSP_STREAM_TO_LIVESTREAM', '0', BS_SVC_LIVESTREAM);
   }
   if (isset($_GET["rtsp_stream_to_livestream"])) {
     // an index of the stream list (the Spectrogram page's choice), out of range = the first stream
@@ -99,6 +105,12 @@ if(isset($_GET['submit'])) {
   $rec_len = intval($set['RECORDING_LENGTH'] ?? $config['RECORDING_LENGTH'] ?? 15);
   if (intval($set['EXTRACTION_LENGTH'] ?? $config['EXTRACTION_LENGTH'] ?? 3) > $rec_len) $set['EXTRACTION_LENGTH'] = $rec_len;
 
+  // nothing changed: nothing written and no service restarted (Gitea #85: every Save restarted recording, analysis and
+  // the live stream, a minute of analysis lost for nothing); the page says so
+  if (!$set) {
+    echo '<script>location.replace("views.php?view=' . ($adv_page === 'audio' ? 'Microphone' : 'Access') . '&status=nochange");</script>';
+    die();
+  }
   if (!conf_set_many($set, $err)) $fail($err);
   $config = get_config($force_reload=true);
 
@@ -114,14 +126,10 @@ if(isset($_GET['submit'])) {
   // the menu is already printed, so the browser is sent there by script
   echo '<script>location.replace("views.php?view=' . ($adv_page === 'audio' ? 'Microphone' : 'Access') . '&status=success");</script>';
   die();
+} catch (RuntimeException $e) {
+  $adv_error = $e->getMessage();
 }
-
-$count = 6000;
 ?>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  </style>
-  </head>
 <div class="settings">
 
 <?php
@@ -147,16 +155,18 @@ $newconfig = get_config();
       <table class="settingstable"><tr><td>
       <h2><?php echo t('str_audio_source'); ?></h2>
       <label for="rec_card"><?php echo t('str_audio_card'); ?> </label>
-      <input name="rec_card" type="text" size="12" value="<?php print($newconfig['REC_CARD']);?>" required/><br>
+      <input name="rec_card" id="rec_card" type="text" size="12" value="<?php echo htmlspecialchars((string)$newconfig['REC_CARD'], ENT_QUOTES); ?>" required/><br>
       <?php echo t('str_audio_card_birdnet_mic_help'); ?> <?php echo t('str_choose_the_dsnoop_device_if_it_help'); ?><br><br>
       <label for="channels"><?php echo t('str_audio_channels'); ?> </label>
-      <input name="channels" type="number" style="width:3em;" min="1" max="32" step="1" value="<?php print($newconfig['CHANNELS']);?>" required/><br>
+      <input name="channels" id="channels" type="number" style="width:3em;" min="1" max="32" step="1" value="<?php echo intval($newconfig['CHANNELS']); ?>" required/><br>
       <?php echo t('str_set_channels_to_the_number_of_help'); ?> <?php echo t('str_32_max'); ?><br><br>
       <?php // the recording length and the clip's length and format are in Station › Model (owner 2026-11-04) ?>
       <p class="small"><?php echo t('str_moved_recording_settings_help', array('model' => '<a href="views.php?view=Model">' . htmlspecialchars(menu_path('Model')) . '</a>')); ?></p>
       <label id="rtsp_stream_input_label" for="rtsp_stream_url_0"><?php echo t('str_rtsp_stream'); ?> </label>
       <br>
-      <input style="display: none;" name="rtsp_stream" type="url" value="">
+      <?php // the list the page saves (comma-joined by collectrtspUrls): a hidden field, never type=url (Gitea #84: the
+      // browser judged "rtsp://a:554,rtsp://b:554" an invalid URL and refused the whole form without a word) ?>
+      <input type="hidden" name="rtsp_stream" value="">
       <input style="display: none;" id="rtsp_stream_url_placeholder" name="rtsp_stream_placeholder" type="url" size="60" value="">
         <?php
         //Print out the rtsp urls in their own input fields
@@ -167,14 +177,14 @@ $newconfig = get_config();
             //For the first input keep the element mostly the same as the original but without styling to align it
 			if ($stream_idx === 0) {
 				?>
-                <input id="rtsp_stream_url_0" name="rtsp_stream_0" type="url" size="60" value="<?php echo $stream_url; ?>">
+                <input id="rtsp_stream_url_0" name="rtsp_stream_0" type="url" size="60" value="<?php echo htmlspecialchars($stream_url, ENT_QUOTES); ?>">
                 <br>
 				<?php
 			} else {
                 //For every other input field, change the id to reflect the URL's index in the array
 				?>
                 <input id="rtsp_stream_url_<?php echo $stream_idx; ?>" name="rtsp_stream_<?php echo $stream_idx; ?>" type="url" size="60"
-                       value="<?php echo $stream_url; ?>">
+                       value="<?php echo htmlspecialchars($stream_url, ENT_QUOTES); ?>">
                 <br>
 				<?php
 			}
@@ -182,7 +192,7 @@ $newconfig = get_config();
         ?>
       <div id="newrtspstream_button_container">
         <br>
-        <span id="newrtspstream" onclick="addNewrtspInput();"><?php echo t('str_add'); ?></span><br>
+        <button type="button" id="newrtspstream" class="netbtn" onclick="addNewrtspInput();"><?php echo t('str_add'); ?></button><br>
       </div>
       <script>
                       //Keep track of how many new input fields were added
@@ -371,8 +381,10 @@ echo '<tr data-name=""><td><input type="text" data-u="name" maxlength="32" patte
       <input type="hidden" name="view" value="<?php echo $adv_page === 'audio' ? 'Microphone' : 'Access'; ?>">
       <input type="hidden" name="advanced_form" value="1">
 <?php
-if(isset($_GET['status'])){
-  echo '<script>bsNotice(' . json_encode(t('str_settings_successfully_updated'), JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ');</script>';
+if ($adv_error !== '') {
+  echo '<script>bsNotice(' . json_encode($adv_error, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ');</script>';
+} elseif (isset($_GET['status'])) {
+  echo '<script>bsNotice(' . json_encode(t($_GET['status'] === 'nochange' ? 'str_nothing_to_save' : 'str_settings_successfully_updated'), JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) . ');</script>';
 }
 ?>
       </form>
