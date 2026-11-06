@@ -151,19 +151,45 @@ if (isset($_GET['bg'])) {
   exit;
 }
 
+// the recording state for X-See-Rec, read from systemctl at most every 5 s (Gitea #75: every poll of every open page
+// spawned systemctl); kept in state/now-rec, '1' or '0'
+function see_rec_active() {
+  $f = BS_STATE . '/now-rec';
+  $m = @filemtime($f);
+  if ($m !== false && abs(time() - $m) < 5) return trim((string)@file_get_contents($f)) === '1';
+  $on = trim((string)shell_exec('systemctl is-active ' . BS_SVC_RECORDING . '.service 2>/dev/null')) === 'active';
+  if (!is_dir(BS_STATE)) @mkdir(BS_STATE, 0775, true);
+  $tmp = $f . '.' . getmypid() . '.tmp';
+  if (@file_put_contents($tmp, $on ? '1' : '0') !== false) @rename($tmp, $f);
+  return $on;
+}
+// the database did not answer (Gitea #74): a 503 with the reason, so the page keeps its cards and says the station is
+// not answering, instead of the 200 + text of ensure_db_ok() that it read as no bird at all
+function see_data_fail() {
+  http_response_code(503);
+  echo json_encode(array('error' => t('str_database_is_busy')));
+  exit;
+}
 if (isset($_GET['data'])) {
   if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
   header('Content-Type: application/json');
+  // the browser keeps the cards with their ETag and asks again every time (Gitea #75): the session's no-store would forbid it
+  header('Cache-Control: no-cache');
+  header_remove('Pragma');
+  header_remove('Expires');
   header('X-See-Bg: ' . json_encode(see_bg_state(see_bg_mode())));  // the background follows a change of location
   // the page says so while the recording is stopped (owner 2026-11-02, US-130 scope)
-  header('X-See-Rec: ' . (trim((string)shell_exec('systemctl is-active ' . BS_SVC_RECORDING . '.service 2>/dev/null')) === 'active' ? '1' : '0'));
+  header('X-See-Rec: ' . (see_rec_active() ? '1' : '0'));
   $conf = is_numeric($_GET['conf'] ?? '') ? max(0, min(1, (float)$_GET['conf'])) : 0.3;
   $min = intval($_GET['min'] ?? 60);
   if (!in_array($min, array(1, 5, 15, 60, 240, 480, 720), true)) $min = 60;
   // a clip reaches the database some 15 s after its time: two minutes more, the page decides what is still in its period
   $now = time();
+  // the station's time, so the page works out each card's age (Gitea #75: an age in the body changed it every second,
+  // and the ETag never matched)
+  header('X-See-Now: ' . $now);
   $since = $now - $min * 60 - 120;
-  $db = get_db();
+  try { $db = get_db(); } catch (Throwable $e) { see_data_fail(); }
   apply_location_filter($db); // the active location, as every page (owner 2026-10-31)
   // the columns of the review item too (Cutoff ... Sp_Override: the settings the review player lists); with MAX() SQLite
   // takes the bare columns from the newest row
@@ -174,23 +200,35 @@ if (isset($_GET['data'])) {
                       // a species shows its newest detection that is neither
                       . " AND File_Name NOT IN (SELECT File_Name FROM detection_reviews WHERE Verdict = 'unsure')"
                       . ' GROUP BY Sci_Name');
-  ensure_db_ok($st);
+  if (!$st) see_data_fail();
   $st->bindValue(':d0', date('Y-m-d', $since));
   $st->bindValue(':d1', date('Y-m-d', $now));
   $st->bindValue(':since', date('Y-m-d H:i:s', $since));
   $st->bindValue(':conf', $conf);
   $res = $st->execute();
+  if (!$res) see_data_fail();
+  $found = array();
+  while ($r = $res->fetchArray(SQLITE3_ASSOC)) $found[] = $r;
+  // the answers of only these detections for the review items (Gitea #75: not the whole review table every 5 s)
+  if (function_exists('review_verdicts_only')) review_verdicts_only(array_column($found, 'File_Name'));
   $rows = array();
-  while ($res && ($r = $res->fetchArray(SQLITE3_ASSOC))) {
+  foreach ($found as $r) {
     $photo = species_photo($r['Sci_Name']);
     $rows[] = array('sci' => $r['Sci_Name'], 'com' => $r['Com_Name'], 'time' => $r['Time'], 'conf' => round($r['Confidence'] * 100),
       'clip' => 'By_Date/' . rawurlencode($r['Date']) . '/' . rawurlencode(species_folder($r['Sci_Name'])) . '/' . rawurlencode($r['File_Name']),
       'file' => ($f = $r['Date'] . '/' . species_folder($r['Sci_Name']) . '/' . $r['File_Name']),
       // the review item's attributes from the shared helper (data-file, data-clip, data-spec, data-params ...)
       'ri' => review_item_attrs($f, $r['Com_Name'] . ', ' . $r['Date'], $r['Sci_Name'], $r),
-      'key' => $r['File_Name'], 'last' => $r['last'], 'age' => max(0, $now - strtotime($r['last'])), 'img' => $photo ? (string)($photo['image_url'] ?? '') : '');
+      'key' => $r['File_Name'], 'last' => $r['last'], 'ts' => strtotime($r['last']), 'img' => $photo ? (string)($photo['image_url'] ?? '') : '');
   }
-  echo json_encode($rows, JSON_UNESCAPED_UNICODE);
+  $body = json_encode($rows, JSON_UNESCAPED_UNICODE);
+  // the same cards as the last answer: 304, the browser gives the page its kept copy (Gitea #75)
+  $etag = '"' . md5($body) . '"';
+  header('ETag: ' . $etag);
+  // a compressing web server may mark it weak (W/) or add its encoding ("...-gzip"): the md5 alone is compared
+  $inm = (string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? '');
+  if ($inm !== '' && preg_match('/^(?:W\/)?"([0-9a-f]{32})(?:-[a-z]+)?"$/', trim($inm), $m) && $m[1] === md5($body)) { http_response_code(304); exit; }
+  echo $body;
   exit;
 }
 ?>
@@ -202,7 +240,11 @@ if (isset($_GET['data'])) {
 .see .seecard { border-radius: 10px; overflow: hidden; background: var(--bg,#fff); box-shadow: 0 1px 5px rgba(0,0,0,.3); aspect-ratio: 1 / 1; display: flex; flex-direction: column; }
 .see .seecard img { display: block; width: 100%; flex: 1 1 auto; min-height: 0; object-fit: contain; background: rgba(0,0,0,.08); }
 .see .seecard b { display: block; padding: 8px 10px 0; font-size: 16px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.see .seecard small { display: block; padding: 2px 10px 8px; flex: none; }
+.see .seecard small { display: block; padding: 2px 10px 8px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* small cards keep the name readable (Gitea #75: at size 80 on a phone the time and confidence wrapped over it): below
+   140 px the time and confidence leave, the page sets seesmall from the Size slider */
+.see.seesmall .seecard small { display: none; }
+.see #seesize { min-height: 24px; }  /* a target of at least 24 px (WCAG 2.5.8) */
 .see .seecard img { cursor: pointer; }
 /* Clean (owner 2026-11-01, the default): only the pictures, rounded; the checkbox beside the slider brings the name and time back */
 .see.seeclean .seecard { background: transparent; box-shadow: none; border-radius: 14px; }
@@ -219,19 +261,19 @@ if (isset($_GET['data'])) {
    owner to the whole-picture rule: a background covers its area), the controls stay on the page colour */
 .see.seebg .seegrid { background-image: linear-gradient(var(--seebgveil, transparent), var(--seebgveil, transparent)), var(--seebgimg); background-size: cover; background-position: center; background-repeat: no-repeat;
   min-height: calc(100vh - 170px); padding: 12px; border-radius: 12px; box-sizing: border-box; }
-.see .seerec { margin: 8px 0; padding: 6px 10px; border-radius: 8px; background: #fff3cd; color: #7a4b00; font-weight: 600; }
+.see .seerec, .see .seeoff { margin: 8px 0; padding: 6px 10px; border-radius: 8px; background: #fff3cd; color: #7a4b00; font-weight: 600; }
 .see .seebgicon { cursor: pointer; border-radius: 50%; padding: 3px; display: inline-flex; color: var(--accent,#2b5e22); vertical-align: middle; }
 .see.seebg .seebgicon { background: var(--accent,#2b5e22); color: #fff; }  /* filled while a background is set */
 /* the pictures saved on the station, in the look of the shared askModal (static/species-modal.js) */
 #seeBgModal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 1000; }
-#seeBgModal .spm-box { background: #fff; color: #000; border-radius: 10px; max-width: 560px; width: calc(100% - 32px); max-height: calc(100vh - 32px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.35); font-size: 14px; }
+#seeBgModal .spm-box { background: var(--panel,#fff); color: var(--text,#000); border-radius: 10px; max-width: 560px; width: calc(100% - 32px); max-height: calc(100vh - 32px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.35); font-size: 14px; }
 #seeBgModal .spm-head { background: var(--accent,#2b5e22); color: #fff; padding: 10px 14px; }
 #seeBgModal h3 { margin: 0; font-size: 16px; color: #fff; text-align: left; }
 #seeBgModal p { margin: 0; padding: 12px 16px 6px; line-height: 1.4; }
 #seeBgModal .seebglist { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; padding: 8px 16px; overflow-y: auto; }
 #seeBgModal .seebglist img { width: 100%; aspect-ratio: 1 / 1; object-fit: contain; background: rgba(0,0,0,.08); border-radius: 8px; cursor: pointer; border: 3px solid transparent; box-sizing: border-box; }
 #seeBgModal .seebglist img.cur { border-color: var(--accent,#2b5e22); }
-#seeBgModal .seebglist em { grid-column: 1 / -1; color: #666; }
+#seeBgModal .seebglist em { grid-column: 1 / -1; opacity: .7; }  /* the page's text a little lighter, on both themes (Gitea #75) */
 #seeBgModal p.seebgall { padding-top: 0; color: #b45309; font-weight: 600; }
 #seeBgModal .seebgfade { display: flex; align-items: center; gap: 8px; padding: 6px 16px 0; }
 #seeBgModal .seebgfade input { flex: 1; }
@@ -241,7 +283,7 @@ if (isset($_GET['data'])) {
 #seeBgModal .spm-buttons #seebgclear { margin-right: auto; }
 .see .seecard.seenew { animation: seenew 1.5s ease-out; }
 @keyframes seenew { from { box-shadow: 0 0 0 5px var(--accent,#2b5e22); } to { box-shadow: 0 1px 5px rgba(0,0,0,.3); } }
-@media (prefers-reduced-motion: reduce) { .see .seecard.seenew { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .see .seecard.seenew, .see.seeclean .seecard.seenew img { animation: none; } }
 </style>
 <?php $see_mode = see_bg_mode(); $see_st = see_bg_state($see_mode); $see_bg_url = $see_st['url']; $see_fade = $see_st['fade']; ?>
 <div data-loc="<?php echo htmlspecialchars($see_mode, ENT_QUOTES); ?>" data-bg="<?php echo htmlspecialchars($see_bg_url, ENT_QUOTES); ?>" data-fade="<?php echo $see_fade; ?>" class="see<?php echo $see_bg_url !== '' ? ' seebg' : ''; ?>"<?php echo $see_bg_url !== '' ? ' style="--seebgimg:url(\'' . htmlspecialchars($see_bg_url, ENT_QUOTES) . '\')"' : ''; ?>>
@@ -268,9 +310,11 @@ if (isset($_GET['data'])) {
     <div class="spm-buttons"><button type="button" id="seebgclear"><?php echo t('str_clear_the_background'); ?></button>
       <button type="button" id="seebgclose"><?php echo t('str_close'); ?></button><button type="button" class="primary" id="seebgupload"><?php echo t('str_upload_an_image'); ?></button></div>
   </div></div>
-  <div class="seegrid" id="seegrid" aria-live="polite"></div>
+  <?php // the notes above the cards (Gitea #75); the station not answering keeps the cards as they are (Gitea #74) ?>
   <p id="seerec" class="seerec" hidden><?php echo t('str_recording_stopped'); ?></p>
+  <p id="seeoff" class="seeoff" role="status" hidden><?php echo t('str_the_station_is_not_answering_help'); ?></p>
   <p id="seeempty" hidden><?php echo t('str_no_bird_heard_in_this_period_at_help'); ?></p>
+  <div class="seegrid" id="seegrid" aria-live="polite"></div>
 </div>
 <script src="static/custom-audio-player.js?v=<?php echo @filemtime(__DIR__ . '/../homepage/static/custom-audio-player.js'); ?>"></script>
 <script src="static/review-player.js?v=<?php echo @filemtime(__DIR__ . '/../homepage/static/review-player.js'); ?>"></script>
@@ -279,7 +323,7 @@ if (isset($_GET['data'])) {
   var grid = document.getElementById('seegrid'), empty = document.getElementById('seeempty'), sel = document.getElementById('seeconf'), per = document.getElementById('seeperiod');
   var cards = {}, seq = 0, first = true;
   var size = document.getElementById('seesize'), root = document.querySelector('.see');
-  function setSize(v) { root.style.setProperty('--seesize', v + 'px'); }
+  function setSize(v) { root.style.setProperty('--seesize', v + 'px'); root.classList.toggle('seesmall', parseInt(v, 10) < 140); }
   try { var sz = localStorage.getItem('see_size'); if (sz) size.value = sz; } catch (e) {}
   setSize(size.value);
   size.oninput = function () { setSize(size.value); try { localStorage.setItem('see_size', size.value); } catch (e) {} };
@@ -296,7 +340,12 @@ if (isset($_GET['data'])) {
   function bgFail(e) { askModal(t('str_background_picture'), t('str_not_saved_reason', {reason: e.message}), t('str_ok'), false, ''); }
   function bgSend(url, body) {
     return fetch(url, {method: 'POST', body: body, credentials: 'same-origin'}).then(function (r) {
-      return r.text().then(function (txt) { if (!r.ok || txt.trim() !== 'OK') throw new Error(txt || r.status); });
+      return r.text().then(function (txt) {
+        if (r.ok && txt.trim() === 'OK') return;
+        // the login page or a server error page (Gitea #74): its message, never the raw HTML
+        if (r.status === 401) throw new Error(t('str_log_in_first'));
+        throw new Error(txt.trim().charAt(0) === '<' ? String(r.status) : (txt || r.status));
+      });
     });
   }
   // the picture and veil for the picker's choice: from the station after a change, and with every refresh of the cards
@@ -373,7 +422,10 @@ if (isset($_GET['data'])) {
   };
   try { var saved = localStorage.getItem('see_conf'); if (saved && sel.querySelector('option[value="' + saved + '"]')) sel.value = saved;
     saved = localStorage.getItem('see_period'); if (saved && per.querySelector('option[value="' + saved + '"]')) per.value = saved; } catch (e) {}
-  function refreshEmpty() { empty.hidden = grid.children.length > 0; }
+  // the station not answering (Gitea #74): the note above the cards, which stay as they are, and no "no bird" meanwhile
+  var off = document.getElementById('seeoff');
+  function refreshEmpty() { empty.hidden = grid.children.length > 0 || !off.hidden; }
+  function offline(on) { if (off.hidden === !on) return; off.hidden = !on; refreshEmpty(); }
   function show(r, ms) {
     var c = cards[r.sci];
     if (!c) {
@@ -410,17 +462,15 @@ if (isset($_GET['data'])) {
     if (img.dataset.src !== (r.img || 'none')) { img.dataset.src = r.img || 'none'; img.src = r.img || 'images/BirdNetBr.png'; }  // no picture: the BirdSuite logo (owner 2026-11-02)
     c.el.querySelector('b').textContent = r.com;
     c.el.querySelector('small').textContent = r.time + ' · ' + r.conf + '%';
-    c.key = r.key;
-    c.clip = r.clip;
-    c.file = r.file;
-    c.ri = r.ri;
-    c.last = r.last;
+    keep(c, r);
     c.until = Date.now() + ms;
     c.el.classList.remove('seenew');
     void c.el.offsetWidth;  // the highlight runs again when the same card sings again
     c.el.classList.add('seenew');
     if (!c.el.parentNode) grid.appendChild(c.el);
   }
+  // the card's detection, the one its picture opens in the review player
+  function keep(c, r) { c.key = r.key; c.clip = r.clip; c.file = r.file; c.ri = r.ri; c.last = r.last; }
   // always by the last detection, the newest top left: a clip may reach the database after a newer one of another species
   function order() {
     var list = Object.keys(cards).map(function (s) { return cards[s]; }).sort(function (a, b) { return a.last < b.last ? 1 : (a.last > b.last ? -1 : 0); });
@@ -433,7 +483,7 @@ if (isset($_GET['data'])) {
   // Review later leaves at once (its species stays only with an older detection that still qualifies)
   document.addEventListener('rp:closed', function (e) {
     setTimeout(function () {
-      if (e.detail && e.detail.answered) { Object.keys(cards).forEach(function (s) { cards[s].el.remove(); }); cards = {}; first = true; }
+      if (e.detail && e.detail.answered) { Object.keys(cards).forEach(function (s) { cards[s].el.remove(); }); cards = {}; first = true; lastBody = null; }
       expire(); load(true);
     }, 0);
   });
@@ -444,28 +494,45 @@ if (isset($_GET['data'])) {
   }
   // one question at a time with a 15 s timeout (2026-11-04 hardening: a slow station piled up one every 5 s); a change
   // of period or confidence drops the running one, its answer would be for the old choice
-  var pending = null;
+  // the cards' answer of the last poll: the same one again (the station's ETag, Gitea #75) leaves the grid alone
+  var pending = null, lastBody = null;
   function load(fresh) {
     if (document.hidden || reviewing()) return;
     if (pending) { if (!fresh) return; pending.abort(); }
     var mine = ++seq, x = pending = new XMLHttpRequest();
     x.timeout = 15000;
     x.onloadend = function () { if (pending === x) pending = null; };
+    // no answer, a timeout, an error or a broken answer (Gitea #74): the cards stay, the note says so, the next poll tries again
+    x.onerror = x.ontimeout = function () { if (mine === seq) offline(true); };
     x.onload = function () {
-      if (mine !== seq || this.status !== 200) return;
+      if (mine !== seq) return;
+      if (this.status !== 200) { offline(true); return; }
+      // the player opened while the poll was out: the grid stands still under it, closing it reads the cards again
+      if (reviewing()) return;
+      var rows, body = this.responseText;
+      try { rows = JSON.parse(body); } catch (e) { rows = null; }
+      if (!Array.isArray(rows)) { offline(true); return; }
+      offline(false);
       try { if (window.seeBgApply) window.seeBgApply(JSON.parse(this.getResponseHeader('X-See-Bg') || 'null')); } catch (e) {}
       document.getElementById('seerec').hidden = this.getResponseHeader('X-See-Rec') !== '0';
-      var rows;
-      try { rows = JSON.parse(this.responseText); } catch (e) { return; }
-      var period = parseInt(per.value, 10) * 60000;
+      if (body === lastBody) return;
+      lastBody = body;
+      var period = parseInt(per.value, 10) * 60000, now = parseInt(this.getResponseHeader('X-See-Now') || '', 10), seen = {};
       // On opening a card has what is left of its period; a new song all of it
       rows.forEach(function (r) {
+        seen[r.sci] = true;
+        r.age = isNaN(now) ? 0 : Math.max(0, now - r.ts);
         var c = cards[r.sci];
         if (c && c.key === r.key) return;
+        // its newest detection was answered No, a cause or Review later elsewhere: the card opens the one that now
+        // qualifies, without a new period (the review item never points at a rejected clip)
+        if (c && r.last < c.last) { keep(c, r); c.el.querySelector('small').textContent = r.time + ' · ' + r.conf + '%'; return; }
         var left = period - r.age * 1000;
         if (!first && r.age < 120) left = period;
         if (left > 0) show(r, left);
       });
+      // a species with no detection left that qualifies leaves
+      Object.keys(cards).forEach(function (s) { if (!seen[s]) { cards[s].el.remove(); delete cards[s]; } });
       first = false;
       expire();
       order();
@@ -476,7 +543,7 @@ if (isset($_GET['data'])) {
   sel.onchange = per.onchange = function () {
     try { localStorage.setItem('see_conf', sel.value); localStorage.setItem('see_period', per.value); } catch (e) {}
     Object.keys(cards).forEach(function (s) { cards[s].el.remove(); });
-    cards = {}; first = true; load(true);
+    cards = {}; first = true; lastBody = null; load(true);
   };
   load();
   setInterval(load, 5000);

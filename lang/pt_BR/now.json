@@ -117,6 +117,7 @@
   "str_the_microphone_was_reconnected": "O microfone foi reconectado.",
   "str_the_microphone_was_reconnected_at": "O microfone foi reconectado às {time}.",
   "str_the_species_list_of_that_state": ", a lista de espécies desse estado",
+  "str_the_station_is_not_answering_help": "A estação não está respondendo, tentando de novo…",
   "str_the_station_network_position_help": "A estação parece estar em {where}: a cerca de {km} km da localidade configurada (posição pela rede na inicialização, {checked}).",
   "str_the_stations_since_the_help": "O relógio da estação não está confirmado (sem internet desde a inicialização): ele mostra {time} e as detecções são registradas com esse horário.",
   "str_time_species_confidence_and_help": "Hora, espécie, confiança e probabilidade de ocorrência no local",

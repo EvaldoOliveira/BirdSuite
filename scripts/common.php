@@ -1224,9 +1224,17 @@ function location_by_id($id) {
 // The Latest page may show every location (owner 2026-10-21): its Location picklist keeps the choice in the now_loc cookie,
 // read only by the Latest pages (they define NOW_PAGE); every other page shows the current location
 // how many locations have detections (owner 2026-10-22: the Location picklist of Now only when more than one has data)
+// Kept between pages (owner 2026-11-06, Gitea #75): every page asks it and the count walks the whole table; the key
+// holds the database's and its WAL file's change time and size, so a detection at a new location shows at once.
+// cached_value(..., true): not keyed by the location shown, which itself asks this count (location_filter()).
 function locations_with_data() {
   static $n = null;
-  if ($n === null) $n = intval(get_db()->querySingle('SELECT COUNT(DISTINCT Location) FROM main.detections'));  // main.: the whole table, not the current location's view
+  if ($n !== null) return $n;
+  clearstatcache(true, BS_DB . '-wal');
+  $key = 'locations_with_data|' . @filesize(BS_DB) . '|' . @filemtime(BS_DB . '-wal') . '|' . @filesize(BS_DB . '-wal');
+  $n = intval(cached_value($key, 3600, function () {
+    return intval(get_db()->querySingle('SELECT COUNT(DISTINCT Location) FROM main.detections'));  // main.: the whole table, not the current location's view
+  }, true));
   return $n;
 }
 function location_filter() {
@@ -1491,10 +1499,11 @@ function apply_location_filter($db) {
 
 // a value kept for $ttl seconds (2026-10-20): the all-days cards scan every detection, and the Latest page asks for them
 // after each new detection; one file per location shown, in the system temp folder
-function cached_value($key, $ttl, $fn) {
+// $global: a value of the whole station, not keyed by the location shown (locations_with_data(), Gitea #75)
+function cached_value($key, $ttl, $fn, $global = false) {
   // keyed by the area the pages show (its SQL holds the radius and the neighbouring locations), the day and the
   // database's last change: a new detection or a review shows at once, the cache only spares the repeated polls
-  $l = count(locations_load()) >= 2 ? location_shown() : null;
+  $l = !$global && count(locations_load()) >= 2 ? location_shown() : null;
   clearstatcache(true, BS_DB);
   $f = sys_get_temp_dir() . '/birdsuite-' . md5(__ROOT__ . '|' . $key . '|' . ($l ? location_sql($l) : 'all') . '|' . date('Y-m-d')
     . '|' . @filemtime(BS_DB)) . '.json';
@@ -1765,37 +1774,75 @@ class ImageProvider {
     $this->context = stream_context_create($opts);
   }
 
+  // A miss is remembered too (owner 2026-11-06, Gitea #73), in the same table, no schema change: a row with an empty
+  // image_url is "no picture". Its title tells the two kinds apart:
+  //   title ''        the page answered but has no picture (or there is no page): asked again after 15-25 days, as a
+  //                   picture is refreshed;
+  //   title 'offline' no answer at all (a station without internet, a Wikimedia error): asked again after an hour;
+  //                   date_created then holds the UTC time ('Y-m-d H:i:s'), not only the day.
+  // Callers get false for both, never an empty address.
+  const OFFLINE = 'offline';
+
   public function get_image($sci_name) {
     $image = $old = $this->get_image_from_db($sci_name);
-    if ($image !== false) {
-      $now = new DateTime();
-      $datetime = DateTime::createFromFormat("Y-m-d", $image['date_created']);
-      $interval = $now->diff($datetime);
-      $expire_days = rand(15, 25);
-      if ($interval->days > $expire_days) {
-        $image = false;
-      }
+    if ($image !== false && $this->is_expired($image)) {
+      $image = false;
     }
     if ($image === false) {
-      $this->get_from_source($sci_name);
-      $image = $this->get_image_from_db($sci_name);
-      // no answer (a station without internet): the old picture is kept for another period instead of asking again
-      // on every page load, each time waiting for the timeout
-      if ($old !== false && $image !== false && $image['date_created'] === $old['date_created'] && $image['image_url'] === $old['image_url']) {
+      $status = $this->get_from_source($sci_name);
+      if ($status === 'ok') {
+        $image = $this->get_image_from_db($sci_name);
+      } elseif ($old !== false && ($old['image_url'] !== '' || $old['title'] !== self::OFFLINE) && ($status === self::OFFLINE || $old['image_url'] !== '')) {
+        // no answer (a station without internet), or the page lost its picture: the old picture (or the old "no
+        // picture") is kept for another period instead of asking again on every page load, each time waiting for the
+        // timeout
         $st = $this->db->prepare('UPDATE images SET date_created = DATE("now") WHERE sci_name == :sci_name');
         $st->bindValue(':sci_name', $sci_name);
         @$st->execute();
+        $image = $this->get_image_from_db($sci_name);
+      } else {
+        // nothing kept: the miss itself is kept (an hour without an answer, a period when there is no picture)
+        $com_en_name = get_com_en_name($sci_name) ?? ($old !== false ? (string)$old['com_en_name'] : '');
+        if ($status === self::OFFLINE) {
+          $this->set_image_in_db($sci_name, $com_en_name, '', self::OFFLINE, $sci_name, '', '', gmdate('Y-m-d H:i:s'));
+        } else {
+          $this->set_image_in_db($sci_name, $com_en_name, '', '', $sci_name, '', '');
+        }
+        $image = false;
       }
     }
+    if ($image === false || (string)$image['image_url'] === '') return false;
     return $image;
+  }
+
+  // a kept row is asked again: a picture or "no picture" after 15-25 days, "no answer" after an hour
+  protected function is_expired($row) {
+    $created = (string)$row['date_created'];
+    if ($row['image_url'] === '' && $row['title'] === self::OFFLINE) {
+      $t = strtotime($created . ' UTC');
+      return $t === false || time() - $t > 3600;
+    }
+    $datetime = DateTime::createFromFormat('!Y-m-d', substr($created, 0, 10), new DateTimeZone('UTC'));
+    if ($datetime === false) return true;
+    $interval = (new DateTime('now', new DateTimeZone('UTC')))->diff($datetime);
+    return $interval->days > rand(15, 25);
   }
 
   public function is_reset() {
     return $this->db_reset;
   }
 
+  // whether the last get_json() had an answer from the server (Gitea #73: no answer is remembered for an hour only,
+  // "no such page" for a whole period); a 429 or 5xx counts as no answer
+  protected $answered = false;
+
   protected function get_json($url) {
-    return json_decode(file_get_contents($url, false, $this->context), true);
+    if (function_exists('http_clear_last_response_headers')) http_clear_last_response_headers();
+    $body = @file_get_contents($url, false, $this->context);
+    $headers = function_exists('http_get_last_response_headers') ? http_get_last_response_headers() : ($http_response_header ?? null);
+    $code = is_array($headers) && preg_match('~^HTTP/\S+\s+(\d{3})~', (string)($headers[0] ?? ''), $m) ? intval($m[1]) : 0;
+    $this->answered = $code > 0 && $code < 500 && $code !== 429;
+    return $body === false ? false : json_decode($body, true);
   }
 
   protected function set_db() {
@@ -1832,8 +1879,10 @@ class ImageProvider {
     return $row;
   }
 
-  protected function set_image_in_db($sci_name, $com_en_name, $image_url, $title, $id, $author_url, $license_url) {
-    $statement0 = $this->db->prepare("INSERT OR REPLACE INTO images VALUES (:sci_name, :com_en_name, :image_url, :title, :id, :author_url, :license_url, DATE(\"now\"))");
+  // $created: null = today (UTC); the "no answer" rows keep the time too (get_image())
+  protected function set_image_in_db($sci_name, $com_en_name, $image_url, $title, $id, $author_url, $license_url, $created = null) {
+    $statement0 = $this->db->prepare("INSERT OR REPLACE INTO images VALUES (:sci_name, :com_en_name, :image_url, :title, :id, :author_url, :license_url, COALESCE(:created, DATE(\"now\")))");
+    $statement0->bindValue(':created', $created, $created === null ? SQLITE3_NULL : SQLITE3_TEXT);
     $statement0->bindValue(':sci_name', $sci_name);
     $statement0->bindValue(':com_en_name', $com_en_name);
     $statement0->bindValue(':image_url', $image_url);
@@ -1851,11 +1900,15 @@ class Wikipedia extends ImageProvider {
   // a standard Wikimedia thumbnail width (other widths answer 400 since 2026); the pictures are shown at 90-300 px
   const THUMB_WIDTH = 330;
 
+  // 'ok' (the picture is kept), 'none' (the page answered without a picture, or there is no page) or 'offline' (no
+  // answer); get_image() remembers the misses (Gitea #73)
   protected function get_from_source($sci_name) {
     $page_title = str_replace(' ', '_', $sci_name);
     $data = $this->get_json("https://en.wikipedia.org/api/rest_v1/page/summary/$page_title");
-    if ($data == false or !isset($data['originalimage']))
-      return;
+    if ($data == false)
+      return $this->answered ? 'none' : self::OFFLINE;
+    if (!isset($data['originalimage']))
+      return 'none';
 
     // the file name without the "?utm_..." query; "originalimage" may itself be a thumbnail (.../thumb/<file>/3840px-<file>)
     $image_url = strtok($data['originalimage']['source'], '?');
@@ -1868,7 +1921,7 @@ class Wikipedia extends ImageProvider {
     // 3840 px thumbnails were up to 45 MB, downloaded on every Now / Kiosk load for a 90 px picture)
     $metadata = $this->get_json("https://commons.wikimedia.org/w/api.php?action=query&titles=File:$image_name&prop=imageinfo&iiprop=extmetadata|size|url&iiurlwidth=" . self::THUMB_WIDTH . "&format=json");
     if ($metadata == false or !isset($metadata['query']['pages']))
-      return;
+      return self::OFFLINE;  // the page has a picture: asked again within the hour
 
     $title = $data['title'];
 
@@ -1899,6 +1952,7 @@ class Wikipedia extends ImageProvider {
 
     //                     $sci_name, $com_en_name, $image_url, $title, $id, $author_url, $license_url
     $this->set_image_in_db($sci_name, $engname, $image_url, $title, $sci_name, $author_url, $license_url);
+    return 'ok';
   }
 
   public function get_image($sci_name) {
@@ -1914,7 +1968,7 @@ class Wikipedia extends ImageProvider {
     return $image;
   }
 
-  // the Wikimedia address of the species' picture as kept (no lookup), or ''
+  // the Wikimedia address of the species' picture as kept (no lookup), or '' (also for a remembered miss, Gitea #73)
   public function source_url($sci_name) {
     $row = $this->get_image_from_db($sci_name);
     return $row ? (string)$row['image_url'] : '';
@@ -1956,16 +2010,54 @@ function get_wikiaves_url($sciname) {
 
 // Review loop: verdict of one detection file ('' = not reviewed), and the SQL that leaves rejected
 // detections ("not this bird") out of a query on detections
+// The answers of this request: 'rows' = File_Name => array(Verdict, Reason, changed), 'only' = null when rows hold the
+// whole table, else the set of file names asked by review_verdicts_only() (Gitea #75)
+function &review_cache() {
+  static $c = array('rows' => null, 'only' => null);
+  return $c;
+}
+// [2]: the detection came from Change species (Orig_Sci kept): clear leaves it Changed (play.php, Gitea #69)
+const REVIEW_COLUMNS = "File_Name, Verdict, COALESCE(Reason, ''), COALESCE(Orig_Sci, '') <> ''";
+// every answer of the station (the whole detection_reviews table); a cache filled by review_verdicts_only() is
+// completed first
 function review_verdicts() {
-  static $verdicts = null;
-  if ($verdicts === null) {
-    $verdicts = array();
-    $db = get_db();
-    // [2]: the detection came from Change species (Orig_Sci kept): clear leaves it Changed (play.php, Gitea #69)
-    $res = $db->query("SELECT File_Name, Verdict, COALESCE(Reason, ''), COALESCE(Orig_Sci, '') <> '' FROM detection_reviews");
-    while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $verdicts[$r[0]] = array($r[1], $r[2], (bool)$r[3]);
+  $c = &review_cache();
+  if ($c['rows'] === null || $c['only'] !== null) {
+    $c['rows'] = array();
+    $c['only'] = null;
+    $res = get_db()->query('SELECT ' . REVIEW_COLUMNS . ' FROM detection_reviews');
+    while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $c['rows'][$r[0]] = array($r[1], $r[2], (bool)$r[3]);
   }
-  return $verdicts;
+  return $c['rows'];
+}
+// Contract (owner 2026-11-06, Gitea #75): a page that knows the files it lists calls review_verdicts_only($files)
+// once, before its rows; review_verdict(), review_reason() and review_item_attrs() then answer those files from the
+// few rows read (one SELECT per 500 names) instead of the whole table. A file outside the set still gets its true
+// answer: review_entry() then loads the whole table (review_verdicts()), never "not reviewed" by mistake.
+function review_verdicts_only(array $file_names) {
+  $c = &review_cache();
+  if ($c['rows'] !== null && $c['only'] === null) return;  // the whole table is already read
+  if ($c['rows'] === null) { $c['rows'] = array(); $c['only'] = array(); }
+  $ask = array();
+  foreach ($file_names as $f) {
+    $f = (string)$f;
+    if ($f === '' || isset($c['only'][$f])) continue;
+    $c['only'][$f] = true;
+    $ask[] = $f;
+  }
+  if (!$ask) return;
+  $db = get_db();
+  foreach (array_chunk($ask, 500) as $chunk) {
+    $in = implode(',', array_map(function ($f) { return "'" . SQLite3::escapeString($f) . "'"; }, $chunk));
+    $res = $db->query('SELECT ' . REVIEW_COLUMNS . " FROM detection_reviews WHERE File_Name IN ($in)");
+    while ($res && ($r = $res->fetchArray(SQLITE3_NUM))) $c['rows'][$r[0]] = array($r[1], $r[2], (bool)$r[3]);
+  }
+}
+// the answer kept for one file, or null when it was not reviewed
+function review_entry($file_name) {
+  $c = &review_cache();
+  if ($c['rows'] !== null && ($c['only'] === null || isset($c['only'][$file_name]))) return $c['rows'][$file_name] ?? null;
+  return review_verdicts()[$file_name] ?? null;
 }
 // The one Review button of the interface: always reviewDetection(this) (static/review-player.js), no local variants
 function validate_button($file, $verdict = null, $positioned = false) {
@@ -2117,7 +2209,7 @@ function review_item_attrs($file, $label, $sci = '', $row = null) {
   // data-reason: the cause of the answer, so the player's Undo puts it back (owner 2026-10-22)
   $reason = review_reason(basename($file));
   // data-changed: it came from Change species, so clear shows it as Changed again, as the station keeps it (Gitea #69)
-  $changed = review_verdicts()[basename($file)][2] ?? false;
+  $changed = review_entry(basename($file))[2] ?? false;
   return ' data-ri="1"' . ($gone ? ' data-gone="1"' : '') . ($reason !== '' ? ' data-reason="' . htmlspecialchars($reason, ENT_QUOTES) . '"' : '') . ($changed ? ' data-changed="1"' : '') . ' data-file="' . htmlspecialchars($file, ENT_QUOTES) . '" data-clip="' . htmlspecialchars($base . $file, ENT_QUOTES)
     . '" data-spec="' . htmlspecialchars(clip_spectrogram($base . $file), ENT_QUOTES)
     . '" data-label="' . htmlspecialchars($label, ENT_QUOTES) . '" data-dir="' . htmlspecialchars($dir, ENT_QUOTES) . '"'
@@ -2347,11 +2439,11 @@ function review_params($sci, $row) {
 }
 
 function review_verdict($file_name) {
-  return review_verdicts()[$file_name][0] ?? '';
+  return review_entry($file_name)[0] ?? '';
 }
 // the cause of a "not this bird" answer, or 'changed' on the Yes written by Change species (owner 2026-10-22)
 function review_reason($file_name) {
-  return review_verdicts()[$file_name][1] ?? '';
+  return review_entry($file_name)[1] ?? '';
 }
 function not_rejected_sql() {
   return " AND File_Name NOT IN (SELECT File_Name FROM detection_reviews WHERE Verdict = 'no')";
