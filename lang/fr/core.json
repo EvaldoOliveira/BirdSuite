@@ -543,5 +543,6 @@
   "str_you_must_download_backup_help": "Vous devez être connecté pour télécharger des fichiers de sauvegarde.",
   "str_you_must_download_the_ebird_help": "Vous devez être authentifié pour télécharger le fichier eBird.",
   "str_you_must_read_the_station_help": "Vous devez être connecté pour lire l'état de la station.",
-  "str_you_must_upload_backup_help": "Vous devez être connecté pour envoyer des fichiers de sauvegarde."
+  "str_you_must_upload_backup_help": "Vous devez être connecté pour envoyer des fichiers de sauvegarde.",
+  "str_hear_bands_help": "<b>Bande verte</b><br>&emsp;Haut : limite le son le plus aigu qui compte<br>&emsp;Bas : coupe les sons en dessous (vent, circulation, ronflement)<br><b>Bande orange</b><br>&emsp;Ramenez le son dans une bande que vous entendez"
 }

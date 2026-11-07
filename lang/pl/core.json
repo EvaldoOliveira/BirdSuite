@@ -543,5 +543,6 @@
   "str_you_must_download_backup_help": "Musisz się zalogować, aby pobierać pliki kopii zapasowej.",
   "str_you_must_download_the_ebird_help": "Musisz być zalogowany, aby pobrać plik eBird.",
   "str_you_must_read_the_station_help": "Musisz się zalogować, aby odczytać stan stacji.",
-  "str_you_must_upload_backup_help": "Musisz się zalogować, aby wysyłać pliki kopii zapasowej."
+  "str_you_must_upload_backup_help": "Musisz się zalogować, aby wysyłać pliki kopii zapasowej.",
+  "str_hear_bands_help": "<b>Zielone pasmo</b><br>&emsp;Góra: ogranicza najwyższy dźwięk, który się liczy<br>&emsp;Dół: odcina dźwięki poniżej (wiatr, ruch uliczny, buczenie)<br><b>Pomarańczowe pasmo</b><br>&emsp;Przenieś dźwięk w pasmo, które słyszysz"
 }

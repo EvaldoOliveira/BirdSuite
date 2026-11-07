@@ -263,5 +263,10 @@
   "str_you_must_delete_files_help": "Чтобы удалять файлы, нужно войти в систему.",
   "str_you_must_restore_detections_help": "Чтобы восстанавливать обнаружения, нужно войти в систему.",
   "str_you_must_review_detections_help": "Чтобы проверять обнаружения, нужно войти в систему.",
-  "str_you_must_wipe_deleted_help": "Чтобы стирать удалённые обнаружения, нужно войти в систему."
+  "str_you_must_wipe_deleted_help": "Чтобы стирать удалённые обнаружения, нужно войти в систему.",
+  "str_khz_mark": "{n} кГц -",
+  "str_not_saved_no_answer": "Не сохранено ({what}): нет ответа от станции",
+  "str_the_model_did_not_answer": "Модель станции не ответила.",
+  "str_the_species_list_did_not_load": "Список видов не загрузился.",
+  "str_the_station_is_busy_try_again": "станция занята, повторите попытку через минуту"
 }

@@ -543,5 +543,6 @@
   "str_you_must_download_backup_help": "必须登录才能下载备份文件。",
   "str_you_must_download_the_ebird_help": "下载 eBird 文件需要先登录。",
   "str_you_must_read_the_station_help": "必须登录才能读取站点健康状况。",
-  "str_you_must_upload_backup_help": "必须登录才能上传备份文件。"
+  "str_you_must_upload_backup_help": "必须登录才能上传备份文件。",
+  "str_hear_bands_help": "<b>绿色频带</b><br>&emsp;上限：限制需要关注的最高声音<br>&emsp;下限：去除其以下的声音（风、交通、嗡嗡声）<br><b>橙色频带</b><br>&emsp;把声音映射到您能听到的频带"
 }

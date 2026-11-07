@@ -679,5 +679,9 @@
   "str_wiz_where_will_it_run": "Gdzie będzie działać?",
   "str_wiz_your_language": "Twój język",
   "str_write_the_saved_settings_over_help": "Nadpisać ustawienia stacji zapisanymi ustawieniami „{name}”? (Najpierw zapisz bieżące, jeśli chcesz je zachować.)",
-  "str_writes_the_chosen_settings_over_help": "Zapisuje wybrane ustawienia w miejsce ustawień stacji (pyta najpierw)"
+  "str_writes_the_chosen_settings_over_help": "Zapisuje wybrane ustawienia w miejsce ustawień stacji (pyta najpierw)",
+  "str_a_on_b": "{a} na {b}",
+  "str_factory_password_only_sets_help": "Stacja nie ma jeszcze własnego hasła: hasło fabryczne otwiera tylko stronę, na której ustawiasz swoje.",
+  "str_low_contrast_pairs_help": "Niski kontrast (poniżej 4,5:1), trudny do odczytania: {pairs}.",
+  "str_web_login_on_needs_a_password_help": "Logowanie web włączone wymaga własnego hasła stacji: wpisz je lub wybierz Wyłączone (stacja otwarta)."
 }

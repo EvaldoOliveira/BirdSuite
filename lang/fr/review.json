@@ -263,5 +263,10 @@
   "str_you_must_delete_files_help": "Vous devez être connecté pour supprimer des fichiers.",
   "str_you_must_restore_detections_help": "Vous devez être connecté pour restaurer des détections.",
   "str_you_must_review_detections_help": "Vous devez être connecté pour vérifier des détections.",
-  "str_you_must_wipe_deleted_help": "Vous devez être connecté pour purger les détections supprimées."
+  "str_you_must_wipe_deleted_help": "Vous devez être connecté pour purger les détections supprimées.",
+  "str_khz_mark": "{n} kHz -",
+  "str_not_saved_no_answer": "Non enregistré ({what}) : pas de réponse de la station",
+  "str_the_model_did_not_answer": "Le modèle de la station n'a pas répondu.",
+  "str_the_species_list_did_not_load": "La liste des espèces ne s'est pas chargée.",
+  "str_the_station_is_busy_try_again": "la station est occupée, réessayez dans un instant"
 }

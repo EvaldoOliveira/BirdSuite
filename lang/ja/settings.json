@@ -679,5 +679,9 @@
   "str_wiz_where_will_it_run": "どこで使いますか?",
   "str_wiz_your_language": "言語",
   "str_write_the_saved_settings_over_help": "保存済み設定「{name}」をステーションの設定に上書きしますか？\n（残したい場合は先に現在の設定を保存してください。）",
-  "str_writes_the_chosen_settings_over_help": "選んだ設定でステーションの設定を上書きします（先に確認）"
+  "str_writes_the_chosen_settings_over_help": "選んだ設定でステーションの設定を上書きします（先に確認）",
+  "str_a_on_b": "{b} の上の {a}",
+  "str_factory_password_only_sets_help": "ステーションにはまだ独自のパスワードがありません。工場出荷時のパスワードでは、パスワードを設定するページしか開けません。",
+  "str_low_contrast_pairs_help": "コントラストが低く（4.5:1 未満）読みにくい：{pairs}。",
+  "str_web_login_on_needs_a_password_help": "ウェブログインをオンにするにはステーション独自のパスワードが必要です。パスワードを入力するか、オフ（オープンステーション）を選んでください。"
 }

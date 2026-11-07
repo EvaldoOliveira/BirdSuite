@@ -679,5 +679,9 @@
   "str_wiz_where_will_it_run": "将在哪里运行？",
   "str_wiz_your_language": "你的语言",
   "str_write_the_saved_settings_over_help": "用已保存的设置“{name}”覆盖站点的设置？（如需保留，请先保存当前设置。）",
-  "str_writes_the_chosen_settings_over_help": "用所选设置覆盖站点的设置（会先询问）"
+  "str_writes_the_chosen_settings_over_help": "用所选设置覆盖站点的设置（会先询问）",
+  "str_a_on_b": "{b} 上的 {a}",
+  "str_factory_password_only_sets_help": "站点还没有自己的密码：出厂密码只能打开设置密码的页面。",
+  "str_low_contrast_pairs_help": "对比度低（低于 4.5:1），难以阅读：{pairs}。",
+  "str_web_login_on_needs_a_password_help": "开启网页登录需要站点自己的密码：请输入一个，或选择关闭（开放站点）。"
 }

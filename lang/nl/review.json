@@ -263,5 +263,10 @@
   "str_you_must_delete_files_help": "Je moet ingelogd zijn om bestanden te verwijderen.",
   "str_you_must_restore_detections_help": "Je moet ingelogd zijn om detecties te herstellen.",
   "str_you_must_review_detections_help": "Je moet ingelogd zijn om detecties te beoordelen.",
-  "str_you_must_wipe_deleted_help": "Je moet ingelogd zijn om verwijderde detecties te wissen."
+  "str_you_must_wipe_deleted_help": "Je moet ingelogd zijn om verwijderde detecties te wissen.",
+  "str_khz_mark": "{n} kHz -",
+  "str_not_saved_no_answer": "Niet opgeslagen ({what}): geen antwoord van het station",
+  "str_the_model_did_not_answer": "Het model van het station antwoordde niet.",
+  "str_the_species_list_did_not_load": "De soortenlijst is niet geladen.",
+  "str_the_station_is_busy_try_again": "het station is bezig, probeer het zo nog eens"
 }

@@ -134,5 +134,8 @@
   "str_waiting": "待機：{n}",
   "str_weeks_ago": "{n}週間前",
   "str_yesterday": "昨日",
-  "str_you_must_change_the_settings_help": "設定を変更するにはログインが必要です。"
+  "str_you_must_change_the_settings_help": "設定を変更するにはログインが必要です。",
+  "str_n_minutes_short": "{n}分",
+  "str_n_seconds_short": "{n}秒",
+  "str_the_station_is_not_answering_help": "ステーションが応答しません。再試行中…"
 }

@@ -679,5 +679,9 @@
   "str_wiz_where_will_it_run": "Dove funzionerà?",
   "str_wiz_your_language": "La tua lingua",
   "str_write_the_saved_settings_over_help": "Scrivere le impostazioni salvate \"{name}\" sopra quelle della stazione?\n(Salva prima quelle attuali se vuoi conservarle.)",
-  "str_writes_the_chosen_settings_over_help": "Scrive le impostazioni scelte su quelle della stazione (chiede prima)"
+  "str_writes_the_chosen_settings_over_help": "Scrive le impostazioni scelte su quelle della stazione (chiede prima)",
+  "str_a_on_b": "{a} su {b}",
+  "str_factory_password_only_sets_help": "La stazione non ha ancora una password propria: la password di fabbrica apre solo la pagina dove imposti la tua.",
+  "str_low_contrast_pairs_help": "Contrasto basso (sotto 4,5:1), difficile da leggere: {pairs}.",
+  "str_web_login_on_needs_a_password_help": "Accesso web attivo richiede una password propria della stazione: digitane una, oppure scegli Disattivo (stazione aperta)."
 }

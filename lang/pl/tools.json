@@ -799,5 +799,17 @@
   "str_you_must_manage_the_logs_help": "Musisz być zalogowany, aby zarządzać logami.",
   "str_you_must_print_the_label_help": "Musisz się zalogować, aby wydrukować etykietę (pokazuje hasło WiFi).",
   "str_you_must_stop_the_recording_help": "Musisz się zalogować, aby zatrzymać nagrywanie.",
-  "str_zoho_an_application_specific_help": "Zoho: hasło dla aplikacji, gdy włączone jest uwierzytelnianie dwuskładnikowe."
+  "str_zoho_an_application_specific_help": "Zoho: hasło dla aplikacji, gdy włączone jest uwierzytelnianie dwuskładnikowe.",
+  "str_assign": "Przypisz",
+  "str_assign_to": "Przypisz do",
+  "str_database_lines_not_deleted": "wiersze bazy danych nie zostały usunięte: {msg}",
+  "str_file_the_n_detections_under": "Przypisać {n} wykryć bez lokalizacji do \"{name}\"?",
+  "str_ignored_col": "Zignorowane",
+  "str_n_detections": "{n} wykryć",
+  "str_n_detections_filed_under": "{n} wykryć przypisano do \"{name}\"",
+  "str_reason_missing_or_unknown": "nie podano powodu lub powód inny niż Człowiek, Hałas lub Ignoruj",
+  "str_species_changed_answer_not_saved": "gatunek został zmieniony, ale odpowiedź (Zmieniony) nie została zapisana: {msg}",
+  "str_the_preview_failed_help": "Podgląd nie powiódł się: zobacz dziennik.",
+  "str_the_preview_took_too_long_help": "Podgląd trwał zbyt długo: wybierz krótszy okres.",
+  "str_without_a_location": "Bez lokalizacji"
 }

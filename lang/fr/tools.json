@@ -799,5 +799,17 @@
   "str_you_must_manage_the_logs_help": "Vous devez être authentifié pour gérer les journaux.",
   "str_you_must_print_the_label_help": "Vous devez être connecté pour imprimer l'étiquette (elle affiche le mot de passe Wi-Fi).",
   "str_you_must_stop_the_recording_help": "Vous devez être connecté pour arrêter l'enregistrement.",
-  "str_zoho_an_application_specific_help": "Zoho : un mot de passe propre à l'application si l'authentification à deux facteurs est activée."
+  "str_zoho_an_application_specific_help": "Zoho : un mot de passe propre à l'application si l'authentification à deux facteurs est activée.",
+  "str_assign": "Attribuer",
+  "str_assign_to": "Attribuer à",
+  "str_database_lines_not_deleted": "lignes de la base de données non supprimées : {msg}",
+  "str_file_the_n_detections_under": "Classer les {n} détections sans lieu sous « {name} » ?",
+  "str_ignored_col": "Ignorées",
+  "str_n_detections": "{n} détections",
+  "str_n_detections_filed_under": "{n} détections classées sous « {name} »",
+  "str_reason_missing_or_unknown": "aucun motif donné, ou un motif qui n'est ni Humain, ni Bruit, ni Ignorer",
+  "str_species_changed_answer_not_saved": "l'espèce a été changée, mais sa réponse (Changée) n'a pas été enregistrée : {msg}",
+  "str_the_preview_failed_help": "L'aperçu a échoué : voir le journal.",
+  "str_the_preview_took_too_long_help": "L'aperçu a pris trop de temps : choisissez une période plus courte.",
+  "str_without_a_location": "Sans lieu"
 }

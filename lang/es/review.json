@@ -263,5 +263,10 @@
   "str_you_must_delete_files_help": "Debes iniciar sesión para eliminar archivos.",
   "str_you_must_restore_detections_help": "Debes iniciar sesión para restaurar detecciones.",
   "str_you_must_review_detections_help": "Debes iniciar sesión para revisar detecciones.",
-  "str_you_must_wipe_deleted_help": "Debes iniciar sesión para purgar detecciones eliminadas."
+  "str_you_must_wipe_deleted_help": "Debes iniciar sesión para purgar detecciones eliminadas.",
+  "str_khz_mark": "{n} kHz -",
+  "str_not_saved_no_answer": "No guardado ({what}): sin respuesta de la estación",
+  "str_the_model_did_not_answer": "El modelo de la estación no respondió.",
+  "str_the_species_list_did_not_load": "La lista de especies no se cargó.",
+  "str_the_station_is_busy_try_again": "la estación está ocupada, vuelva a intentarlo en un momento"
 }

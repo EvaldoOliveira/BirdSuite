@@ -799,5 +799,17 @@
   "str_you_must_manage_the_logs_help": "Du musst angemeldet sein, um die Protokolle zu verwalten.",
   "str_you_must_print_the_label_help": "Du musst angemeldet sein, um das Etikett zu drucken (es zeigt das WLAN-Passwort).",
   "str_you_must_stop_the_recording_help": "Du musst angemeldet sein, um die Aufnahme zu stoppen.",
-  "str_zoho_an_application_specific_help": "Zoho: ein anwendungsspezifisches Passwort, wenn die Zwei-Faktor-Authentifizierung aktiv ist."
+  "str_zoho_an_application_specific_help": "Zoho: ein anwendungsspezifisches Passwort, wenn die Zwei-Faktor-Authentifizierung aktiv ist.",
+  "str_assign": "Zuordnen",
+  "str_assign_to": "Zuordnen zu",
+  "str_database_lines_not_deleted": "Datenbankzeilen nicht gelöscht: {msg}",
+  "str_file_the_n_detections_under": "Die {n} Erkennungen ohne Standort unter \"{name}\" einordnen?",
+  "str_ignored_col": "Ignoriert",
+  "str_n_detections": "{n} Erkennungen",
+  "str_n_detections_filed_under": "{n} Erkennungen unter \"{name}\" eingeordnet",
+  "str_reason_missing_or_unknown": "kein Grund angegeben, oder ein Grund, der nicht Mensch, Geräusch oder Ignorieren ist",
+  "str_species_changed_answer_not_saved": "die Art wurde geändert, aber ihre Antwort (Geändert) wurde nicht gespeichert: {msg}",
+  "str_the_preview_failed_help": "Die Vorschau ist fehlgeschlagen: siehe Protokoll.",
+  "str_the_preview_took_too_long_help": "Die Vorschau hat zu lange gedauert: wählen Sie einen kürzeren Zeitraum.",
+  "str_without_a_location": "Ohne Standort"
 }

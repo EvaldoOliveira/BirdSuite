@@ -134,5 +134,8 @@
   "str_waiting": "Ожидает: {n}",
   "str_weeks_ago": "{n} нед. назад",
   "str_yesterday": "Вчера",
-  "str_you_must_change_the_settings_help": "Чтобы изменить настройки, нужно войти в систему."
+  "str_you_must_change_the_settings_help": "Чтобы изменить настройки, нужно войти в систему.",
+  "str_n_minutes_short": "{n}мин",
+  "str_n_seconds_short": "{n}с",
+  "str_the_station_is_not_answering_help": "Станция не отвечает, повторная попытка…"
 }

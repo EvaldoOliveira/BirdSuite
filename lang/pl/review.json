@@ -263,5 +263,10 @@
   "str_you_must_delete_files_help": "Musisz się zalogować, aby usuwać pliki.",
   "str_you_must_restore_detections_help": "Musisz się zalogować, aby przywracać wykrycia.",
   "str_you_must_review_detections_help": "Musisz się zalogować, aby weryfikować wykrycia.",
-  "str_you_must_wipe_deleted_help": "Musisz się zalogować, aby wymazać usunięte wykrycia."
+  "str_you_must_wipe_deleted_help": "Musisz się zalogować, aby wymazać usunięte wykrycia.",
+  "str_khz_mark": "{n} kHz -",
+  "str_not_saved_no_answer": "Nie zapisano ({what}): brak odpowiedzi stacji",
+  "str_the_model_did_not_answer": "Model stacji nie odpowiedział.",
+  "str_the_species_list_did_not_load": "Lista gatunków nie została wczytana.",
+  "str_the_station_is_busy_try_again": "stacja jest zajęta, spróbuj ponownie za chwilę"
 }

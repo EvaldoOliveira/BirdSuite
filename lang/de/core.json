@@ -543,5 +543,6 @@
   "str_you_must_download_backup_help": "Du musst angemeldet sein, um Sicherungsdateien herunterzuladen.",
   "str_you_must_download_the_ebird_help": "Sie müssen angemeldet sein, um die eBird-Datei herunterzuladen.",
   "str_you_must_read_the_station_help": "Du musst angemeldet sein, um den Zustand der Station abzurufen.",
-  "str_you_must_upload_backup_help": "Du musst angemeldet sein, um Sicherungsdateien hochzuladen."
+  "str_you_must_upload_backup_help": "Du musst angemeldet sein, um Sicherungsdateien hochzuladen.",
+  "str_hear_bands_help": "<b>Grünes Band</b><br>&emsp;Oben: begrenzt den höchsten Ton, der zählt<br>&emsp;Unten: schneidet die Töne darunter ab (Wind, Verkehr, Brummen)<br><b>Oranges Band</b><br>&emsp;Den Klang in ein Band verschieben, das Sie hören können"
 }

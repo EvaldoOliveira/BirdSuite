@@ -263,5 +263,10 @@
   "str_you_must_delete_files_help": "必须登录才能删除文件。",
   "str_you_must_restore_detections_help": "必须登录才能恢复检测。",
   "str_you_must_review_detections_help": "必须登录才能复核检测。",
-  "str_you_must_wipe_deleted_help": "必须登录才能清空已删除的检测。"
+  "str_you_must_wipe_deleted_help": "必须登录才能清空已删除的检测。",
+  "str_khz_mark": "{n} kHz -",
+  "str_not_saved_no_answer": "未保存（{what}）：站点没有响应",
+  "str_the_model_did_not_answer": "站点的模型没有响应。",
+  "str_the_species_list_did_not_load": "物种列表未能加载。",
+  "str_the_station_is_busy_try_again": "站点正忙，请稍后再试"
 }

@@ -263,5 +263,10 @@
   "str_you_must_delete_files_help": "Du musst angemeldet sein, um Dateien zu löschen.",
   "str_you_must_restore_detections_help": "Du musst angemeldet sein, um Erkennungen wiederherzustellen.",
   "str_you_must_review_detections_help": "Du musst angemeldet sein, um Erkennungen zu prüfen.",
-  "str_you_must_wipe_deleted_help": "Du musst angemeldet sein, um gelöschte Erkennungen endgültig zu löschen."
+  "str_you_must_wipe_deleted_help": "Du musst angemeldet sein, um gelöschte Erkennungen endgültig zu löschen.",
+  "str_khz_mark": "{n} kHz -",
+  "str_not_saved_no_answer": "Nicht gespeichert ({what}): keine Antwort der Station",
+  "str_the_model_did_not_answer": "Das Modell der Station hat nicht geantwortet.",
+  "str_the_species_list_did_not_load": "Die Artenliste wurde nicht geladen.",
+  "str_the_station_is_busy_try_again": "die Station ist beschäftigt, versuchen Sie es gleich noch einmal"
 }

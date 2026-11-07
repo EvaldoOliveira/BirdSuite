@@ -799,5 +799,17 @@
   "str_you_must_manage_the_logs_help": "Чтобы управлять журналами, нужно войти в систему.",
   "str_you_must_print_the_label_help": "Чтобы напечатать этикетку, нужно войти в систему (на ней виден пароль Wi-Fi).",
   "str_you_must_stop_the_recording_help": "Чтобы остановить запись, нужно войти в систему.",
-  "str_zoho_an_application_specific_help": "Zoho: пароль для приложения, если включена двухфакторная аутентификация."
+  "str_zoho_an_application_specific_help": "Zoho: пароль для приложения, если включена двухфакторная аутентификация.",
+  "str_assign": "Присвоить",
+  "str_assign_to": "Присвоить к",
+  "str_database_lines_not_deleted": "строки базы данных не удалены: {msg}",
+  "str_file_the_n_detections_under": "Отнести {n} обнаружений без местоположения к \"{name}\"?",
+  "str_ignored_col": "Пропущенные",
+  "str_n_detections": "{n} обнаружений",
+  "str_n_detections_filed_under": "{n} обнаружений отнесено к \"{name}\"",
+  "str_reason_missing_or_unknown": "причина не указана или это не Человек, Шум или Пропустить",
+  "str_species_changed_answer_not_saved": "вид изменён, но его ответ (Изменено) не сохранён: {msg}",
+  "str_the_preview_failed_help": "Предпросмотр не удался: см. журнал.",
+  "str_the_preview_took_too_long_help": "Предпросмотр занял слишком много времени: выберите более короткий период.",
+  "str_without_a_location": "Без местоположения"
 }

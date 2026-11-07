@@ -134,5 +134,8 @@
   "str_waiting": "En attente : {n}",
   "str_weeks_ago": "il y a {n} semaines",
   "str_yesterday": "Hier",
-  "str_you_must_change_the_settings_help": "Vous devez être connecté pour modifier les paramètres."
+  "str_you_must_change_the_settings_help": "Vous devez être connecté pour modifier les paramètres.",
+  "str_n_minutes_short": "{n}min",
+  "str_n_seconds_short": "{n}s",
+  "str_the_station_is_not_answering_help": "La station ne répond pas, nouvel essai…"
 }

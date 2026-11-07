@@ -134,5 +134,8 @@
   "str_waiting": "等待：{n}",
   "str_weeks_ago": "{n} 周前",
   "str_yesterday": "昨天",
-  "str_you_must_change_the_settings_help": "必须登录才能更改设置。"
+  "str_you_must_change_the_settings_help": "必须登录才能更改设置。",
+  "str_n_minutes_short": "{n}分",
+  "str_n_seconds_short": "{n}秒",
+  "str_the_station_is_not_answering_help": "站点无响应，正在重试…"
 }

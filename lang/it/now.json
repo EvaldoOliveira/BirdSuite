@@ -134,5 +134,8 @@
   "str_waiting": "In attesa: {n}",
   "str_weeks_ago": "{n} settimane fa",
   "str_yesterday": "Ieri",
-  "str_you_must_change_the_settings_help": "Devi aver effettuato l'accesso per modificare le impostazioni."
+  "str_you_must_change_the_settings_help": "Devi aver effettuato l'accesso per modificare le impostazioni.",
+  "str_n_minutes_short": "{n}min",
+  "str_n_seconds_short": "{n}s",
+  "str_the_station_is_not_answering_help": "La stazione non risponde, nuovo tentativo…"
 }

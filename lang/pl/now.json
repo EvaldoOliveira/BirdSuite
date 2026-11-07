@@ -134,5 +134,8 @@
   "str_waiting": "Oczekuje: {n}",
   "str_weeks_ago": "{n} tyg. temu",
   "str_yesterday": "Wczoraj",
-  "str_you_must_change_the_settings_help": "Musisz się zalogować, aby zmienić ustawienia."
+  "str_you_must_change_the_settings_help": "Musisz się zalogować, aby zmienić ustawienia.",
+  "str_n_minutes_short": "{n}min",
+  "str_n_seconds_short": "{n}s",
+  "str_the_station_is_not_answering_help": "Stacja nie odpowiada, ponawianie…"
 }

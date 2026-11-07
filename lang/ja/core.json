@@ -543,5 +543,6 @@
   "str_you_must_download_backup_help": "バックアップファイルをダウンロードするには認証が必要です。",
   "str_you_must_download_the_ebird_help": "eBird ファイルをダウンロードするにはログインが必要です。",
   "str_you_must_read_the_station_help": "ステーションの状態を読み取るには認証が必要です。",
-  "str_you_must_upload_backup_help": "バックアップファイルをアップロードするには認証が必要です。"
+  "str_you_must_upload_backup_help": "バックアップファイルをアップロードするには認証が必要です。",
+  "str_hear_bands_help": "<b>緑の帯</b><br>&emsp;上：対象とする最も高い音を制限します<br>&emsp;下：それより低い音を除きます（風、交通、ハム音）<br><b>オレンジの帯</b><br>&emsp;音を聞こえる帯域に移します"
 }

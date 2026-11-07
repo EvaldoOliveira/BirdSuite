@@ -799,5 +799,17 @@
   "str_you_must_manage_the_logs_help": "Devi essere autenticato per gestire i log.",
   "str_you_must_print_the_label_help": "Devi aver effettuato l'accesso per stampare l'etichetta (mostra la password del WiFi).",
   "str_you_must_stop_the_recording_help": "Devi aver effettuato l'accesso per fermare la registrazione.",
-  "str_zoho_an_application_specific_help": "Zoho: una password specifica per l'applicazione quando l'autenticazione a due fattori è attiva."
+  "str_zoho_an_application_specific_help": "Zoho: una password specifica per l'applicazione quando l'autenticazione a due fattori è attiva.",
+  "str_assign": "Assegna",
+  "str_assign_to": "Assegna a",
+  "str_database_lines_not_deleted": "righe del database non eliminate: {msg}",
+  "str_file_the_n_detections_under": "Archiviare le {n} rilevazioni senza località sotto \"{name}\"?",
+  "str_ignored_col": "Ignorate",
+  "str_n_detections": "{n} rilevazioni",
+  "str_n_detections_filed_under": "{n} rilevazioni archiviate sotto \"{name}\"",
+  "str_reason_missing_or_unknown": "nessun motivo indicato, oppure un motivo che non è Umano, Rumore o Ignora",
+  "str_species_changed_answer_not_saved": "la specie è stata cambiata, ma la sua risposta (Cambiata) non è stata salvata: {msg}",
+  "str_the_preview_failed_help": "L'anteprima non è riuscita: vedi il log.",
+  "str_the_preview_took_too_long_help": "L'anteprima ha impiegato troppo tempo: scegli un periodo più breve.",
+  "str_without_a_location": "Senza località"
 }

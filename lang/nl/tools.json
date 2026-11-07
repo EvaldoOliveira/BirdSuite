@@ -799,5 +799,17 @@
   "str_you_must_manage_the_logs_help": "Je moet aangemeld zijn om de logboeken te beheren.",
   "str_you_must_print_the_label_help": "Je moet ingelogd zijn om het label af te drukken (het toont het wifi-wachtwoord).",
   "str_you_must_stop_the_recording_help": "Je moet ingelogd zijn om de opname te stoppen.",
-  "str_zoho_an_application_specific_help": "Zoho: een applicatiespecifiek wachtwoord als tweestapsverificatie aan staat."
+  "str_zoho_an_application_specific_help": "Zoho: een applicatiespecifiek wachtwoord als tweestapsverificatie aan staat.",
+  "str_assign": "Toewijzen",
+  "str_assign_to": "Toewijzen aan",
+  "str_database_lines_not_deleted": "databaseregels niet verwijderd: {msg}",
+  "str_file_the_n_detections_under": "De {n} detecties zonder locatie onder \"{name}\" plaatsen?",
+  "str_ignored_col": "Genegeerd",
+  "str_n_detections": "{n} detecties",
+  "str_n_detections_filed_under": "{n} detecties onder \"{name}\" geplaatst",
+  "str_reason_missing_or_unknown": "geen reden opgegeven, of een reden die niet Mens, Ruis of Negeren is",
+  "str_species_changed_answer_not_saved": "de soort is gewijzigd, maar het antwoord (Gewijzigd) is niet opgeslagen: {msg}",
+  "str_the_preview_failed_help": "Het voorbeeld is mislukt: zie het logboek.",
+  "str_the_preview_took_too_long_help": "Het voorbeeld duurde te lang: kies een kortere periode.",
+  "str_without_a_location": "Zonder locatie"
 }

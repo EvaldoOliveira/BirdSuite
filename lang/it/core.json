@@ -543,5 +543,6 @@
   "str_you_must_download_backup_help": "Devi aver effettuato l'accesso per scaricare i file di backup.",
   "str_you_must_download_the_ebird_help": "Devi essere autenticato per scaricare il file eBird.",
   "str_you_must_read_the_station_help": "Devi aver effettuato l'accesso per leggere lo stato della stazione.",
-  "str_you_must_upload_backup_help": "Devi aver effettuato l'accesso per caricare i file di backup."
+  "str_you_must_upload_backup_help": "Devi aver effettuato l'accesso per caricare i file di backup.",
+  "str_hear_bands_help": "<b>Banda verde</b><br>&emsp;Sopra: limita il suono più acuto che conta<br>&emsp;Sotto: taglia i suoni al di sotto (vento, traffico, ronzio)<br><b>Banda arancione</b><br>&emsp;Porta il suono in una banda che riesci a sentire"
 }

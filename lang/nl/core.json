@@ -543,5 +543,6 @@
   "str_you_must_download_backup_help": "Je moet ingelogd zijn om back-upbestanden te downloaden.",
   "str_you_must_download_the_ebird_help": "U moet aangemeld zijn om het eBird-bestand te downloaden.",
   "str_you_must_read_the_station_help": "Je moet ingelogd zijn om de gezondheid van het station te lezen.",
-  "str_you_must_upload_backup_help": "Je moet ingelogd zijn om back-upbestanden te uploaden."
+  "str_you_must_upload_backup_help": "Je moet ingelogd zijn om back-upbestanden te uploaden.",
+  "str_hear_bands_help": "<b>Groene band</b><br>&emsp;Boven: begrenst de hoogste toon die telt<br>&emsp;Onder: snijdt de tonen eronder weg (wind, verkeer, brom)<br><b>Oranje band</b><br>&emsp;Breng het geluid naar een band die u kunt horen"
 }
