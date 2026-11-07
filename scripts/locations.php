@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['setcur'])) {
 	// the location's own timezone and species list (owner 2026-10-20), stored with it, then applied with the coordinates
 	$list = locations_complete(locations_load());
 	// a name another location carries is refused, as Add does (Gitea #92)
-	if ($here && $name !== '' && location_name_taken($name, $list, intval($here['id']))) { echo t('str_a_location_named_exists_already', array('name' => $name)); die(); }
+	if ($here && $name !== '' && $name !== (string)$here['name'] && location_name_taken($name, $list, intval($here['id']))) { echo t('str_a_location_named_exists_already', array('name' => $name)); die(); }
 	foreach ($list as &$x) if ($here && intval($x['id']) === intval($here['id'])) {
 		$x['lat'] = $lat; $x['lon'] = $lon;
 		if ($name !== '') $x['name'] = $name;
@@ -227,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['save'])) {
 		$new[$id]['theme'] = $th === '' || theme_valid($th) ? $th : location_theme($old[$id]);
 	}
 	// two rows with the same name are refused, as Add does (Gitea #92)
-	foreach ($new as $id => $l) if (location_name_taken($l['name'], array_values($new), $id)) { echo t('str_a_location_named_exists_already', array('name' => $l['name'])); die(); }
+	foreach ($new as $id => $l) if ($l['name'] !== (string)$old[$id]['name'] && location_name_taken($l['name'], array_values($new), $id)) { echo t('str_a_location_named_exists_already', array('name' => $l['name'])); die(); }
 	// the test location is built in: it is kept even when the list sent leaves it out
 	foreach ($old as $id => $l) if (!isset($new[$id]) && ($l['builtin'] ?? '') === 'test') $new[$id] = $l;
 	// a location with detections (removed ones too: they keep its id until restored or purged), or the current one,

@@ -247,7 +247,7 @@
   "str_folder": "Folder:",
   "str_folder_not_allowed": "Folder not allowed",
   "str_folder_not_mounted_not_writable_help": "Folder not mounted, not writable, full or on the station's own disk.",
-  "str_for_example_birdsuite_3f9a1c7b2e04": "for example: BirdSuite-3F9A1C7B2E04.",
+  "str_for_example_birdsuite_3f9a1c7b2e04": "for example: BirdSuite-2E04.",
   "str_for_sql_queries_and_editing_help": "For SQL queries and editing rows, the <a href=\"views.php?view=Adminer\">Advanced editor</a> (Adminer).",
   "str_format": "Format",
   "str_format_colon": "Format:",

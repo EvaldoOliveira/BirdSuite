@@ -125,7 +125,7 @@ function time_confirmed() {
 function set_time_from_client($epoch) {
 	$epoch = intval($epoch);
 	if ($epoch < 1735689600 || time_confirmed()) return '';
-	$out = json_decode((string)shell_exec(station_prefix() . 'python3 ' . escapeshellarg(__DIR__ . '/field_net.py') . ' time ' . $epoch . ' 2>/dev/null'), true);
+	$out = json_decode((string)shell_exec(station_prefix() . 'python3 ' . escapeshellarg(BS_SCRIPTS . '/field_net.py') . ' time ' . $epoch . ' 2>/dev/null'), true);
 	return ($out['ok'] ?? false) ? '' : ($out['error'] ?? t('str_the_clock_was_not_set'));
 }
 

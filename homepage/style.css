@@ -1603,7 +1603,7 @@ iframe.pageframe:focus, iframe.pageframe:focus-within, iframe.pageframe.bs-focus
 
 /* More options (US-52): the expert part of a page, folded below the Expert level, open at Expert; never removed */
 details.moreopts { margin: 8px 0; }
-details.moreopts > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent, #2b5e22); width: fit-content; padding: 1px 4px; border-radius: 4px; }
+details.moreopts > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text, #000); /* the text colour: the accent was under 4.5:1 on the Ocean panel (run 6 UX-36) */ width: fit-content; padding: 1px 4px; border-radius: 4px; }
 details.moreopts > summary.moreopts-open { display: none; }
 details.moreopts > summary.nondefault { background: #fff8c4 !important; color: #000 !important; }
 

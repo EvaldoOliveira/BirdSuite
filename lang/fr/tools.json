@@ -243,7 +243,7 @@
   "str_folder": "Dossier :",
   "str_folder_not_allowed": "Dossier non autorisé",
   "str_folder_not_mounted_not_writable_help": "Dossier non monté, sans droit d'écriture, plein ou sur le disque de la station.",
-  "str_for_example_birdsuite_3f9a1c7b2e04": "par exemple: BirdSuite-3F9A1C7B2E04.",
+  "str_for_example_birdsuite_3f9a1c7b2e04": "par exemple: BirdSuite-2E04.",
   "str_for_sql_queries_and_editing_help": "Pour les requêtes SQL et l'édition des lignes, l'<a href=\"views.php?view=Adminer\">Éditeur avancé</a> (Adminer).",
   "str_format": "Format",
   "str_format_colon": "Format :",

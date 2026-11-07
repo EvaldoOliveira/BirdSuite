@@ -243,7 +243,7 @@
   "str_folder": "フォルダー:",
   "str_folder_not_allowed": "許可されていないフォルダー",
   "str_folder_not_mounted_not_writable_help": "フォルダーが未マウント、書き込み不可、満杯、またはステーション自身のディスク上にあります。",
-  "str_for_example_birdsuite_3f9a1c7b2e04": "例: BirdSuite-3F9A1C7B2E04。",
+  "str_for_example_birdsuite_3f9a1c7b2e04": "例: BirdSuite-2E04。",
   "str_for_sql_queries_and_editing_help": "SQL クエリや行の編集には<a href=\"views.php?view=Adminer\">高度なエディター</a>（Adminer）。",
   "str_format": "形式",
   "str_format_colon": "形式：",

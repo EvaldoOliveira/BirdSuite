@@ -243,7 +243,7 @@
   "str_folder": "文件夹：",
   "str_folder_not_allowed": "不允许使用此文件夹",
   "str_folder_not_mounted_not_writable_help": "文件夹未挂载、不可写、已满或位于工作站自身的磁盘上。",
-  "str_for_example_birdsuite_3f9a1c7b2e04": "例如：BirdSuite-3F9A1C7B2E04。",
+  "str_for_example_birdsuite_3f9a1c7b2e04": "例如：BirdSuite-2E04。",
   "str_for_sql_queries_and_editing_help": "SQL 查询和编辑行请用<a href=\"views.php?view=Adminer\">高级编辑器</a>（Adminer）。",
   "str_format": "格式",
   "str_format_colon": "格式：",

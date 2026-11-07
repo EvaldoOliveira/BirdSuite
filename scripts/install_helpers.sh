@@ -393,6 +393,11 @@ ClientAliveCountMax 2
 TCPKeepAlive no
 LogLevel VERBOSE
 EOF2
+	# passwords only until the station user has an authorized key (run 6 HRD-10, 2026-11-07): with a key, key only; a
+	# station without one keeps the password login, else nobody could get in
+	if [ -s "$HOME/.ssh/authorized_keys" ] && grep -q '^\(ssh-\|ecdsa-\|sk-\)' "$HOME/.ssh/authorized_keys"; then
+		printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' >> "$tmp"
+	fi
 	if cmp -s "$tmp" "$f"; then rm -f "$tmp"; return 0; fi
 	install -o root -g root -m 0644 "$tmp" "$f"
 	rm -f "$tmp"

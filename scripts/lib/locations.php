@@ -303,10 +303,12 @@ function apply_station_coordinates($lat, $lon) {
 // $except = the id of the location being renamed
 function location_unique_name($name, $list, $except = 0) {
 	$taken = array();
+	// the names as the list shows them (locations_load() gives a built-in place its translated name), never a built-in's
+	// stored name (run 6 NEW-R6-92: a station from before bug #91 has its own "Home" beside the built-in one, shown "Casa",
+	// and every save of the list was refused as repeated); the callers refuse a name only when it changes
 	foreach ($list as $l) {
 		if (intval($l['id'] ?? 0) === intval($except)) continue;
 		$taken[] = mb_strtolower((string)$l['name']);
-		if (isset(location_builtin_names()[$l['builtin'] ?? ''])) $taken[] = mb_strtolower(location_builtin_names()[$l['builtin']]);
 	}
 	$base = $name; $n = 1;
 	while (in_array(mb_strtolower($name), $taken, true)) $name = $base . ' ' . (++$n);
@@ -422,7 +424,7 @@ function location_biome_text($l) {
 // every species of the location profile with its probability in the week of $date (Now › Low Prob in SQL)
 function location_profile_week($date) {
 	static $pj = false;
-	if ($pj === false) $pj = is_file(__DIR__ . '/region_profile.json') ? json_decode(file_get_contents(__DIR__ . '/region_profile.json'), true) : null;
+	if ($pj === false) $pj = is_file(BS_SCRIPTS . '/region_profile.json') ? json_decode(file_get_contents(BS_SCRIPTS . '/region_profile.json'), true) : null;
 	$t = strtotime($date ?: date('Y-m-d'));
 	$w = min(48, (intval(date('n', $t)) - 1) * 4 + min(4, intdiv(intval(date('j', $t)) - 1, 7) + 1));
 	$out = array();
@@ -433,7 +435,7 @@ function location_profile_week($date) {
 function location_probability($sci, $date) {
 	static $profile = null;
 	if ($profile === null) {
-		$pj = is_file(__DIR__ . '/region_profile.json') ? json_decode(file_get_contents(__DIR__ . '/region_profile.json'), true) : null;
+		$pj = is_file(BS_SCRIPTS . '/region_profile.json') ? json_decode(file_get_contents(BS_SCRIPTS . '/region_profile.json'), true) : null;
 		$profile = $pj['data'] ?? array();
 	}
 	if (!isset($profile[$sci])) return null;

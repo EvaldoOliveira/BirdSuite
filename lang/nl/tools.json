@@ -243,7 +243,7 @@
   "str_folder": "Map:",
   "str_folder_not_allowed": "Map niet toegestaan",
   "str_folder_not_mounted_not_writable_help": "Map niet aangekoppeld, niet beschrijfbaar, vol of op de eigen schijf van het station.",
-  "str_for_example_birdsuite_3f9a1c7b2e04": "bijvoorbeeld: BirdSuite-3F9A1C7B2E04.",
+  "str_for_example_birdsuite_3f9a1c7b2e04": "bijvoorbeeld: BirdSuite-2E04.",
   "str_for_sql_queries_and_editing_help": "Voor SQL-query's en het bewerken van rijen: de <a href=\"views.php?view=Adminer\">Geavanceerde editor</a> (Adminer).",
   "str_format": "Formaat",
   "str_format_colon": "Formaat:",

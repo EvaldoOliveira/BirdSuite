@@ -196,7 +196,7 @@ function detection_review_table($rows, $with_species = true, $with_date = true, 
 	if ($simple) $with_date = false;
 	static $profile = null;
 	if ($profile === null) {
-		$pj = is_file(__DIR__ . '/region_profile.json') ? json_decode(file_get_contents(__DIR__ . '/region_profile.json'), true) : null;
+		$pj = is_file(BS_SCRIPTS . '/region_profile.json') ? json_decode(file_get_contents(BS_SCRIPTS . '/region_profile.json'), true) : null;
 		$profile = $pj['data'] ?? array();
 	}
 	$h = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES); };

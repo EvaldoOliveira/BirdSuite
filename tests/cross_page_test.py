@@ -76,7 +76,7 @@ def main():
         page = get(base, 'views.php?view=Validation', cookie)
         m = re.search(r'window\.BS_LOC = ("[^"]*")', page)
         check(m is not None and m.group(1).strip('"') == ('' if loc in ('', ) else loc), f'[{name}] BS_LOC is the location shown')
-        m = re.search(r'var CUR_SRC = "([^"]*)"', page)
+        m = re.search(r'(?:var CUR_SRC = |window.BS_CURATION = {src: )"([^"]*)"', page)
         src = m.group(1).replace('\\/', '/') if m else ''
         check(bool(src), f'[{name}] Validation hands its source to the review (CUR_SRC)')
         todo = []

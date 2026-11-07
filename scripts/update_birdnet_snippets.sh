@@ -85,6 +85,8 @@ find "$BS_PROG" "$BS_RECS" -not -user $USER -execdir sudo -E chown $USER:$USER {
 find "$BS_PROG" "$BS_RECS" -path "$BS_VENV" -prune -o -perm /o=w ! -type l -exec chmod g+rwX,o-w {} + 2>/dev/null
 # the token store (app passwords, bot token) stays private to the station user (owner 2026-10-22)
 [ -f "$BS_NOTIFY/apprise-tokens.txt" ] && chmod u=rw,go= "$BS_NOTIFY/apprise-tokens.txt"
+# the channel and body files the station user's only too (run 6, 2026-11-07: they were world-readable)
+for f in "$BS_NOTIFY"/apprise.txt "$BS_NOTIFY"/apprise-rare.txt "$BS_NOTIFY"/body.txt "$BS_NOTIFY"/body-rare.txt; do [ -f "$f" ] && chmod u=rw,go= "$f"; done
 chmod g+r $HOME
 # the program folder entered by the web server (a station installed on 2026-11-03 got it u=rwx,g=rw: pages without
 # pictures, stylesheets or scripts; newinstaller.sh)

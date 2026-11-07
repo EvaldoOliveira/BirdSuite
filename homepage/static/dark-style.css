@@ -1691,7 +1691,7 @@ iframe.pageframe:focus, iframe.pageframe:focus-visible, iframe.pageframe:focus-w
 
 /* More options (US-52), as style.css */
 details.moreopts { margin: 8px 0; }
-details.moreopts > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent, #9ccc65); width: fit-content; padding: 1px 4px; border-radius: 4px; }
+details.moreopts > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text, #e0e0e0); /* the accent was 2.26:1 on the dark panel (run 6 UX-55/56) */ width: fit-content; padding: 1px 4px; border-radius: 4px; }
 details.moreopts > summary.moreopts-open { display: none; }
 details.moreopts > summary.nondefault { background: #fff8c4 !important; color: #000 !important; }
 

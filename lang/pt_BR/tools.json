@@ -247,7 +247,7 @@
   "str_folder": "Pasta:",
   "str_folder_not_allowed": "Pasta não permitida",
   "str_folder_not_mounted_not_writable_help": "Pasta não montada, sem permissão de escrita, cheia ou no próprio disco da estação.",
-  "str_for_example_birdsuite_3f9a1c7b2e04": "por exemplo: BirdSuite-3F9A1C7B2E04.",
+  "str_for_example_birdsuite_3f9a1c7b2e04": "por exemplo: BirdSuite-2E04.",
   "str_for_sql_queries_and_editing_help": "Para consultas SQL e edição de linhas, o <a href=\"views.php?view=Adminer\">Editor avançado</a> (Adminer).",
   "str_format": "Formato",
   "str_format_colon": "Formato:",

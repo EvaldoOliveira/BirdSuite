@@ -408,7 +408,7 @@ foreach ($langs as $l) {
 		<label><?php echo t('str_password_colon'); ?> <input name="fleet_psk" type="password" minlength="8" maxlength="63" autocomplete="new-password"></label><br>
 		<label><?php echo t('str_repeat'); ?> <input name="fleet_psk2" type="password" minlength="8" maxlength="63" autocomplete="new-password"></label><br>
 		<h3><?php echo t('str_in_the_field_station_wifi_plan_help'); ?></h3>
-		<p><small><?php echo t('str_the_station_wifi_ssid_its_password_help', array('ssid' => $h('BirdSuite' . (station_mac(true) !== '' ? '-' . station_mac(true) : '')))); ?></small></p>
+		<p><small><?php echo t('str_the_station_wifi_ssid_its_password_help', array('ssid' => $h(default_sitename()))); ?></small></p>
 		<label><?php echo t('str_password_colon'); ?> <input name="ap_psk" type="password" minlength="8" maxlength="63" autocomplete="new-password"></label><br>
 		<label><?php echo t('str_repeat'); ?> <input name="ap_psk2" type="password" minlength="8" maxlength="63" autocomplete="new-password"></label><br>
 		</div>

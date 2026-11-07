@@ -96,6 +96,7 @@ if(($_GET['submit'] ?? '') === 'settings') try {
 	// the four notification files beside the settings (the notifier reads them at every send)
 	foreach (array('apprise.txt' => $apprise_input, 'apprise-rare.txt' => $apprise_input_rare, 'body.txt' => $apprise_notification_body, 'body-rare.txt' => $apprise_notification_body_rare) as $f => $text) {
 		if (@file_put_contents(BS_NOTIFY . '/' . $f, $text) === false) throw new RuntimeException(t('str_error_writing', array('file' => $f)));
+		@chmod(BS_NOTIFY . '/' . $f, 0600);  // the station user's only (run 6 observation: they were world-readable)
 	}
 	syslog(LOG_INFO, "Restarting Services");
 	shell_exec(station_prefix() . "restart_services.sh");

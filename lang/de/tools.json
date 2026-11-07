@@ -243,7 +243,7 @@
   "str_folder": "Ordner:",
   "str_folder_not_allowed": "Ordner nicht erlaubt",
   "str_folder_not_mounted_not_writable_help": "Ordner nicht eingehängt, nicht beschreibbar, voll oder auf dem eigenen Datenträger der Station.",
-  "str_for_example_birdsuite_3f9a1c7b2e04": "zum Beispiel: BirdSuite-3F9A1C7B2E04.",
+  "str_for_example_birdsuite_3f9a1c7b2e04": "zum Beispiel: BirdSuite-2E04.",
   "str_for_sql_queries_and_editing_help": "Für SQL-Abfragen und das Bearbeiten von Zeilen: der <a href=\"views.php?view=Adminer\">Erweiterte Editor</a> (Adminer).",
   "str_format": "Format",
   "str_format_colon": "Format:",

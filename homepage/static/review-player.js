@@ -36,12 +36,13 @@
 //##############################################################################
 
 if (typeof window.t !== 'function') window.t = function (s, v) { if (v) for (var k in v) s = s.split('{' + k + '}').join(v[k]); return s; };
+// the answers in the owner's order (2026-11-07): Clear review, Change species, Yes, Review later
 var REVIEW_OPTS = [
-	// the answers without explanations under them (owner 2026-10-22)
-	['yes', '✓', '#2e7d32', t('str_yes_this_bird'), '', 'Y'],
-	['no', '⇄', '#1565c0', t('str_change_species'), '', 'N'],  // was "Not this bird" (owner 2026-10-22); arrows = swap the species, the cross stays on the causes (owner 2026-11-01), in blue
-	['unsure', '?', '#9e9e9e', t('str_review_later'), '', 'R'],  // R (owner 2026-10-23, was U)  // the answer "unsure" shown as Review later (owner 2026-10-22)
 	['clear', '↺', '#607d8b', t('str_clear_the_review'), '', 'C']  // no explanation under it (owner 2026-10-22)
+	['no', '⇄', '#1565c0', t('str_change_species'), '', 'N'],  // was "Not this bird" (owner 2026-10-22); arrows = swap the species, the cross stays on the causes (owner 2026-11-01), in blue
+	['yes', '✓', '#2e7d32', t('str_yes_this_bird'), '', 'Y'],
+	['unsure', '?', '#9e9e9e', t('str_review_later'), '', 'R'],  // R (owner 2026-10-23, was U)  // the answer "unsure" shown as Review later (owner 2026-10-22)
+	// the answers without explanations under them (owner 2026-10-22)
 ];
 var REVIEW_LABELS = {yes: '✓ ' + t('str_yes_state'), no: '⇄ ' + t('str_change_species'), unsure: '? ' + t('str_review_later'), clear: t('str_review')};
 // the Review button names the answer chosen (owner 2026-10-22): the cause in red, Yes / Changed in green, Unknown bird in grey
