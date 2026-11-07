@@ -508,6 +508,8 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
 		$st->bindValue(':r', $verdict === 'no' ? $reason : '');
 	}
 	$ok = $st->execute() !== false && ($verdict === 'clear' || $rw->changes() > 0);
+	// the database held by another writer for the 5 s waited (2026-11-06 second pass R2: it read "detection not found")
+	$busy = !$ok && in_array($rw->lastErrorCode(), array(5, 6), true);
 	// a positive review also confirms the species (Confirmed list of Species Management), owner 2026-10-08; the list under
 	// a lock (confirmed_list_set); a list that could not be written leaves the answer saved and goes to the web server's log
 	if ($ok && $verdict === 'yes') {
@@ -532,7 +534,7 @@ if(isset($_GET['review']) && isset($_GET['verdict'])) {
 		if ($d) unstage_clip($d['Date'], $d['Sci_Name'], $file_name);
 	}
 	$rw->close();
-	echo $ok ? "OK" : 'Error - ' . t('str_detection_not_found');
+	echo $ok ? "OK" : 'Error - ' . t($busy ? 'str_the_station_is_busy_try_again' : 'str_detection_not_found');
 	die();
 }
 

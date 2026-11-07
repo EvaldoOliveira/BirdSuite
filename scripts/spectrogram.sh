@@ -65,8 +65,15 @@ while read; do
 				if ! err=$(timeout 30 "$BS_PYTHON" "$BS_SCRIPTS/spectrogram_png.py" "${analyzing_now}" "${spectrogram_png}" \
 						"${analyzing_now//$HOME\//}" ${raw_opt:+--raw} 2>&1 > /dev/null); then
 					echo "spectrogram_png.py failed on ${analyzing_now##*/}: ${err##*$'\n'}" >&2
-					timeout 30 sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${spectrogram_png}" $raw_opt \
-						|| echo "spectrogram not drawn: ${analyzing_now##*/}" >&2
+					# drawn beside the picture and moved into place (2026-11-06 second pass S1: a browser could read a half-written
+					# file); Extracted/spectrogram.png is a link into StreamData, the file behind it is replaced
+					real_png=$(readlink -f "${spectrogram_png}" 2> /dev/null || echo "${spectrogram_png}")
+					if timeout 30 sox -V1 "${analyzing_now}" -n remix 1 rate 24k spectrogram $PALETTE_OPTS -c "${analyzing_now//$HOME\//}" -o "${real_png}.tmp.png" $raw_opt; then
+						mv -f "${real_png}.tmp.png" "${real_png}"
+					else
+						rm -f "${real_png}.tmp.png"
+						echo "spectrogram not drawn: ${analyzing_now##*/}" >&2
+					fi
 				fi
 		fi
 		next=$(( now + looptime ))

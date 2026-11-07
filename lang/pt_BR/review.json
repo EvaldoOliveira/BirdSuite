@@ -267,5 +267,6 @@
   "str_you_must_delete_files_help": "Você precisa entrar para excluir arquivos.",
   "str_you_must_restore_detections_help": "Você precisa entrar para restaurar detecções.",
   "str_you_must_review_detections_help": "Você precisa entrar para revisar detecções.",
-  "str_you_must_wipe_deleted_help": "Você precisa entrar para expurgar detecções excluídas."
+  "str_you_must_wipe_deleted_help": "Você precisa entrar para expurgar detecções excluídas.",
+  "str_the_station_is_busy_try_again": "a estação está ocupada, tente de novo daqui a pouco"
 }

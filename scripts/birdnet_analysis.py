@@ -52,6 +52,10 @@ NO_SPACE_RETRY = []
 NO_SPACE_LOCK = threading.Lock()
 RETRY_MIN_FREE_MB = 100
 NO_SPACE_TEXT = re.compile(r'No space left on device|database or disk is full|disk I/O error', re.I)
+# a database held by another writer for longer than write_to_db waits (3 x 30 s; a long import, a job): the recording is
+# kept the same way and analysed again once the database answers (2026-11-06 second pass A1: it went to the quarantine
+# and its detections were lost, though the write is safe to repeat)
+DB_BUSY_TEXT = re.compile(r'database is locked|database table is locked', re.I)
 
 
 def no_space(e):
@@ -68,21 +72,43 @@ def no_space(e):
     return False
 
 
-def keep_for_retry(file_name):
+def db_busy(e):
+    # the database held by another writer, anywhere in the chain
+    while e is not None:
+        if DB_BUSY_TEXT.search(str(e)):
+            return True
+        e = e.__cause__ or e.__context__
+    return False
+
+
+def keep_for_retry(file_name, why='no space left'):
     with NO_SPACE_LOCK:
         if file_name not in NO_SPACE_RETRY:
             NO_SPACE_RETRY.append(file_name)
-    log.warning('no space left: %s kept in StreamData, analysed again once there is room', os.path.basename(file_name))
+    log.warning('%s: %s kept in StreamData, analysed again once there is room and the database answers', why, os.path.basename(file_name))
 
 
 def room_again():
-    # the data folder (clips) and the database folder both have room
+    # the data folder (clips) and the database folder both have room, and the database takes a writer at once
     for path in (get_settings()['RECS_DIR'], core.BS_DATA):
         try:
             if shutil.disk_usage(path).free < RETRY_MIN_FREE_MB * 1024 * 1024:
                 return False
         except OSError:
             return False
+    try:
+        import sqlite3
+        from utils.helpers import DB_PATH
+        con = sqlite3.connect(DB_PATH, timeout=1)
+        try:
+            con.execute('BEGIN IMMEDIATE')
+            con.rollback()
+        finally:
+            con.close()
+    except sqlite3.OperationalError:
+        return False
+    except Exception:  # noqa: BLE001  anything else: the retry itself will say
+        pass
     return True
 
 
@@ -340,10 +366,10 @@ def handle_reporting_queue(queue):
                 # stopped in the middle (a service restart, 2026-10-23: the recording landed in quarantine): it stays in
                 # StreamData and the next start analyses it again
                 log.warning('reporting interrupted by the shutdown: %s left for the next start', os.path.basename(file.file_name))
-            elif no_space(e):
-                # not a bad recording: the card is full (bug #64); the rows already written are not repeated by the
-                # next try (write_to_db: WHERE NOT EXISTS)
-                keep_for_retry(file.file_name)
+            elif no_space(e) or db_busy(e):
+                # not a bad recording: the card is full (bug #64) or the database held by another writer (A1); the rows
+                # already written are not repeated by the next try (write_to_db: WHERE NOT EXISTS)
+                keep_for_retry(file.file_name, 'no space left' if no_space(e) else 'database busy')
             else:
                 log.exception(f'Unexpected error: {stderr}', exc_info=e)
                 quarantine(file.file_name)

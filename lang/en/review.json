@@ -267,5 +267,6 @@
   "str_you_must_delete_files_help": "You must be authenticated to delete files.",
   "str_you_must_restore_detections_help": "You must be authenticated to restore detections.",
   "str_you_must_review_detections_help": "You must be authenticated to review detections.",
-  "str_you_must_wipe_deleted_help": "You must be authenticated to wipe deleted detections."
+  "str_you_must_wipe_deleted_help": "You must be authenticated to wipe deleted detections.",
+  "str_the_station_is_busy_try_again": "the station is busy, try again in a moment"
 }
